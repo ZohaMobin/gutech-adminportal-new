@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_BACKEND_URL;
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
 export const useDepartmentsAndPrograms = () => {
   const [departments, setDepartments] = useState([]);
@@ -16,10 +16,7 @@ export const useDepartmentsAndPrograms = () => {
         setError(null);
 
         // Fetch departments and programs in parallel
-        const [deptResponse, progResponse] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/departments`),
-          axios.get(`${API_BASE_URL}/api/programs`),
-        ]);
+        const [deptResponse, progResponse] = await Promise.all([axios.get(`${API_BASE_URL}/api/departments`), axios.get(`${API_BASE_URL}/api/programs`)]);
 
         setDepartments(deptResponse.data || []);
         setPrograms(progResponse.data || []);
@@ -68,6 +65,3 @@ export const useDepartmentsAndPrograms = () => {
     getProgramName,
   };
 };
-
-
-

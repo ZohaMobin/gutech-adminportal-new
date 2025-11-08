@@ -16,7 +16,7 @@ const DepartmentsPage = () => {
   });
 
   const adminToken = sessionStorage.getItem("adminToken");
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
+  const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     fetchDepartments();
@@ -50,11 +50,7 @@ const DepartmentsPage = () => {
     try {
       setError("");
       if (editingDepartment) {
-        await axios.put(
-          `${API_BASE_URL}/api/departments/${editingDepartment._id}`,
-          formData,
-          { headers: { Authorization: `Bearer ${adminToken}` } }
-        );
+        await axios.put(`${API_BASE_URL}/api/departments/${editingDepartment._id}`, formData, { headers: { Authorization: `Bearer ${adminToken}` } });
       } else {
         await axios.post(`${API_BASE_URL}/api/departments`, formData, {
           headers: { Authorization: `Bearer ${adminToken}` },
@@ -148,22 +144,14 @@ const DepartmentsPage = () => {
                   <td>{dept.name}</td>
                   <td>{dept.description || "-"}</td>
                   <td>
-                    <span className={`status-badge ${dept.isActive ? "active" : "inactive"}`}>
-                      {dept.isActive ? "Active" : "Inactive"}
-                    </span>
+                    <span className={`status-badge ${dept.isActive ? "active" : "inactive"}`}>{dept.isActive ? "Active" : "Inactive"}</span>
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button
-                        className="btn-edit"
-                        onClick={() => handleEdit(dept)}
-                      >
+                      <button className="btn-edit" onClick={() => handleEdit(dept)}>
                         Edit
                       </button>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDelete(dept._id)}
-                      >
+                      <button className="btn-delete" onClick={() => handleDelete(dept._id)}>
                         Deactivate
                       </button>
                     </div>
@@ -189,47 +177,21 @@ const DepartmentsPage = () => {
                 <label>
                   Code <span className="required">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="code"
-                  value={formData.code}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., CS"
-                  disabled={!!editingDepartment}
-                />
+                <input type="text" name="code" value={formData.code} onChange={handleInputChange} required placeholder="e.g., CS" disabled={!!editingDepartment} />
               </div>
               <div className="form-group">
                 <label>
                   Name <span className="required">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., Computer Science"
-                />
+                <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="e.g., Computer Science" />
               </div>
               <div className="form-group">
                 <label>Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="3"
-                  placeholder="Optional description"
-                />
+                <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" placeholder="Optional description" />
               </div>
               <div className="form-group">
                 <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleInputChange}
-                  />
+                  <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleInputChange} />
                   Active
                 </label>
               </div>
@@ -250,4 +212,3 @@ const DepartmentsPage = () => {
 };
 
 export default DepartmentsPage;
-

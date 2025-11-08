@@ -18,7 +18,7 @@ const ProgramsPage = () => {
   });
 
   const adminToken = sessionStorage.getItem("adminToken");
-  const API_BASE_URL = process.env.REACT_APP_API_URL;
+  const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     fetchPrograms();
@@ -52,11 +52,7 @@ const ProgramsPage = () => {
     try {
       setError("");
       if (editingProgram) {
-        await axios.put(
-          `${API_BASE_URL}/api/programs/${editingProgram._id}`,
-          formData,
-          { headers: { Authorization: `Bearer ${adminToken}` } }
-        );
+        await axios.put(`${API_BASE_URL}/api/programs/${editingProgram._id}`, formData, { headers: { Authorization: `Bearer ${adminToken}` } });
       } else {
         await axios.post(`${API_BASE_URL}/api/programs`, formData, {
           headers: { Authorization: `Bearer ${adminToken}` },
@@ -160,22 +156,14 @@ const ProgramsPage = () => {
                   <td>{program.typicalDuration}</td>
                   <td>{program.description || "-"}</td>
                   <td>
-                    <span className={`status-badge ${program.isActive ? "active" : "inactive"}`}>
-                      {program.isActive ? "Active" : "Inactive"}
-                    </span>
+                    <span className={`status-badge ${program.isActive ? "active" : "inactive"}`}>{program.isActive ? "Active" : "Inactive"}</span>
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button
-                        className="btn-edit"
-                        onClick={() => handleEdit(program)}
-                      >
+                      <button className="btn-edit" onClick={() => handleEdit(program)}>
                         Edit
                       </button>
-                      <button
-                        className="btn-delete"
-                        onClick={() => handleDelete(program._id)}
-                      >
+                      <button className="btn-delete" onClick={() => handleDelete(program._id)}>
                         Deactivate
                       </button>
                     </div>
@@ -201,39 +189,19 @@ const ProgramsPage = () => {
                 <label>
                   Code <span className="required">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="code"
-                  value={formData.code}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., BSC"
-                  disabled={!!editingProgram}
-                />
+                <input type="text" name="code" value={formData.code} onChange={handleInputChange} required placeholder="e.g., BSC" disabled={!!editingProgram} />
               </div>
               <div className="form-group">
                 <label>
                   Name <span className="required">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., Bachelor of Science"
-                />
+                <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="e.g., Bachelor of Science" />
               </div>
               <div className="form-group">
                 <label>
                   Level <span className="required">*</span>
                 </label>
-                <select
-                  name="level"
-                  value={formData.level}
-                  onChange={handleInputChange}
-                  required
-                >
+                <select name="level" value={formData.level} onChange={handleInputChange} required>
                   <option value="undergraduate">Undergraduate</option>
                   <option value="graduate">Graduate</option>
                   <option value="doctoral">Doctoral</option>
@@ -243,35 +211,15 @@ const ProgramsPage = () => {
                 <label>
                   Typical Duration (Semesters) <span className="required">*</span>
                 </label>
-                <input
-                  type="number"
-                  name="typicalDuration"
-                  value={formData.typicalDuration}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                  max="20"
-                  placeholder="e.g., 8"
-                />
+                <input type="number" name="typicalDuration" value={formData.typicalDuration} onChange={handleInputChange} required min="1" max="20" placeholder="e.g., 8" />
               </div>
               <div className="form-group">
                 <label>Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="3"
-                  placeholder="Optional description"
-                />
+                <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" placeholder="Optional description" />
               </div>
               <div className="form-group">
                 <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleInputChange}
-                  />
+                  <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleInputChange} />
                   Active
                 </label>
               </div>
@@ -292,4 +240,3 @@ const ProgramsPage = () => {
 };
 
 export default ProgramsPage;
-
