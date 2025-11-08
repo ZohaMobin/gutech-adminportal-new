@@ -8,7 +8,7 @@ import { FiSearch } from "react-icons/fi";
 import NoResultsFound from "../../Components/NoResultsFound";
 
 const ImportStudentsPage = () => {
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState([]);

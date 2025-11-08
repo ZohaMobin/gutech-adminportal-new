@@ -18,7 +18,7 @@ const AcademicYearsPage = () => {
   });
 
   const adminToken = sessionStorage.getItem("adminToken");
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     fetchAcademicYears();
@@ -56,18 +56,14 @@ const AcademicYearsPage = () => {
       // Validate dates
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
-      
+
       if (endDate <= startDate) {
         setError("End date must be after start date");
         return;
       }
 
       if (editingAcademicYear) {
-        await axios.put(
-          `${API_BASE_URL}/api/academic-years/${editingAcademicYear._id}`,
-          formData,
-          { headers: { Authorization: `Bearer ${adminToken}` } }
-        );
+        await axios.put(`${API_BASE_URL}/api/academic-years/${editingAcademicYear._id}`, formData, { headers: { Authorization: `Bearer ${adminToken}` } });
         setSuccess("Academic year updated successfully");
       } else {
         await axios.post(`${API_BASE_URL}/api/academic-years`, formData, {
@@ -75,11 +71,11 @@ const AcademicYearsPage = () => {
         });
         setSuccess("Academic year created successfully");
       }
-      
+
       setShowModal(false);
       resetForm();
       fetchAcademicYears();
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
@@ -92,8 +88,8 @@ const AcademicYearsPage = () => {
     setFormData({
       semesterType: academicYear.semesterType,
       year: academicYear.year,
-      startDate: academicYear.startDate ? new Date(academicYear.startDate).toISOString().split('T')[0] : "",
-      endDate: academicYear.endDate ? new Date(academicYear.endDate).toISOString().split('T')[0] : "",
+      startDate: academicYear.startDate ? new Date(academicYear.startDate).toISOString().split("T")[0] : "",
+      endDate: academicYear.endDate ? new Date(academicYear.endDate).toISOString().split("T")[0] : "",
       isCurrent: academicYear.isCurrent || false,
     });
     setShowModal(true);
@@ -105,11 +101,7 @@ const AcademicYearsPage = () => {
     }
     try {
       setError("");
-      await axios.put(
-        `${API_BASE_URL}/api/academic-years/${id}/set-current`,
-        {},
-        { headers: { Authorization: `Bearer ${adminToken}` } }
-      );
+      await axios.put(`${API_BASE_URL}/api/academic-years/${id}/set-current`, {}, { headers: { Authorization: `Bearer ${adminToken}` } });
       setSuccess("Current academic year updated successfully");
       fetchAcademicYears();
       setTimeout(() => setSuccess(""), 3000);
@@ -152,11 +144,7 @@ const AcademicYearsPage = () => {
       active: "status-active",
       completed: "status-completed",
     };
-    return (
-      <span className={`status-badge ${statusColors[status] || ""}`}>
-        {status}
-      </span>
-    );
+    return <span className={`status-badge ${statusColors[status] || ""}`}>{status}</span>;
   };
 
   if (loading) {
@@ -171,7 +159,13 @@ const AcademicYearsPage = () => {
     <div className="academic-years-page">
       <div className="page-header">
         <h1>Academic Years</h1>
-        <button className="btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+        <button
+          className="btn-primary"
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
+          }}
+        >
           + Add Academic Year
         </button>
       </div>
@@ -195,7 +189,9 @@ const AcademicYearsPage = () => {
           <tbody>
             {academicYears.length === 0 ? (
               <tr>
-                <td colSpan="7" className="no-data">No academic years found</td>
+                <td colSpan="7" className="no-data">
+                  No academic years found
+                </td>
               </tr>
             ) : (
               academicYears.map((ay) => (
@@ -209,27 +205,18 @@ const AcademicYearsPage = () => {
                     {ay.isCurrent ? (
                       <span className="current-badge">Current</span>
                     ) : (
-                      <button
-                        className="btn-set-current"
-                        onClick={() => handleSetCurrent(ay._id)}
-                      >
+                      <button className="btn-set-current" onClick={() => handleSetCurrent(ay._id)}>
                         Set Current
                       </button>
                     )}
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button
-                        className="btn-edit"
-                        onClick={() => handleEdit(ay)}
-                      >
+                      <button className="btn-edit" onClick={() => handleEdit(ay)}>
                         Edit
                       </button>
                       {ay.isActive && (
-                        <button
-                          className="btn-delete"
-                          onClick={() => handleDelete(ay._id)}
-                        >
+                        <button className="btn-delete" onClick={() => handleDelete(ay._id)}>
                           Deactivate
                         </button>
                       )}
@@ -243,24 +230,30 @@ const AcademicYearsPage = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            setShowModal(false);
+            resetForm();
+          }}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingAcademicYear ? "Edit Academic Year" : "Add Academic Year"}</h2>
-              <button className="modal-close" onClick={() => { setShowModal(false); resetForm(); }}>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+              >
                 ×
               </button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="semesterType">Semester Type *</label>
-                <select
-                  id="semesterType"
-                  name="semesterType"
-                  value={formData.semesterType}
-                  onChange={handleInputChange}
-                  required
-                >
+                <select id="semesterType" name="semesterType" value={formData.semesterType} onChange={handleInputChange} required>
                   <option value="Fall">Fall</option>
                   <option value="Spring">Spring</option>
                   <option value="Summer">Summer</option>
@@ -269,56 +262,35 @@ const AcademicYearsPage = () => {
 
               <div className="form-group">
                 <label htmlFor="year">Year *</label>
-                <input
-                  type="number"
-                  id="year"
-                  name="year"
-                  value={formData.year}
-                  onChange={handleInputChange}
-                  min="2000"
-                  max="2100"
-                  required
-                />
+                <input type="number" id="year" name="year" value={formData.year} onChange={handleInputChange} min="2000" max="2100" required />
               </div>
 
               <div className="form-group">
                 <label htmlFor="startDate">Start Date *</label>
-                <input
-                  type="date"
-                  id="startDate"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleInputChange}
-                  required
-                />
+                <input type="date" id="startDate" name="startDate" value={formData.startDate} onChange={handleInputChange} required />
               </div>
 
               <div className="form-group">
                 <label htmlFor="endDate">End Date *</label>
-                <input
-                  type="date"
-                  id="endDate"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleInputChange}
-                  required
-                />
+                <input type="date" id="endDate" name="endDate" value={formData.endDate} onChange={handleInputChange} required />
               </div>
 
               <div className="form-group checkbox-group">
                 <label>
-                  <input
-                    type="checkbox"
-                    name="isCurrent"
-                    checked={formData.isCurrent}
-                    onChange={handleInputChange}
-                  />
+                  <input type="checkbox" name="isCurrent" checked={formData.isCurrent} onChange={handleInputChange} />
                   Set as Current Academic Year
                 </label>
               </div>
 
               <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => { setShowModal(false); resetForm(); }}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
+                >
                   Cancel
                 </button>
                 <button type="submit" className="btn-submit">
@@ -334,4 +306,3 @@ const AcademicYearsPage = () => {
 };
 
 export default AcademicYearsPage;
-

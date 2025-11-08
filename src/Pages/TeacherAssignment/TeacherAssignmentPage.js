@@ -82,7 +82,7 @@ const TeacherAssignmentPage = () => {
   const [newSection, setNewSection] = useState({ section: '', teacherId: '' });
   const [sectionTeachers, setSectionTeachers] = useState({});
 
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001';
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Add axios interceptor for handling connection errors
   useEffect(() => {

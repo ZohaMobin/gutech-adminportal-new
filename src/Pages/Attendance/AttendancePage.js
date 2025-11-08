@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import "./AttendancePage.css";
 
 const AttendancePage = () => {
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
