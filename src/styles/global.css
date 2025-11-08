@@ -1,0 +1,195 @@
+/* Global styles and variables */
+:root {
+  /* Color Palette */
+  --primary-color: #991D20;
+  --primary-light: rgba(153, 29, 32, 0.1);
+  --text-color: #727272;
+  --text-dark: #333333;
+  --light-bg: #F9F9F9;
+  --white: #FFFFFF;
+  --border-color: #E5E5E5;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --error-color: #d32f2f;
+  --error-bg: #fff3f3;
+  --error-border: #ffcdd2;
+
+  /* Layout */
+  --sidebar-width: 250px;
+  --header-height: 60px;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px var(--shadow-color);
+  --shadow-md: 0 4px 6px var(--shadow-color);
+  --shadow-lg: 0 8px 16px var(--shadow-color);
+}
+
+/* Base App Styles */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Common utility classes */
+.text-primary { color: var(--primary-color); }
+.text-dark { color: var(--text-dark); }
+.text-light { color: var(--text-color); }
+
+.bg-primary { background-color: var(--primary-color); }
+.bg-light { background-color: var(--light-bg); }
+.bg-white { background-color: var(--white); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* Card Styles */
+.card {
+  background-color: var(--white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Typography */
+.page-title {
+  color: var(--text-dark);
+  margin-bottom: var(--spacing-lg);
+  font-weight: 600;
+  font-size: 24px;
+}
+
+.section-title {
+  color: var(--text-dark);
+  margin-bottom: var(--spacing-md);
+  font-weight: 500;
+  font-size: 18px;
+}
+
+/* Button Styles */
+.btn {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color var(--transition-fast);
+}
+
+.btn:hover {
+  background-color: #7d1518;
+}
+
+.btn-secondary {
+  background-color: var(--light-bg);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-color);
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Empty States - Removed in favor of NoResultsFound component */
+
+/* Error States */
+.error-message {
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+  margin: var(--spacing-md) 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message p {
+  color: var(--error-color);
+  margin: 0;
+}
+
+.dismiss-error-btn {
+  background: none;
+  border: none;
+  color: var(--error-color);
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.dismiss-error-btn:hover {
+  text-decoration: underline;
+}
+
+/* Filter Controls */
+.clear-filters-btn {
+  background-color: #e9ecef;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  color: #495057;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.clear-filters-btn:hover {
+  background-color: #dee2e6;
+}
+
+/* Responsive Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+@media (max-width: 576px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

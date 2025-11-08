@@ -1,0 +1,460 @@
+/* AssignSectionPage.css */
+.assign-section-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: var(--light-bg);
+  min-height: calc(100vh - var(--header-height));
+}
+
+.page-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+  position: relative;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.page-header p {
+  color: var(--text-color);
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+}
+
+/* Form Panel Styles */
+.form-panel {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  padding: 2.5rem;
+}
+
+.form-panel h2 {
+  margin-bottom: 2rem;
+  color: var(--text-dark);
+  font-size: 1.8rem;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.form-panel h2:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: var(--primary-color);
+  border-radius: 2px;
+}
+
+.filter-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.filter-section h3 {
+  margin-bottom: 1.5rem;
+  color: var(--text-dark);
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.assignment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: var(--light-bg);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  background-color: var(--white);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+  background-color: var(--light-bg);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.submit-button,
+.cancel-button {
+  padding: 0.9rem 1.8rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.submit-button {
+  background: var(--primary-color);
+  color: var(--white);
+  flex: 1;
+  box-shadow: 0 4px 10px var(--shadow-color);
+}
+
+.submit-button:hover {
+  background: #7a1719;
+  box-shadow: 0 6px 15px var(--shadow-color);
+}
+
+.cancel-button {
+  background-color: var(--light-bg);
+  color: var(--text-color);
+  padding: 0.9rem 1.5rem;
+}
+
+.cancel-button:hover {
+  background-color: var(--border-color);
+  color: var(--text-dark);
+}
+
+.no-courses-message {
+  padding: 2rem;
+  background-color: var(--light-bg);
+  border-radius: 10px;
+  text-align: center;
+  color: var(--text-color);
+  font-style: italic;
+  border: 1px dashed var(--border-color);
+}
+
+/* Info Panel Styles */
+.info-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.filters-section {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  padding: 2rem;
+}
+
+.filters-section h3 {
+  margin-bottom: 1.5rem;
+  color: var(--text-dark);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.filter-group {
+  display: flex;
+  gap: 1.2rem;
+}
+
+.search-input,
+.department-filter {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: var(--light-bg);
+}
+
+.search-input {
+  flex: 1;
+}
+
+.search-input:focus,
+.department-filter:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  background-color: var(--white);
+}
+
+.enrollment-info,
+.teacher-info,
+.course-info {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  padding: 2rem;
+}
+
+.enrollment-info h3,
+.teacher-info h3,
+.course-info h3 {
+  margin-bottom: 1.5rem;
+  color: var(--text-dark);
+  font-size: 1.5rem;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.enrollment-info h3:after,
+.teacher-info h3:after,
+.course-info h3:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: var(--primary-color);
+  border-radius: 2px;
+}
+
+.info-card {
+  background-color: var(--light-bg);
+  border-radius: 10px;
+  padding: 1.8rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--primary-color);
+}
+
+.info-card p {
+  margin-bottom: 0.8rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.info-card p strong {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.enrollment-chart {
+  background-color: var(--border-color);
+  border-radius: 8px;
+  height: 36px;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px var(--shadow-color);
+}
+
+.chart-bar {
+  background: var(--primary-color);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: 600;
+  box-shadow: 0 2px 5px var(--shadow-color);
+}
+
+.section-recommendation {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--primary-light);
+  border-radius: 8px;
+  color: var(--primary-color);
+  font-weight: 500;
+  border-left: 4px solid var(--primary-color);
+}
+
+.existing-sections {
+  margin-top: 2rem;
+}
+
+.existing-sections h4 {
+  margin-bottom: 1.2rem;
+  color: var(--text-dark);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.sections-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.2rem;
+}
+
+.section-item {
+  background-color: var(--light-bg);
+  border-radius: 10px;
+  padding: 1.2rem;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  border-left: 4px solid var(--primary-color);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.section-header p {
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.edit-button,
+.delete-button {
+  padding: 0.5rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-button {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.edit-button:hover {
+  background-color: rgba(153, 29, 32, 0.2);
+}
+
+.delete-button {
+  background-color: #fde8e8;
+  color: #e74c3c;
+}
+
+.delete-button:hover {
+  background-color: #fbd5d5;
+}
+
+.section-item p {
+  margin: 0.6rem 0;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+
+.section-item p:first-child {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Loading Styles */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.loading-spinner {
+  border: 4px solid var(--primary-light);
+  border-radius: 50%;
+  border-top: 4px solid var(--primary-color);
+  width: 50px;
+  height: 50px;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .sections-list {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .assign-section-container {
+    padding: 1.5rem;
+  }
+  
+  .page-header h1 {
+    font-size: 2rem;
+  }
+  
+  .form-panel,
+  .filters-section,
+  .enrollment-info,
+  .teacher-info,
+  .course-info {
+    padding: 1.8rem;
+  }
+  
+  .filter-group {
+    flex-direction: column;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .cancel-button {
+    width: 100%;
+  }
+  
+  .sections-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Toast Notifications */
+.Toastify__toast {
+  border-radius: 10px;
+  font-family: inherit;
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.Toastify__toast--success {
+  background: var(--primary-color);
+}
+
+.Toastify__toast--error {
+  background: #e74c3c;
+}
+  

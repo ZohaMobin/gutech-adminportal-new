@@ -1,0 +1,60 @@
+/* Style for ClassFeeRecords component */
+.class-fee-records {
+    margin: 50px;
+  }
+  
+  h2 {
+    margin-bottom: 20px;
+    color: #991d20;
+    justify-self: center;
+  }
+  
+  /* Table styles */
+  .fee-table {
+    width: 100%;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  
+  .fee-table th, .fee-table td {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    text-align: left;
+  }
+  
+  .fee-table th {
+    background-color: #991d20;
+    font-weight: bold;
+  }
+  
+  .fee-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+    border-radius: 5px;
+  }
+  
+  .fee-table tr:hover {
+    background-color: #991d20;
+    border-radius: 10px;
+    color: #ddd;
+  }
+  
+  .fee-table button {
+    padding: 10px 10px;
+    background-color: #991d20;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: 10ms ease;
+    font-weight: 600;
+  }
+  
+  .fee-table button:hover {
+    background-color: #000;
+    transform: scale(1.05);
+
+  }
+  

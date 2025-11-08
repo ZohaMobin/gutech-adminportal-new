@@ -1,0 +1,405 @@
+.student-directory-container {
+  padding: var(--spacing-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+  background: var(--light-bg);
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.page-header {
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  background: var(--white);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  border-bottom: 3px solid var(--primary-color);
+}
+
+.header-content {
+  flex: 1;
+  min-width: 300px;
+}
+
+.header-content h1 {
+  font-size: 2rem;
+  color: var(--text-dark);
+  margin: 0 0 var(--spacing-xs) 0;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.header-content p {
+  color: var(--text-color);
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Search Bar Styles */
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-sm);
+  min-width: 300px;
+}
+
+.search-icon {
+  color: var(--text-color);
+  margin: 0 var(--spacing-xs);
+}
+
+.search-bar input {
+  border: none;
+  padding: var(--spacing-sm);
+  flex-grow: 1;
+  outline: none;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+}
+
+.search-button {
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.search-button:hover {
+  background: #7a1719;
+}
+
+/* Filter Toggle Button */
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  color: var(--text-dark);
+}
+
+.filter-toggle:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Filters Panel */
+.filters-panel {
+  background: var(--white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-lg);
+  overflow: hidden;
+  display: none;
+}
+
+.filters-panel.show {
+  display: block;
+}
+
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--light-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.filters-header h3 {
+  margin: 0;
+  color: var(--text-dark);
+}
+
+.close-filters {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-normal);
+}
+
+.close-filters:hover {
+  background: var(--border-color);
+  color: var(--text-dark);
+}
+
+.filters-content {
+  padding: var(--spacing-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.filter-group select {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--white);
+  font-size: 0.9rem;
+  transition: var(--transition-normal);
+  color: var(--text-dark);
+}
+
+.filter-group select:hover:not(:disabled) {
+  border-color: var(--primary-color);
+}
+
+.filter-group select:disabled {
+  background: var(--light-bg);
+  cursor: not-allowed;
+}
+
+/* Active Filters */
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-md);
+}
+
+.filter-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: var(--primary-light);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--primary-color);
+}
+
+.filter-tag button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  color: var(--text-color);
+  transition: var(--transition-normal);
+}
+
+.filter-tag button:hover {
+  color: #dc3545;
+}
+
+/* Results Section */
+.content-section {
+  background: var(--white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.results-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.results-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.results-summary h3 {
+  margin: 0;
+  color: var(--text-dark);
+}
+
+.results-count {
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+/* Table Styles */
+.students-table-container {
+  overflow-x: auto;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.students-table th {
+  background: var(--light-bg);
+  padding: var(--spacing-md);
+  text-align: left;
+  color: var(--text-dark);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.students-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-dark);
+}
+
+.students-table tr:hover {
+  background: var(--primary-light);
+}
+
+/* CGPA Badge */
+.cgpa-cell {
+  text-align: center;
+}
+
+.cgpa-badge {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.cgpa-badge.high {
+  background: #d4edda;
+  color: #155724;
+}
+
+.cgpa-badge.medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.cgpa-badge.low {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  color: var(--text-color);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* No Results State */
+.no-results {
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.no-results-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  color: var(--text-color);
+}
+
+.no-results-content h3 {
+  margin: 0;
+  color: var(--text-dark);
+}
+
+/* Clear Filters Button */
+.clear-filters-btn {
+  background: none;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  font-size: 0.9rem;
+}
+
+.clear-filters-btn:hover {
+  background: var(--primary-color);
+  color: var(--white);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .student-directory-container {
+    padding: var(--spacing-md);
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .search-bar {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .filters-content {
+    grid-template-columns: 1fr;
+  }
+
+  .students-table th,
+  .students-table td {
+    padding: var(--spacing-sm);
+  }
+} 

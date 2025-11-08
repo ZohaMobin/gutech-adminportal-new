@@ -1,0 +1,118 @@
+.schedule-filters-panel {
+  width: 300px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #e0e0e0;
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.clear-filters-btn {
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-filters-btn:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.separator {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 10px 0;
+}
+
+.add-schedule-btn {
+  padding: 10px 16px;
+  background-color: #4caf50;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-schedule-btn:hover {
+  background-color: #43a047;
+}
+
+.add-schedule-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.legend {
+  margin-top: 20px;
+}
+
+.legend h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.legend-label {
+  font-size: 0.9rem;
+  color: #666;
+} 

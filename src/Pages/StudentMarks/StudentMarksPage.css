@@ -1,0 +1,324 @@
+.student-marks-container {
+  padding: var(--spacing-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+  background: var(--light-bg);
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.page-header {
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.header-content h1 {
+  font-size: 1.8rem;
+  color: var(--text-dark);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.header-content p {
+  color: var(--text-color);
+  margin: 0;
+}
+
+/* Error Message */
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message p {
+  margin: 0;
+  flex-grow: 1;
+}
+
+.dismiss-error-btn {
+  background: none;
+  border: none;
+  color: #721c24;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-normal);
+}
+
+.dismiss-error-btn:hover {
+  background: rgba(114, 28, 36, 0.1);
+}
+
+/* Filters Section */
+.filters-section {
+  background: var(--white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.filter-group select {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--white);
+  font-size: 0.9rem;
+  transition: var(--transition-normal);
+  color: var(--text-dark);
+}
+
+.filter-group select:hover:not(:disabled) {
+  border-color: var(--primary-color);
+}
+
+.filter-group select:disabled {
+  background: var(--light-bg);
+  cursor: not-allowed;
+}
+
+.clear-filters-btn {
+  background: none;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  font-size: 0.9rem;
+}
+
+.clear-filters-btn:hover {
+  background: var(--primary-color);
+  color: var(--white);
+}
+
+/* Marks Table Section */
+.marks-table-section {
+  background: var(--white);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.marks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.marks-table th {
+  background: var(--light-bg);
+  padding: var(--spacing-md);
+  text-align: left;
+  color: var(--text-dark);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.marks-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-dark);
+}
+
+.marks-table tr:hover {
+  background: var(--primary-light);
+}
+
+.marks-cell {
+  text-align: center;
+  font-weight: 500;
+}
+
+.total-marks {
+  text-align: center;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* No Data State */
+.no-data-container {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--text-color);
+}
+
+/* Error State */
+.error-container {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: #dc3545;
+  background: #f8d7da;
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-lg) 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .student-marks-container {
+    padding: var(--spacing-md);
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .marks-table th,
+  .marks-table td {
+    padding: var(--spacing-sm);
+  }
+
+  .marks-table {
+    font-size: 0.8rem;
+  }
+}
+
+.help-text {
+  background-color: var(--light-bg);
+  border-left: 3px solid var(--primary-color);
+  padding: 8px 12px;
+  margin: 15px 0;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+  max-width: 600px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.help-text p {
+  margin: 0;
+  color: var(--text-color);
+  flex: 1;
+}
+
+.close-help {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  font-size: 1rem;
+  opacity: 0.7;
+  transition: var(--transition-normal);
+}
+
+.close-help:hover {
+  opacity: 1;
+}
+
+.help-text ol {
+  margin: 0 0 8px 0;
+  padding-left: 15px;
+}
+
+.help-text li {
+  color: var(--text-color);
+  margin-bottom: 3px;
+}
+
+.table-header {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Scoped to StudentMarksPage only - using a parent class to prevent global conflicts */
+.student-marks-page .search-container,
+.student-marks-container .search-container {
+  position: relative;
+  width: 300px;
+}
+
+.student-marks-page .search-input,
+.student-marks-container .search-input {
+  width: 100%;
+  padding: 8px 12px;
+  padding-left: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  color: var(--text-color);
+  background-color: var(--white);
+  transition: var(--transition-normal);
+}
+
+.student-marks-page .search-input:focus,
+.student-marks-container .search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.student-marks-page .search-container::before,
+.student-marks-container .search-container::before {
+  content: "🔍";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  pointer-events: none;
+} 
