@@ -10,7 +10,7 @@ import LoadingSpinner from '../../Components/LoadingSpinner';
 import NoResultsFound from '../../Components/NoResultsFound';
 
 const CoursePage = () => {
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001';
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
   const { departments, programs, loading: deptProgLoading, getProgramById } = useDepartmentsAndPrograms();
   
   const [course, setCourse] = useState({

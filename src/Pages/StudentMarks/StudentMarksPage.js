@@ -8,7 +8,7 @@ import LoadingSpinner from '../../Components/LoadingSpinner';
 import NoResultsFound from '../../Components/NoResultsFound';
 
 const StudentMarksPage = () => {
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001';
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
   const { departments, programs, loading: deptProgLoading } = useDepartmentsAndPrograms();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -56,7 +56,8 @@ const StudentMarksPage = () => {
           courses: courseRes.data
         }));
       } catch (err) {
-        setError('Failed to load courses. Please try again.');
+        const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to load courses. Please try again.';
+        setError(errorMessage);
         console.error('Error loading courses:', err);
         // Keep existing courses if available
       } finally {
@@ -93,7 +94,8 @@ const StudentMarksPage = () => {
           sections: sectionRes.data.sections || []
         }));
       } catch (err) {
-        setError('Failed to load sections. Please try again.');
+        const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to load sections. Please try again.';
+        setError(errorMessage);
         console.error('Error loading sections:', err);
         // Keep existing sections if available
       } finally {
@@ -121,7 +123,8 @@ const StudentMarksPage = () => {
         });
         setMarksData(response.data.data || []);
       } catch (err) {
-        setError('Failed to load marks data. Please try again.');
+        const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to load marks data. Please try again.';
+        setError(errorMessage);
         console.error('Error loading marks data:', err);
         setMarksData([]);
       } finally {

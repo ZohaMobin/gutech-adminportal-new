@@ -4,7 +4,6 @@ import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms
 import { semesters } from '../../config/academicConfig';
 import { FiInfo, FiX, FiCheck, FiSearch, FiFilter } from 'react-icons/fi';
 import './TeacherAssignmentPage.css';
-import NoResultsFound from '../../Components/NoResultsFound';
 
 // Create a separate component for each section to ensure isolation
 const SectionItem = ({ section, teachers, onAssign, loading }) => {
@@ -74,15 +73,12 @@ const TeacherAssignmentPage = () => {
   const [selectedProgram, setSelectedProgram] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedTeacher, setSelectedTeacher] = useState('');
   const [selectedSection, setSelectedSection] = useState(null);
-  const [editingSection, setEditingSection] = useState(null);
-  const [students, setStudents] = useState([]);
   const [showHelp, setShowHelp] = useState(true);
   const [newSection, setNewSection] = useState({ section: '', teacherId: '' });
   const [sectionTeachers, setSectionTeachers] = useState({});
 
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001';
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Add axios interceptor for handling connection errors
   useEffect(() => {
@@ -124,21 +120,22 @@ const TeacherAssignmentPage = () => {
       fetchCourses();
       fetchTeachers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDepartment, selectedProgram, selectedSemester]);
 
   useEffect(() => {
     if (selectedCourse) {
       fetchSections();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCourse]);
 
   useEffect(() => {
     if (selectedSection) {
       setError(null);
       fetchStudents();
-    } else {
-      setStudents([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSection]);
 
   const fetchCourses = async () => {
@@ -211,19 +208,11 @@ const TeacherAssignmentPage = () => {
     
     try {
       const token = sessionStorage.getItem('adminToken');
-      const response = await axios.get(`${apiUrl}/api/course-registrations/getStudents/${selectedSection}`, {
+      await axios.get(`${apiUrl}/api/course-registrations/getStudents/${selectedSection}`, {
         headers: { 'x-auth-token': token }
       });
-      setStudents(response.data);
-      
-      if (response.data && response.data.length > 0) {
-        setError(null);
-      } else {
-        setError('No students are currently enrolled in this section');
-      }
     } catch (error) {
       if (error.response?.status === 404) {
-        setStudents([]);
         setError('No students are currently enrolled in this section');
       } else {
         setError(error.response?.data?.message || 'Failed to fetch students');
@@ -253,7 +242,7 @@ const TeacherAssignmentPage = () => {
         }
         
         // Update existing section
-        const response = await axios.put(`${apiUrl}/api/sections/${sectionId}`, {
+        await axios.put(`${apiUrl}/api/sections/${sectionId}`, {
           teacherId: teacherId,
           section: section.section
         }, {
@@ -273,7 +262,7 @@ const TeacherAssignmentPage = () => {
           return;
         }
         
-        const response = await axios.post(`${apiUrl}/api/sections/addSection`, {
+        await axios.post(`${apiUrl}/api/sections/addSection`, {
           courseId: selectedCourse,
           teacherId: teacherId,
           section: newSection.section
@@ -314,7 +303,7 @@ const TeacherAssignmentPage = () => {
       setLoading(true);
       const token = sessionStorage.getItem('adminToken');
       
-      const response = await axios.post(`${apiUrl}/api/sections/addSection`, {
+      await axios.post(`${apiUrl}/api/sections/addSection`, {
         courseId: selectedCourse,
         teacherId: newSection.teacherId,
         section: newSection.section
@@ -337,19 +326,10 @@ const TeacherAssignmentPage = () => {
     setSelectedProgram('');
     setSelectedSemester('');
     setSelectedCourse('');
-    setSelectedTeacher('');
     setCourses([]);
     setTeachers([]);
     setSections([]);
-    setEditingSection(null);
     setSuccess(null);
-  };
-
-  const handleTeacherChange = (sectionId, teacherId) => {
-    // Create a new object to ensure React detects the state change
-    const updatedSectionTeachers = { ...sectionTeachers };
-    updatedSectionTeachers[sectionId] = teacherId;
-    setSectionTeachers(updatedSectionTeachers);
   };
 
   return (

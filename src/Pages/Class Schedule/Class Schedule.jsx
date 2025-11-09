@@ -36,7 +36,7 @@ function ClassSchedule() {
     teacherId: "",
   });
 
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Fetch course details function moved before it's used
   const fetchCourseDetails = async (courseId) => {

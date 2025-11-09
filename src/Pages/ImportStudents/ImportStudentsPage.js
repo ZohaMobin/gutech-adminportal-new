@@ -8,7 +8,7 @@ import { FiSearch } from "react-icons/fi";
 import NoResultsFound from "../../Components/NoResultsFound";
 
 const ImportStudentsPage = () => {
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState([]);
@@ -214,13 +214,20 @@ const ImportStudentsPage = () => {
           } else {
             setError(err.response?.data?.message || "Error processing the file");
           }
+        } finally {
+          // Set loading to false after the async operation completes
+          setLoading(false);
         }
+      };
+
+      reader.onerror = () => {
+        setError("Error reading the file");
+        setLoading(false);
       };
 
       reader.readAsArrayBuffer(file);
     } catch (err) {
       setError("Error reading the file");
-    } finally {
       setLoading(false);
     }
   };
@@ -314,6 +321,7 @@ const ImportStudentsPage = () => {
         )}
 
         <button className="upload-button" onClick={handleUpload} disabled={!file || loading}>
+          {loading && <span className="button-spinner"></span>}
           {loading ? "Importing..." : "Import Students"}
         </button>
       </div>
