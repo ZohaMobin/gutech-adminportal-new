@@ -71,7 +71,7 @@ const ImportStudentsPage = () => {
         name: "John Doe",
         email: "john.doe@example.com",
         department: "Computer Science [Use Exact Name]",
-        program: "Bachelor of Computer Science[Use Exact Name]",
+        program: "Bachelor of Science in Computer Science[Use Exact Name]",
         currentSemester: 1,
         CGPA: 0.0,
       },
@@ -92,7 +92,7 @@ const ImportStudentsPage = () => {
       { Field: "name", Description: "Full name of the student", Required: "Yes", Example: "John Doe" },
       { Field: "email", Description: "Valid email address", Required: "Yes", Example: "john.doe@example.com" },
       { Field: "department", Description: "Department name (exact match) OR MongoDB ObjectId. Get names from Departments page.", Required: "Yes", Example: "Computer Science" },
-      { Field: "program", Description: "Program name (exact match) OR MongoDB ObjectId. Get names from Programs page.", Required: "Yes", Example: "Bachelor of Computer Science" },
+      { Field: "program", Description: "Program name (exact match) OR MongoDB ObjectId. Get names from Programs page.", Required: "Yes", Example: "Bachelor of Science in Computer Science" },
       { Field: "currentSemester", Description: "Current semester (1-8, default: 1)", Required: "No", Example: "1" },
       { Field: "CGPA", Description: "Cumulative GPA (0.0-4.0, default: 0)", Required: "No", Example: "3.5" },
     ];
