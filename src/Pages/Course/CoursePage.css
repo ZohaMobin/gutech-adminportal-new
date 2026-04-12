@@ -379,6 +379,68 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: var(--spacing-md);
 }
 
+.offerings-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.academic-year-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: var(--spacing-md);
+}
+
+.academic-year-tab {
+  border: 1px solid #d6dbe4;
+  background: #f6f8fb;
+  color: #435168;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.academic-year-tab:hover {
+  background: #e9eef7;
+  border-color: #b9c7dc;
+}
+
+.academic-year-tab.active {
+  background: #143b63;
+  border-color: #143b63;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(20, 59, 99, 0.18);
+}
+
+.deactivate-offerings-btn {
+  border: 1px solid #e4c7c3;
+  background: #fff7f6;
+  color: #9f1f18;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  box-shadow: none;
+}
+
+.deactivate-offerings-btn:hover:not(:disabled) {
+  background: #fbe9e7;
+  border-color: #d8a9a3;
+}
+
+.deactivate-offerings-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .group-by-controls {
   display: flex;
   align-items: center;
@@ -498,6 +560,18 @@ tr:hover {
   }
   
   .group-by-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .offerings-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .offerings-header-actions {
+    width: 100%;
     flex-direction: column;
     align-items: flex-start;
   }

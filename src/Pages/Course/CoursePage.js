@@ -44,6 +44,7 @@ const CoursePage = () => {
   const [showOfferingsHelp, setShowOfferingsHelp] = useState(true);
   const [showManageHelp, setShowManageHelp] = useState(true);
   const [showAssignmentsHelp, setShowAssignmentsHelp] = useState(true);
+  const [selectedOfferingAcademicYear, setSelectedOfferingAcademicYear] = useState("");
   
   // New state for manage courses tab
   const [searchTerm, setSearchTerm] = useState("");
@@ -281,16 +282,88 @@ const CoursePage = () => {
     }));
   };
 
+  const getAcademicYearLabel = (offering) => {
+    if (offering.academicYearId && typeof offering.academicYearId === 'object') {
+      return offering.academicYearId.displayName || `${offering.academicYearId.semesterType} ${offering.academicYearId.year}`;
+    }
+
+    if (offering.semesterType && offering.year) {
+      return `${offering.semesterType} ${offering.year}`;
+    }
+
+    return 'Unassigned Academic Year';
+  };
+
+  const academicYearTabs = React.useMemo(() => {
+    const tabMap = new Map();
+
+    courseOfferings.forEach((offering) => {
+      const academicYearObject = offering.academicYearId && typeof offering.academicYearId === 'object'
+        ? offering.academicYearId
+        : null;
+      const key = academicYearObject?._id || `${offering.semesterType || 'unknown'}-${offering.year || 'unknown'}`;
+
+      if (!tabMap.has(key)) {
+        tabMap.set(key, {
+          key,
+          label: getAcademicYearLabel(offering),
+          year: academicYearObject?.year || offering.year || 0,
+          semesterType: academicYearObject?.semesterType || offering.semesterType || '',
+          isCurrent: Boolean(academicYearObject?.isCurrent),
+        });
+      }
+    });
+
+    const semesterOrder = { Fall: 1, Spring: 2, Summer: 3 };
+
+    return Array.from(tabMap.values()).sort((a, b) => {
+      if (b.year !== a.year) {
+        return b.year - a.year;
+      }
+
+      return (semesterOrder[a.semesterType] || 99) - (semesterOrder[b.semesterType] || 99);
+    });
+  }, [courseOfferings]);
+
+  useEffect(() => {
+    if (academicYearTabs.length === 0) {
+      if (selectedOfferingAcademicYear !== "") {
+        setSelectedOfferingAcademicYear("");
+      }
+      return;
+    }
+
+    const hasSelectedTab = academicYearTabs.some((tab) => tab.key === selectedOfferingAcademicYear);
+    if (hasSelectedTab) {
+      return;
+    }
+
+    const currentTab = academicYearTabs.find((tab) => tab.isCurrent);
+    setSelectedOfferingAcademicYear(currentTab?.key || academicYearTabs[0].key);
+  }, [academicYearTabs, selectedOfferingAcademicYear]);
+
+  const visibleCourseOfferings = selectedOfferingAcademicYear
+    ? courseOfferings.filter((offering) => {
+        const academicYearObject = offering.academicYearId && typeof offering.academicYearId === 'object'
+          ? offering.academicYearId
+          : null;
+        const key = academicYearObject?._id || `${offering.semesterType || 'unknown'}-${offering.year || 'unknown'}`;
+        return key === selectedOfferingAcademicYear;
+      })
+    : courseOfferings;
+
   // Group course offerings by selected criteria
   const groupOfferings = () => {
+    const offeringsToGroup = visibleCourseOfferings;
+
     // If no grouping options are selected, return a single group
     if (!Object.values(groupByOptions).some(value => value)) {
-      return { "All Offerings": courseOfferings };
+      return { "All Offerings": offeringsToGroup };
     }
 
     const grouped = {};
     
-    courseOfferings.forEach(offering => {
+    offeringsToGroup.forEach(offering => {
       // Create a composite key based on selected grouping options
       const keyParts = [];
       
@@ -366,6 +439,47 @@ const CoursePage = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setFilterStatus("");
+  };
+
+  const handleDeactivateAcademicYearOfferings = async () => {
+    const activeOfferingsInYear = visibleCourseOfferings.filter((offering) => offering.isActive);
+
+    if (activeOfferingsInYear.length === 0) {
+      toast.error("No active course offerings found in the selected academic year");
+      return;
+    }
+
+    const selectedYearLabel = academicYearTabs.find((tab) => tab.key === selectedOfferingAcademicYear)?.label || "this academic year";
+    const shouldContinue = window.confirm(`Deactivate ${activeOfferingsInYear.length} active course offering(s) in ${selectedYearLabel}?`);
+
+    if (!shouldContinue) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = sessionStorage.getItem('adminToken');
+
+      await Promise.all(
+        activeOfferingsInYear.map((offering) =>
+          axios.put(
+            `${apiUrl}/api/course-offerings/${offering._id}`,
+            { isActive: false },
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          )
+        )
+      );
+
+      toast.success(`Deactivated ${activeOfferingsInYear.length} course offering(s) in ${selectedYearLabel}`);
+      fetchCourseOfferings();
+    } catch (error) {
+      console.error('Error deactivating course offerings:', error);
+      toast.error(error.response?.data?.message || 'Failed to deactivate course offerings');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -701,36 +815,62 @@ const CoursePage = () => {
           <div className="offerings-list">
             <div className="offerings-header">
               <h3>Current Course Offerings</h3>
-              <div className="group-by-controls">
-                <label>Group by:</label>
-                <div className="group-by-checkboxes">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={groupByOptions.department}
-                      onChange={() => handleGroupByChange('department')}
-                    />
-                    Department
-                  </label>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={groupByOptions.program}
-                      onChange={() => handleGroupByChange('program')}
-                    />
-                    Program
-                  </label>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={groupByOptions.semester}
-                      onChange={() => handleGroupByChange('semester')}
-                    />
-                    Semester
-                  </label>
+              <div className="offerings-header-actions">
+                <button
+                  type="button"
+                  className="deactivate-offerings-btn"
+                  onClick={handleDeactivateAcademicYearOfferings}
+                  disabled={loading || visibleCourseOfferings.filter((offering) => offering.isActive).length === 0}
+                >
+                  Deactivate Year Offerings
+                </button>
+                <div className="group-by-controls">
+                  <label>Group by:</label>
+                  <div className="group-by-checkboxes">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={groupByOptions.department}
+                        onChange={() => handleGroupByChange('department')}
+                      />
+                      Department
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={groupByOptions.program}
+                        onChange={() => handleGroupByChange('program')}
+                      />
+                      Program
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={groupByOptions.semester}
+                        onChange={() => handleGroupByChange('semester')}
+                      />
+                      Semester
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {academicYearTabs.length > 0 && (
+              <div className="academic-year-tabs">
+                {academicYearTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    className={`academic-year-tab ${selectedOfferingAcademicYear === tab.key ? 'active' : ''}`}
+                    onClick={() => setSelectedOfferingAcademicYear(tab.key)}
+                  >
+                    {tab.label}
+                    {tab.isCurrent ? ' (Current)' : ''}
+                  </button>
+                ))}
+              </div>
+            )}
             
               <div className="content-section">
                 {loading ? (
@@ -738,14 +878,11 @@ const CoursePage = () => {
                     <div className="loading-spinner"></div>
                     <p>Loading course offerings...</p>
                   </div>
-                ) : courseOfferings.length === 0 ? (
+                ) : visibleCourseOfferings.length === 0 ? (
                   <NoResultsFound 
                     title="No Course Offerings Found"
-                    message="No course offerings match your current filter criteria. Try adjusting your filters or selecting different options."
+                    message="No course offerings exist for the selected academic year yet."
                     icon="filter"
-                    actionButton={true}
-                    actionButtonText="Clear All Filters"
-                    onActionButtonClick={clearFilters}
                   />
                 ) : (
                   <div className="offerings-container">
