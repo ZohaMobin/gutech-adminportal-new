@@ -1,61 +1,210 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
 import { semesters } from '../../config/academicConfig';
-import { FiInfo, FiX, FiCheck, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiX, FiCheck, FiPlus, FiEdit2 } from 'react-icons/fi';
 import './TeacherAssignmentPage.css';
 
-// Create a separate component for each section to ensure isolation
-const SectionItem = ({ section, teachers, onAssign, loading }) => {
-  const [selectedTeacher, setSelectedTeacher] = useState('');
-  
-  // Initialize with current teacher if available
+const getAssignedTeacherIds = (section) => {
+  if (Array.isArray(section.teachers) && section.teachers.length > 0) {
+    return section.teachers.map((teacher) => teacher.id);
+  }
+
+  if (section.teacher?.id) {
+    return [section.teacher.id];
+  }
+
+  return [];
+};
+
+const formatTeacherNames = (teachersList = []) => {
+  if (!Array.isArray(teachersList) || teachersList.length === 0) {
+    return 'Unassigned';
+  }
+
+  return teachersList.map((teacher) => teacher.name || 'Unknown Teacher').join(', ');
+};
+
+const TeacherPicker = ({ teachers, selectedTeacherIds, onAddTeacher, onRemoveTeacher, emptyLabel }) => {
+  const [pendingTeacherId, setPendingTeacherId] = useState('');
+
+  const availableTeachers = useMemo(
+    () => teachers.filter((teacher) => !selectedTeacherIds.includes(teacher._id)),
+    [teachers, selectedTeacherIds]
+  );
+
   useEffect(() => {
-    if (section.teacher && section.teacher.id) {
-      setSelectedTeacher(section.teacher.id);
+    if (availableTeachers.length === 0) {
+      setPendingTeacherId('');
+      return;
     }
-  }, [section]);
-  
-  const handleTeacherChange = (e) => {
-    setSelectedTeacher(e.target.value);
-  };
-  
-  const handleAssign = () => {
-    onAssign(section, selectedTeacher);
-  };
-  
+
+    if (!pendingTeacherId || !availableTeachers.some((teacher) => teacher._id === pendingTeacherId)) {
+      setPendingTeacherId(availableTeachers[0]._id);
+    }
+  }, [availableTeachers, pendingTeacherId]);
+
+  const selectedTeachers = teachers.filter((teacher) => selectedTeacherIds.includes(teacher._id));
+
   return (
-    <div className="section-item">
-      <div className="section-details">
-        <span className="assignment-section-name">{section.section}</span>
-        <span className="assignment-teacher-name">
-          {section.teacher?.name || 'Unassigned'}
-        </span>
+    <div className="teacher-picker">
+      <div className="teacher-chip-list">
+        {selectedTeachers.length > 0 ? (
+          selectedTeachers.map((teacher) => {
+            const teacherName = teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher';
+
+            return (
+              <div key={teacher._id} className="teacher-chip">
+                <div className="teacher-chip-copy">
+                  <span className="teacher-chip-name">{teacherName}</span>
+                  <span className="teacher-chip-meta">{teacher.employeeId || 'N/A'}</span>
+                </div>
+                <button
+                  type="button"
+                  className="teacher-chip-remove"
+                  onClick={() => onRemoveTeacher(teacher._id)}
+                  aria-label={`Remove ${teacherName}`}
+                >
+                  <FiX />
+                </button>
+              </div>
+            );
+          })
+        ) : (
+          <div className="teacher-picker-empty">{emptyLabel}</div>
+        )}
       </div>
-      <div className="section-actions">
+
+      <div className="teacher-picker-actions">
         <select
-          value={selectedTeacher}
-          onChange={handleTeacherChange}
+          value={pendingTeacherId}
+          onChange={(e) => setPendingTeacherId(e.target.value)}
           className="teacher-select"
+          disabled={availableTeachers.length === 0}
         >
-          <option value="">Select Teacher</option>
-          {teachers.length > 0 ? (
-            teachers.map((teacher) => (
-            <option key={teacher._id} value={teacher._id}>
-                {teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher'} ({teacher.employeeId || 'N/A'})
-            </option>
+          {availableTeachers.length > 0 ? (
+            availableTeachers.map((teacher) => (
+              <option key={teacher._id} value={teacher._id}>
+                {(teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher')} ({teacher.employeeId || 'N/A'})
+              </option>
             ))
           ) : (
-            <option value="" disabled>No teachers available</option>
+            <option value="">No more teachers available</option>
           )}
         </select>
         <button
-          className="assign-btn"
-          onClick={handleAssign}
-          disabled={!selectedTeacher || loading}
+          type="button"
+          className="add-teacher-btn"
+          onClick={() => pendingTeacherId && onAddTeacher(pendingTeacherId)}
+          disabled={!pendingTeacherId || availableTeachers.length === 0}
         >
-          {loading ? 'Assigning...' : 'Assign'}
+          <FiPlus />
+          Add Teacher
         </button>
+      </div>
+    </div>
+  );
+};
+
+const arraysEqual = (left = [], right = []) => {
+  if (left.length !== right.length) return false;
+
+  const normalizedLeft = [...left].sort();
+  const normalizedRight = [...right].sort();
+
+  return normalizedLeft.every((value, index) => value === normalizedRight[index]);
+};
+
+// Create a separate component for each section to ensure isolation
+const SectionItem = ({ section, teachers, onAssign, loading }) => {
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Initialize with current teachers if available
+  useEffect(() => {
+    setSelectedTeacherIds(getAssignedTeacherIds(section));
+    setIsEditing(false);
+  }, [section]);
+
+  const initialTeacherIds = getAssignedTeacherIds(section);
+  const hasChanges = !arraysEqual(selectedTeacherIds, initialTeacherIds);
+  const assignedTeachers = teachers.filter((teacher) => selectedTeacherIds.includes(teacher._id));
+  
+  const handleAddTeacher = (teacherId) => {
+    setSelectedTeacherIds((prev) => (prev.includes(teacherId) ? prev : [...prev, teacherId]));
+  };
+
+  const handleRemoveTeacher = (teacherId) => {
+    setSelectedTeacherIds((prev) => prev.filter((id) => id !== teacherId));
+  };
+
+  const handleAssign = () => {
+    onAssign(section, selectedTeacherIds);
+  };
+
+  const handleCancel = () => {
+    setSelectedTeacherIds(initialTeacherIds);
+    setIsEditing(false);
+  };
+  
+  return (
+    <div className={`section-item ${isEditing ? 'editing' : ''}`}>
+      <div className="section-details">
+        <span className="assignment-section-name">{section.section}</span>
+        <span className="assignment-teacher-label">{selectedTeacherIds.length} assigned</span>
+      </div>
+      <div className="section-actions">
+        {!isEditing ? (
+          <>
+            <div className="section-summary">
+              {assignedTeachers.length > 0 ? (
+                assignedTeachers.map((teacher) => {
+                  const teacherName = teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher';
+                  return (
+                    <div key={teacher._id} className="teacher-chip compact">
+                      <div className="teacher-chip-copy">
+                        <span className="teacher-chip-name">{teacherName}</span>
+                        <span className="teacher-chip-meta">{teacher.employeeId || 'N/A'}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="teacher-picker-empty">No teachers assigned yet</div>
+              )}
+            </div>
+            <div className="section-action-row">
+              <button type="button" className="edit-assignees-btn" onClick={() => setIsEditing(true)}>
+                <FiEdit2 />
+                Edit
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <TeacherPicker
+              teachers={teachers}
+              selectedTeacherIds={selectedTeacherIds}
+              onAddTeacher={handleAddTeacher}
+              onRemoveTeacher={handleRemoveTeacher}
+              emptyLabel="No teachers assigned yet"
+            />
+            <div className="section-action-row">
+              <button type="button" className="secondary-action-btn" onClick={handleCancel}>
+                Cancel
+              </button>
+              {hasChanges && (
+                <button
+                  className="assign-btn"
+                  onClick={handleAssign}
+                  disabled={selectedTeacherIds.length === 0 || loading}
+                >
+                  {loading ? 'Saving...' : 'Save Assignees'}
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -75,8 +224,7 @@ const TeacherAssignmentPage = () => {
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedSection, setSelectedSection] = useState(null);
   const [showHelp, setShowHelp] = useState(true);
-  const [newSection, setNewSection] = useState({ section: '', teacherId: '' });
-  const [sectionTeachers, setSectionTeachers] = useState({});
+  const [newSection, setNewSection] = useState({ section: '', teacherIds: [] });
 
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
@@ -183,15 +331,6 @@ const TeacherAssignmentPage = () => {
       
       setSections(response.data);
       
-      // Initialize sectionTeachers with current teacher assignments
-      const initialSectionTeachers = {};
-      response.data.forEach(section => {
-        if (section.teacher && section.teacher.id) {
-          initialSectionTeachers[section._id] = section.teacher.id;
-        }
-      });
-      setSectionTeachers(initialSectionTeachers);
-      
     } catch (err) {
       console.error('Error fetching sections:', err);
       setError(err.response?.data?.message || 'Failed to fetch sections. Please try again.');
@@ -222,9 +361,32 @@ const TeacherAssignmentPage = () => {
     }
   };
 
-  const handleAssign = async (section, teacherId) => {
-    if (!teacherId) {
-      setError('Please select a teacher');
+  const toggleNewSectionTeacher = (teacherId) => {
+    setNewSection((prev) => ({
+      ...prev,
+      teacherIds: prev.teacherIds.includes(teacherId)
+        ? prev.teacherIds.filter((id) => id !== teacherId)
+        : [...prev.teacherIds, teacherId],
+    }));
+  };
+
+  const addNewSectionTeacher = (teacherId) => {
+    setNewSection((prev) => ({
+      ...prev,
+      teacherIds: prev.teacherIds.includes(teacherId) ? prev.teacherIds : [...prev.teacherIds, teacherId],
+    }));
+  };
+
+  const removeNewSectionTeacher = (teacherId) => {
+    setNewSection((prev) => ({
+      ...prev,
+      teacherIds: prev.teacherIds.filter((id) => id !== teacherId),
+    }));
+  };
+
+  const handleAssign = async (section, teacherIds) => {
+    if (!teacherIds || teacherIds.length === 0) {
+      setError('Please select at least one teacher');
       return;
     }
 
@@ -243,7 +405,8 @@ const TeacherAssignmentPage = () => {
         
         // Update existing section
         await axios.put(`${apiUrl}/api/sections/${sectionId}`, {
-          teacherId: teacherId,
+          teacherId: teacherIds[0],
+          teacherIds,
           section: section.section
         }, {
           headers: { 'x-auth-token': token }
@@ -264,13 +427,14 @@ const TeacherAssignmentPage = () => {
         
         await axios.post(`${apiUrl}/api/sections/addSection`, {
           courseId: selectedCourse,
-          teacherId: teacherId,
+          teacherId: teacherIds[0],
+          teacherIds,
           section: newSection.section
         }, {
           headers: { 'x-auth-token': token }
         });
         setSuccess('Section added successfully');
-        setNewSection({ section: '', teacherId: '' });
+        setNewSection({ section: '', teacherIds: [] });
       }
       
       fetchSections();
@@ -288,8 +452,8 @@ const TeacherAssignmentPage = () => {
       return;
     }
     
-    if (!newSection.teacherId) {
-      setError('Please select a teacher');
+    if (!newSection.teacherIds || newSection.teacherIds.length === 0) {
+      setError('Please select at least one teacher');
       return;
     }
     
@@ -305,13 +469,14 @@ const TeacherAssignmentPage = () => {
       
       await axios.post(`${apiUrl}/api/sections/addSection`, {
         courseId: selectedCourse,
-        teacherId: newSection.teacherId,
+        teacherId: newSection.teacherIds[0],
+        teacherIds: newSection.teacherIds,
         section: newSection.section
       }, {
         headers: { 'x-auth-token': token }
       });
       setSuccess('Section added successfully');
-      setNewSection({ section: '', teacherId: '' });
+      setNewSection({ section: '', teacherIds: [] });
       fetchSections();
     } catch (err) {
       console.error('Error adding section:', err);
@@ -336,7 +501,7 @@ const TeacherAssignmentPage = () => {
     <div className="teacher-assignment-container">
       {showHelp && (
         <div className="course-important-note">
-          <p>In case, no sections exist. Create a new section.</p>
+          <p>Assign one or more teachers to each section. Use Add Teacher when a course should appear for multiple teachers.</p>
           <button className="course-close-note-btn" onClick={() => setShowHelp(false)}>×</button>
         </div>
       )}
@@ -469,26 +634,22 @@ const TeacherAssignmentPage = () => {
                       className="section-input"
                       required
                     />
-                    <select
-                      value={newSection.teacherId}
-                      onChange={(e) => setNewSection({ ...newSection, teacherId: e.target.value })}
-                      className="teacher-select"
-                    >
-                      <option value="">Select Teacher</option>
-                      {teachers.length > 0 ? (
-                        teachers.map((teacher) => (
-                        <option key={teacher._id} value={teacher._id}>
-                            {teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher'} ({teacher.employeeId || 'N/A'})
-                        </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>No teachers available for this department</option>
-                      )}
-                    </select>
+                  </div>
+                  <div className="new-section-teachers">
+                    <label className="new-section-label">Assigned teachers</label>
+                    <TeacherPicker
+                      teachers={teachers}
+                      selectedTeacherIds={newSection.teacherIds}
+                      onAddTeacher={addNewSectionTeacher}
+                      onRemoveTeacher={removeNewSectionTeacher}
+                      emptyLabel="No teachers selected yet"
+                    />
+                  </div>
+                  <div className="new-section-actions">
                     <button
                       className="assign-btn"
                       onClick={handleAddSection}
-                      disabled={!newSection.teacherId || !newSection.section || loading}
+                      disabled={!newSection.teacherIds.length || !newSection.section || loading}
                     >
                       {loading ? 'Adding...' : 'Add Section'}
                     </button>

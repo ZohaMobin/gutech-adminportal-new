@@ -17,6 +17,18 @@ const AttendancePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const formatTeacherNames = (section) => {
+    if (Array.isArray(section.teachers) && section.teachers.length > 0) {
+      return section.teachers.map((teacher) => teacher.name || "Unknown").join(", ");
+    }
+
+    if (section.teacher?.name) {
+      return section.teacher.name;
+    }
+
+    return "N/A";
+  };
+
   // Get auth token
   const getAuthToken = () => {
     return sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
@@ -441,7 +453,7 @@ const AttendancePage = () => {
                         return (
                           <button key={sectionId} className={`section-tab ${isActive ? "active" : ""}`} onClick={() => handleSectionChange(sectionId)}>
                             <span className="tab-label">{sectionName}</span>
-                            {section.teacher && <span className="tab-teacher">{section.teacher.name || "N/A"}</span>}
+                            <span className="tab-teacher">{formatTeacherNames(section)}</span>
                             {studentCount > 0 && <span className="tab-count">{studentCount} students</span>}
                           </button>
                         );
@@ -465,7 +477,7 @@ const AttendancePage = () => {
                           <div className="section-header">
                             <div className="section-title">
                               <h3>{sectionName}</h3>
-                              {selectedSection.teacher && <p className="section-teacher">Teacher: {selectedSection.teacher.name || "N/A"}</p>}
+                              <p className="section-teacher">Teachers: {formatTeacherNames(selectedSection)}</p>
                             </div>
                             {hasData && (
                               <button className="export-btn section-export-btn" onClick={() => exportSectionToCSV(selectedSectionId, sectionName)}>

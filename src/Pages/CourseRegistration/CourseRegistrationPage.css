@@ -381,35 +381,38 @@
 
 .sections-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-md);
     margin-top: var(--spacing-md);
 }
 
 .section-card {
     background-color: var(--background-white);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    padding: var(--spacing-md);
+    border: 1px solid #e7e9ee;
+    border-radius: 16px;
+    padding: 18px;
     transition: var(--transition-fast);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
 }
 
 .section-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
 }
 
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eef1f4;
 }
 
 .section-header h5 {
     color: var(--text-dark);
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 700;
     margin: 0;
 }
 
@@ -425,34 +428,61 @@
 .section-details {
     color: var(--text-secondary);
     font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.section-details p {
-    margin: 0;
-    margin-bottom: 8px;
+.section-metrics {
+    display: flex;
+    gap: 12px;
+}
+
+.section-metric {
+    min-width: 310px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.metric-value {
+    font-size: 1.35rem;
+    line-height: 1.1;
+    font-weight: 700;
+    color: #111827;
 }
 
 .teacher-info {
-    display: flex;
-    align-items: center;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-color);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 8px 12px;
+    padding-top: 2px;
 }
 
 .teacher-label {
-    font-weight: 500;
-    margin-right: 8px;
-    color: var(--text-dark);
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.88rem;
 }
 
 .section-teacher-name {
-    color: var(--primary-color);
+    color: #991b1b;
     font-size: 14px;
     font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
+    line-height: 1.5;
 }
 
 .loading-sections {

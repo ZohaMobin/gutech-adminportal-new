@@ -29,6 +29,18 @@ const CourseRegistrationPage = () => {
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [newSection, setNewSection] = useState({ section: "", teacherId: "" });
 
+  const formatTeacherNames = (section) => {
+    if (Array.isArray(section.teachers) && section.teachers.length > 0) {
+      return section.teachers.map((teacher) => teacher.name || "Unknown").join(", ");
+    }
+
+    if (section.teacher?.name) {
+      return section.teacher.name;
+    }
+
+    return "";
+  };
+
   // Fetch semesters when program is selected
   useEffect(() => {
     const fetchSemesters = async () => {
@@ -395,11 +407,16 @@ const CourseRegistrationPage = () => {
                       <h5>Section {section.section}</h5>
                     </div>
                     <div className="section-details">
-                      <p>Students: {section.enrolledStudentsCount || 0}</p>
-                      {section.teacher && (
+                      <div className="section-metrics">
+                        <div className="section-metric">
+                          <span className="metric-label">Students</span>
+                          <span className="metric-value">{section.enrolledStudentsCount || 0}</span>
+                        </div>
+                      </div>
+                      {formatTeacherNames(section) && (
                         <div className="teacher-info">
-                          <span className="teacher-label">Teacher:</span>
-                          <span className="section-teacher-name">{section.teacher.name}</span>
+                          <span className="teacher-label">Teachers:</span>
+                          <span className="section-teacher-name">{formatTeacherNames(section)}</span>
                         </div>
                       )}
                     </div>

@@ -456,7 +456,15 @@ function ClassSchedule() {
 
     // Add teacher information to the section name
     let teacherInfo = "";
-    if (section.teacherId) {
+    if (Array.isArray(section.teacherIds) && section.teacherIds.length > 0) {
+      const teacherNames = section.teacherIds
+        .map((teacher) => teacher?.userId?.name || teacher?.name || teacher?.email)
+        .filter(Boolean)
+        .join(", ");
+      if (teacherNames) {
+        teacherInfo = ` - Teachers: ${teacherNames}`;
+      }
+    } else if (section.teacherId) {
       // Check for different ways the teacher name might be available
       if (section.teacherId.userId && section.teacherId.userId.name) {
         teacherInfo = ` - Teacher: ${section.teacherId.userId.name}`;

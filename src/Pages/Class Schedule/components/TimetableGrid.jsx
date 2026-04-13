@@ -41,6 +41,25 @@ const TimetableGrid = ({
     );
   };
 
+  const formatTeacherNames = (sectionData) => {
+    if (Array.isArray(sectionData?.teachers) && sectionData.teachers.length > 0) {
+      return sectionData.teachers.map((teacher) => teacher.name || teacher.userId?.name || 'Unknown').join(', ');
+    }
+
+    if (Array.isArray(sectionData?.teacherIds) && sectionData.teacherIds.length > 0) {
+      return sectionData.teacherIds
+        .map((teacher) => teacher?.userId?.name || teacher?.name || teacher?.email)
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    if (sectionData?.teacherId?.userId?.name) {
+      return sectionData.teacherId.userId.name;
+    }
+
+    return 'No teacher assigned';
+  };
+
   return (
     <div className="timetable-grid">
       <div className="filters-summary">
@@ -129,7 +148,7 @@ const TimetableGrid = ({
                                   </span>
                                 </p>
                                 <p className="timetable-teacher-name">
-                                  Teacher: {sectionData?.teacherId?.userId?.name || 'No teacher assigned'}
+                                  Teachers: {formatTeacherNames(sectionData)}
                                 </p>
                                 <p className="course-details">
                                   {sectionData?.courseId?.department && `${typeof sectionData.courseId.department === 'object' ? sectionData.courseId.department.name : sectionData.courseId.department}`}

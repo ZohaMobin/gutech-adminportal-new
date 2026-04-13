@@ -282,7 +282,7 @@ const StudentMarksPage = () => {
               <option value="">Select Section</option>
               {availableFilters.sections.map(section => (
                 <option key={section.id} value={section.id}>
-                  Section {section.section} - {section.teacher?.userId?.name || 'No teacher assigned'}
+                  Section {section.section} - {formatTeacherNames(section)}
                 </option>
               ))}
             </select>
@@ -360,3 +360,18 @@ const StudentMarksPage = () => {
 };
 
 export default StudentMarksPage; 
+  const formatTeacherNames = (section) => {
+    if (Array.isArray(section.teachers) && section.teachers.length > 0) {
+      return section.teachers.map((teacher) => teacher.name || teacher.userId?.name || 'Unknown').join(', ');
+    }
+
+    if (section.teacher?.userId?.name) {
+      return section.teacher.userId.name;
+    }
+
+    if (section.teacher?.name) {
+      return section.teacher.name;
+    }
+
+    return 'No teacher assigned';
+  };
