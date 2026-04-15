@@ -122,15 +122,43 @@ const AttendancePage = () => {
 
             if (sectionAttendanceData && sectionAttendanceData.dates) {
               // Extract all dates
-              const datesSet = new Set();
+              const dateSlotsSet = new Set();
               const studentsFromAttendance = new Map();
               const processedData = {};
 
               Object.keys(sectionAttendanceData.dates).forEach((dateStr) => {
-                datesSet.add(dateStr);
+                const dateEntry = sectionAttendanceData.dates[dateStr];
+                if (dateEntry?.slots && Array.isArray(dateEntry.slots)) {
+                  dateEntry.slots.forEach((slot) => {
+                    const slotKey = `${dateStr}__slot-${slot.slotNumber}`;
+                    dateSlotsSet.add(slotKey);
+                    slot.students.forEach((record) => {
+                      const studentId = record.studentId?.toString() || record.studentId;
 
-                if (sectionAttendanceData.dates[dateStr] && sectionAttendanceData.dates[dateStr].students) {
-                  sectionAttendanceData.dates[dateStr].students.forEach((record) => {
+                      if (studentId && !studentsFromAttendance.has(studentId)) {
+                        studentsFromAttendance.set(studentId, {
+                          id: studentId,
+                          rollNumber: record.rollNumber || "",
+                          name: record.name || "Unknown",
+                        });
+                      }
+
+                      if (!processedData[studentId]) {
+                        processedData[studentId] = {
+                          studentId: studentId,
+                          rollNumber: record.rollNumber || "",
+                          name: record.name || "Unknown",
+                          attendance: {},
+                        };
+                      }
+                      processedData[studentId].attendance[slotKey] = record.status;
+                    });
+                  });
+                } else if (dateEntry?.students) {
+                  // Backward compatibility with old payload
+                  const slotKey = `${dateStr}__slot-1`;
+                  dateSlotsSet.add(slotKey);
+                  dateEntry.students.forEach((record) => {
                     const studentId = record.studentId?.toString() || record.studentId;
 
                     // Add student to map if not already present
@@ -151,12 +179,17 @@ const AttendancePage = () => {
                         attendance: {},
                       };
                     }
-                    processedData[studentId].attendance[dateStr] = record.status;
+                    processedData[studentId].attendance[slotKey] = record.status;
                   });
                 }
-              });
+              }); 
 
-              sectionDates = Array.from(datesSet).sort();
+              sectionDates = Array.from(dateSlotsSet).sort((a, b) => {
+                const [dateA, slotA] = a.split("__slot-");
+                const [dateB, slotB] = b.split("__slot-");
+                if (dateA === dateB) return Number(slotA) - Number(slotB);
+                return dateA.localeCompare(dateB);
+              });
               sectionAttendance = processedData;
 
               // Merge students from attendance with fetched students
@@ -371,9 +404,12 @@ const AttendancePage = () => {
   };
 
   // Format date for display
-  const formatDate = (dateStr) => {
+  const formatDateSlot = (dateSlotStr) => {
+    const [dateStr, slotPart] = dateSlotStr.split("__slot-");
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const slotNumber = Number(slotPart) || 1;
+    const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return `${dateLabel} (S${slotNumber})`;
   };
 
   // Initialize
@@ -513,7 +549,7 @@ const AttendancePage = () => {
                                     <th className="sticky-col">Name</th>
                                     {sectionData.dates.map((date) => (
                                       <th key={date} className="date-header">
-                                        {formatDate(date)}
+                                        {formatDateSlot(date)}
                                       </th>
                                     ))}
                                   </tr>
