@@ -5,6 +5,30 @@ import { Download, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 import "./AttendancePage.css";
 
+const getAttendanceItems = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload.flatMap((entry) => (Array.isArray(entry?.attendance) ? entry.attendance : []));
+  }
+
+  if (Array.isArray(payload?.attendance)) {
+    return payload.attendance;
+  }
+
+  return [];
+};
+
+const normalizeAttendanceStatus = (status) => {
+  if (!status) return "";
+
+  const normalizedStatus = status.toString().trim().toLowerCase();
+
+  if (["present", "absent", "late", "leave"].includes(normalizedStatus)) {
+    return normalizedStatus;
+  }
+
+  return "";
+};
+
 const AttendancePage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
@@ -111,11 +135,13 @@ const AttendancePage = () => {
           let sectionAttendance = {};
           let sectionStudentsList = sectionStudents;
 
-          if (attendanceResponse.data && attendanceResponse.data.attendance) {
+          const attendanceItems = getAttendanceItems(attendanceResponse.data);
+
+          if (attendanceItems.length > 0) {
             // Find attendance data for this section
             // The API returns attendance grouped by sectionId, so we need to find the matching section
             const sectionIdStr = sectionId?.toString() || sectionId;
-            const sectionAttendanceData = attendanceResponse.data.attendance.find((item) => {
+            const sectionAttendanceData = attendanceItems.find((item) => {
               const itemSectionId = item.sectionId?.toString() || item.sectionId;
               return itemSectionId === sectionIdStr;
             });
@@ -151,7 +177,7 @@ const AttendancePage = () => {
                           attendance: {},
                         };
                       }
-                      processedData[studentId].attendance[slotKey] = record.status;
+                      processedData[studentId].attendance[slotKey] = normalizeAttendanceStatus(record.status);
                     });
                   });
                 } else if (dateEntry?.students) {
@@ -179,7 +205,7 @@ const AttendancePage = () => {
                         attendance: {},
                       };
                     }
-                    processedData[studentId].attendance[slotKey] = record.status;
+                    processedData[studentId].attendance[slotKey] = normalizeAttendanceStatus(record.status);
                   });
                 }
               }); 
@@ -355,6 +381,7 @@ const AttendancePage = () => {
             if (status === "present") return "P";
             if (status === "absent") return "A";
             if (status === "late") return "L";
+            if (status === "leave") return "LV";
             return "";
           }),
         ];
@@ -573,7 +600,7 @@ const AttendancePage = () => {
                                             const status = studentData?.attendance[date] || "";
                                             return (
                                               <td key={date} className={`attendance-cell ${status}`}>
-                                                {status === "present" ? "P" : status === "absent" ? "A" : status === "late" ? "L" : ""}
+                                                {status === "present" ? "P" : status === "absent" ? "A" : status === "late" ? "L" : status === "leave" ? "LV" : ""}
                                               </td>
                                             );
                                           })}
@@ -600,6 +627,10 @@ const AttendancePage = () => {
                               <div className="legend-item">
                                 <span className="legend-dot late"></span>
                                 <span>Late (L)</span>
+                              </div>
+                              <div className="legend-item">
+                                <span className="legend-dot leave"></span>
+                                <span>Leave (LV)</span>
                               </div>
                             </div>
                           )}

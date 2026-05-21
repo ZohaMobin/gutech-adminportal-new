@@ -346,6 +346,11 @@
   color: #f59e0b;
 }
 
+.attendance-cell.leave {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
 .no-results {
   text-align: center;
   padding: 2rem;
@@ -421,6 +426,11 @@
 .legend-dot.late {
   background-color: rgba(245, 158, 11, 0.2);
   border: 2px solid #f59e0b;
+}
+
+.legend-dot.leave {
+  background-color: rgba(59, 130, 246, 0.2);
+  border: 2px solid #2563eb;
 }
 
 /* Responsive */
