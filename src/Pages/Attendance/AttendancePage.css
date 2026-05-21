@@ -4,6 +4,10 @@
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   background-color: #f8fafc;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .attendance-header {
@@ -68,11 +72,15 @@
   display: flex;
   gap: 1.5rem;
   min-height: calc(100vh - 12rem);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* Course Sidebar */
 .course-sidebar {
   width: 320px;
+  min-width: 320px;
   background-color: white;
   border-radius: 0.75rem;
   padding: 1.5rem;
@@ -162,6 +170,8 @@
 /* Main Content */
 .attendance-main {
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
   background-color: white;
   border-radius: 0.75rem;
   padding: 1.5rem;
@@ -169,6 +179,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  overflow: hidden;
 }
 
 .course-header {
@@ -236,6 +247,14 @@
   max-height: calc(100vh - 30rem);
   overflow-y: auto;
   flex: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  position: relative;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+  padding-bottom: 0.25rem;
 }
 
 .attendance-table-container::-webkit-scrollbar {
@@ -257,7 +276,7 @@
   border-collapse: separate;
   border-spacing: 0;
   margin: 0;
-  min-width: 600px;
+  min-width: max-content;
 }
 
 .attendance-table th {
@@ -281,6 +300,11 @@
   background-color: #f8fafc;
 }
 
+.attendance-table th.sticky-col:nth-child(2) {
+  left: 152px;
+  z-index: 12;
+}
+
 .attendance-table th.date-header {
   text-align: center;
   min-width: 80px;
@@ -300,6 +324,11 @@
   background-color: white;
 }
 
+.attendance-table td.sticky-col:nth-child(2) {
+  left: 152px;
+  z-index: 10;
+}
+
 .attendance-table tr:hover td.sticky-col {
   background-color: #f8fafc;
 }
@@ -315,13 +344,15 @@
 .roll-number {
   font-weight: 500;
   color: #1e293b;
-  min-width: 120px;
+  min-width: 152px;
+  width: 152px;
 }
 
 .student-name {
   font-weight: 400;
   color: #1e293b;
-  min-width: 200px;
+  min-width: 240px;
+  width: 240px;
 }
 
 .attendance-cell {
@@ -572,6 +603,10 @@
   background-color: #ffffff;
   box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
   margin-top: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .section-header {

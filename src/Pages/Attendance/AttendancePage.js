@@ -29,6 +29,30 @@ const normalizeAttendanceStatus = (status) => {
   return "";
 };
 
+const getAttendanceStatusLabel = (status) => {
+  if (status === "present") return "P";
+  if (status === "absent") return "A";
+  if (status === "late") return "L";
+  if (status === "leave") return "LV";
+  return "";
+};
+
+const getWorksheetDataForSection = (sectionData, formatDateSlot) => {
+  const header = ["Roll Number", "Name", ...sectionData.dates.map((date) => formatDateSlot(date))];
+  const rows = sectionData.students.map((student) => {
+    const studentId = student.id?.toString() || student.id;
+    const studentData = sectionData.attendanceData[studentId];
+
+    return [
+      student.rollNumber || "",
+      student.name || "Unknown Student",
+      ...sectionData.dates.map((date) => getAttendanceStatusLabel(studentData?.attendance[date] || "")),
+    ];
+  });
+
+  return [header, ...rows];
+};
+
 const AttendancePage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
@@ -360,33 +384,7 @@ const AttendancePage = () => {
     }
 
     try {
-      // Prepare data for CSV
-      const csvData = [];
-
-      // Header row: Student Info + Dates
-      const header = ["Roll Number", "Name", ...sectionData.dates];
-      csvData.push(header);
-
-      // Data rows: Use students array for proper names and roll numbers, attendanceData for attendance status
-      sectionData.students.forEach((student) => {
-        const studentId = student.id?.toString() || student.id;
-        const studentData = sectionData.attendanceData[studentId];
-
-        const row = [
-          student.rollNumber || "",
-          student.name || "Unknown Student",
-          ...sectionData.dates.map((date) => {
-            const status = studentData?.attendance[date] || "";
-            // Convert status to readable format
-            if (status === "present") return "P";
-            if (status === "absent") return "A";
-            if (status === "late") return "L";
-            if (status === "leave") return "LV";
-            return "";
-          }),
-        ];
-        csvData.push(row);
-      });
+      const csvData = getWorksheetDataForSection(sectionData, formatDateSlot);
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(csvData);
@@ -414,6 +412,58 @@ const AttendancePage = () => {
     } catch (error) {
       console.error("Error exporting CSV:", error);
       toast.error("Failed to export attendance. Please try again.");
+    }
+  };
+
+  const exportCourseAttendanceToExcel = () => {
+    if (!selectedCourse || sections.length === 0) {
+      toast.error("No course selected to export");
+      return;
+    }
+
+    const sectionsWithData = sections
+      .map((section) => {
+        const sectionId = section.id || section._id;
+        return {
+          section,
+          sectionId,
+          sectionData: sectionAttendanceData[sectionId],
+        };
+      })
+      .filter(({ sectionData }) => sectionData && sectionData.students.length > 0 && Object.keys(sectionData.attendanceData || {}).length > 0);
+
+    if (sectionsWithData.length === 0) {
+      toast.error("No attendance data available to export");
+      return;
+    }
+
+    try {
+      const workbook = XLSX.utils.book_new();
+
+      sectionsWithData.forEach(({ section, sectionData }, index) => {
+        const sectionName = section.section ? `Section ${section.section}` : `Section ${index + 1}`;
+        const worksheetData = getWorksheetDataForSection(sectionData, formatDateSlot);
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+        worksheet["!cols"] = [
+          { wch: 15 },
+          { wch: 30 },
+          ...sectionData.dates.map(() => ({ wch: 14 })),
+        ];
+
+        const safeSheetName = sectionName.replace(/[\\/?*[\]:]/g, "").slice(0, 31) || `Section${index + 1}`;
+        XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetName);
+      });
+
+      const courseName = selectedCourse.name || "Course";
+      const courseCode = selectedCourse.code || "";
+      const filename = `Attendance_${courseCode}_${courseName}_All_Sections_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+      toast.success("Course attendance exported successfully!");
+    } catch (error) {
+      console.error("Error exporting course attendance:", error);
+      toast.error("Failed to export course attendance. Please try again.");
     }
   };
 
@@ -451,6 +501,16 @@ const AttendancePage = () => {
           <h1>Attendance Management</h1>
           <p>View attendance records course-wise</p>
         </div>
+        {selectedCourse && sections.some((section) => {
+          const sectionId = section.id || section._id;
+          const sectionData = sectionAttendanceData[sectionId];
+          return sectionData && sectionData.students.length > 0 && Object.keys(sectionData.attendanceData || {}).length > 0;
+        }) && (
+          <button className="export-btn" onClick={exportCourseAttendanceToExcel}>
+            <Download size={18} />
+            Export All Sections
+          </button>
+        )}
       </div>
 
       {error && (
