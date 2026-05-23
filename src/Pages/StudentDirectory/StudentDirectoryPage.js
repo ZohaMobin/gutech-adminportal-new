@@ -291,7 +291,7 @@ const StudentDirectoryPage = () => {
                       <td>{student.email || 'N/A'}</td>
                       <td>{student.department?.name || student.department || 'N/A'}</td>
                       <td>{student.program?.name || student.program || 'N/A'}</td>
-                      <td>{student.currentSemester || 'N/A'}</td>
+                      <td>{student.currentSemester ?? 'N/A'}</td>
                       <td className="cgpa-cell">
                         <span className={`cgpa-badge ${student.CGPA >= 3.5 ? 'high' : student.CGPA >= 2.5 ? 'medium' : 'low'}`}>
                           {student.CGPA?.toFixed(2) || 'N/A'}

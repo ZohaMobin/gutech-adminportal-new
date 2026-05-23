@@ -25,7 +25,7 @@ const CoursePage = () => {
     courseId: "",
     department: "",
     program: "",
-    semester: "1",
+    semester: "0",
     academicYearId: ""
   });
 
@@ -264,7 +264,7 @@ const CoursePage = () => {
         courseId: "",
         department: "",
         program: "",
-        semester: "1",
+        semester: "0",
         academicYearId: ""
       });
       toast.success('Course offering created successfully');
@@ -782,8 +782,8 @@ const CoursePage = () => {
                 {(() => {
                   const program = getProgramById(courseOffering.program);
                   const maxSemesters = program?.typicalDuration || 8;
-                  return [...Array(maxSemesters)].map((_, i) => (
-                    <option key={i + 1} value={i + 1}>Semester {i + 1}</option>
+                  return Array.from({ length: maxSemesters + 1 }, (_, i) => (
+                    <option key={i} value={i}>Semester {i}</option>
                   ));
                 })()}
               </select>

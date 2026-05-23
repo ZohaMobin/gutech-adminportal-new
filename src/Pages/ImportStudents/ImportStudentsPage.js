@@ -72,7 +72,7 @@ const ImportStudentsPage = () => {
         email: "john.doe@example.com",
         department: "Computer Science [Use Exact Name]",
         program: "Bachelor of Science in Computer Science[Use Exact Name]",
-        currentSemester: 1,
+        currentSemester: 0,
         CGPA: 0.0,
       },
       {
@@ -81,7 +81,7 @@ const ImportStudentsPage = () => {
         email: "jane.smith@example.com",
         department: "Business Administration[Use Exact Name]",
         program: "Bachelor of Business Administration[Use Exact Name]",
-        currentSemester: 2,
+        currentSemester: 1,
         CGPA: 0.0,
       },
     ];
@@ -93,7 +93,7 @@ const ImportStudentsPage = () => {
       { Field: "email", Description: "Valid email address", Required: "Yes", Example: "john.doe@example.com" },
       { Field: "department", Description: "Department name (exact match) OR MongoDB ObjectId. Get names from Departments page.", Required: "Yes", Example: "Computer Science" },
       { Field: "program", Description: "Program name (exact match) OR MongoDB ObjectId. Get names from Programs page.", Required: "Yes", Example: "Bachelor of Science in Computer Science" },
-      { Field: "currentSemester", Description: "Current semester (1-8, default: 1)", Required: "No", Example: "1" },
+      { Field: "currentSemester", Description: "Current semester (0-8, default: 0)", Required: "No", Example: "0" },
       { Field: "CGPA", Description: "Cumulative GPA (0.0-4.0, default: 0)", Required: "No", Example: "3.5" },
     ];
 
@@ -154,7 +154,7 @@ const ImportStudentsPage = () => {
               rollNumber: student.rollNumber,
               department: student.department,
               program: student.program,
-              currentSemester: student.currentSemester || 1,
+              currentSemester: student.currentSemester === undefined || student.currentSemester === null || student.currentSemester === "" ? 0 : student.currentSemester,
               CGPA: student.CGPA || 0,
             },
           }));
@@ -310,7 +310,7 @@ const ImportStudentsPage = () => {
                       <td>{student.email}</td>
                       <td>{student.department}</td>
                       <td>{student.program}</td>
-                      <td>{student.currentSemester || "N/A"}</td>
+                      <td>{student.currentSemester ?? "N/A"}</td>
                       <td>{student.CGPA || "N/A"}</td>
                     </tr>
                   ))}
