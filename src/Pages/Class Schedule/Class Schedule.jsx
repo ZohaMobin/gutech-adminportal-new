@@ -6,6 +6,7 @@ import FiltersPanel from "./components/FiltersPanel";
 import TimetableGrid from "./components/TimetableGrid";
 import ScheduleModal from "./components/ScheduleModal";
 import { showToast, showConflictToasts, TOAST_TYPES } from "../../Components/Toast/Toast";
+import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import "./Class Schedule.css";
 
 function ClassSchedule() {
@@ -453,29 +454,8 @@ function ClassSchedule() {
 
     const courseName = section.courseId?.name || (typeof section.courseId === "string" ? section.courseId : "");
     const sectionName = section.section || section.name || "";
-
-    // Add teacher information to the section name
-    let teacherInfo = "";
-    if (Array.isArray(section.teacherIds) && section.teacherIds.length > 0) {
-      const teacherNames = section.teacherIds
-        .map((teacher) => teacher?.userId?.name || teacher?.name || teacher?.email)
-        .filter(Boolean)
-        .join(", ");
-      if (teacherNames) {
-        teacherInfo = ` - Teachers: ${teacherNames}`;
-      }
-    } else if (section.teacherId) {
-      // Check for different ways the teacher name might be available
-      if (section.teacherId.userId && section.teacherId.userId.name) {
-        teacherInfo = ` - Teacher: ${section.teacherId.userId.name}`;
-      } else if (section.teacherId.name) {
-        teacherInfo = ` - Teacher: ${section.teacherId.name}`;
-      } else if (section.teacherId.firstName && section.teacherId.lastName) {
-        teacherInfo = ` - Teacher: ${section.teacherId.firstName} ${section.teacherId.lastName}`;
-      } else if (section.teacherId.email) {
-        teacherInfo = ` - Teacher: ${section.teacherId.email}`;
-      }
-    }
+    const teachersLabel = formatSectionTeachers(section);
+    const teacherInfo = teachersLabel !== "No teacher assigned" ? ` - Teachers: ${teachersLabel}` : "";
 
     return `${courseName} (Section ${sectionName})${teacherInfo}`;
   };

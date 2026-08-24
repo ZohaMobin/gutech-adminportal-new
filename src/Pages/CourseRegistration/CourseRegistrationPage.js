@@ -6,6 +6,7 @@ import { semesters, getCurrentAcademicYear } from "../../config/academicConfig";
 import "./CourseRegistrationPage.css";
 import { FiSearch } from "react-icons/fi";
 import NoResultsFound from "../../Components/NoResultsFound";
+import { formatSectionTeachers } from "../../utils/sectionTeachers";
 
 const CourseRegistrationPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -28,18 +29,6 @@ const CourseRegistrationPage = () => {
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [newSection, setNewSection] = useState({ section: "", teacherId: "" });
-
-  const formatTeacherNames = (section) => {
-    if (Array.isArray(section.teachers) && section.teachers.length > 0) {
-      return section.teachers.map((teacher) => teacher.name || "Unknown").join(", ");
-    }
-
-    if (section.teacher?.name) {
-      return section.teacher.name;
-    }
-
-    return "";
-  };
 
   // Fetch semesters when program is selected
   useEffect(() => {
@@ -413,10 +402,10 @@ const CourseRegistrationPage = () => {
                           <span className="metric-value">{section.enrolledStudentsCount || 0}</span>
                         </div>
                       </div>
-                      {formatTeacherNames(section) && (
+                      {formatSectionTeachers(section) && (
                         <div className="teacher-info">
                           <span className="teacher-label">Teachers:</span>
-                          <span className="section-teacher-name">{formatTeacherNames(section)}</span>
+                          <span className="section-teacher-name">{formatSectionTeachers(section)}</span>
                         </div>
                       )}
                     </div>

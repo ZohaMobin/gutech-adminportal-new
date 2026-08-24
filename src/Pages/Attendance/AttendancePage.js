@@ -3,6 +3,7 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 import { Download, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
+import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import "./AttendancePage.css";
 
 const getAttendanceItems = (payload) => {
@@ -64,18 +65,6 @@ const AttendancePage = () => {
   const [sectionSearchQueries, setSectionSearchQueries] = useState({}); // { sectionId: searchQuery }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const formatTeacherNames = (section) => {
-    if (Array.isArray(section.teachers) && section.teachers.length > 0) {
-      return section.teachers.map((teacher) => teacher.name || "Unknown").join(", ");
-    }
-
-    if (section.teacher?.name) {
-      return section.teacher.name;
-    }
-
-    return "N/A";
-  };
 
   // Get auth token
   const getAuthToken = () => {
@@ -576,7 +565,7 @@ const AttendancePage = () => {
                         return (
                           <button key={sectionId} className={`section-tab ${isActive ? "active" : ""}`} onClick={() => handleSectionChange(sectionId)}>
                             <span className="tab-label">{sectionName}</span>
-                            <span className="tab-teacher">{formatTeacherNames(section)}</span>
+                            <span className="tab-teacher">{formatSectionTeachers(section)}</span>
                             {studentCount > 0 && <span className="tab-count">{studentCount} students</span>}
                           </button>
                         );
@@ -600,7 +589,7 @@ const AttendancePage = () => {
                           <div className="section-header">
                             <div className="section-title">
                               <h3>{sectionName}</h3>
-                              <p className="section-teacher">Teachers: {formatTeacherNames(selectedSection)}</p>
+                              <p className="section-teacher">Teachers: {formatSectionTeachers(selectedSection)}</p>
                             </div>
                             {hasData && (
                               <button className="export-btn section-export-btn" onClick={() => exportSectionToCSV(selectedSectionId, sectionName)}>
