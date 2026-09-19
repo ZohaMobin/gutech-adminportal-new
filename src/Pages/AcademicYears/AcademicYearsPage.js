@@ -142,9 +142,18 @@ const AcademicYearsPage = () => {
     const statusColors = {
       upcoming: "status-upcoming",
       active: "status-active",
+      closed: "status-completed",
+      archived: "status-completed",
       completed: "status-completed",
     };
-    return <span className={`status-badge ${statusColors[status] || ""}`}>{status}</span>;
+    const statusLabels = {
+      upcoming: "Upcoming",
+      active: "Active",
+      closed: "Closed",
+      archived: "Archived",
+      completed: "Closed",
+    };
+    return <span className={`status-badge ${statusColors[status] || ""}`}>{statusLabels[status] || status}</span>;
   };
 
   if (loading) {

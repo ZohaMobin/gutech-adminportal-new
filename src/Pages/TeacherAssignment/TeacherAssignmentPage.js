@@ -225,8 +225,27 @@ const TeacherAssignmentPage = () => {
   const [selectedSection, setSelectedSection] = useState(null);
   const [showHelp, setShowHelp] = useState(true);
   const [newSection, setNewSection] = useState({ section: '', teacherIds: [] });
+  const [activeAcademicTerm, setActiveAcademicTerm] = useState(null);
 
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
+  const getAuthToken = () => sessionStorage.getItem('adminToken') || sessionStorage.getItem('token');
+  const requestHeaders = () => ({ 'x-auth-token': getAuthToken(), Authorization: `Bearer ${getAuthToken()}` });
+
+  useEffect(() => {
+    const fetchActiveAcademicTerm = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/api/academic-years/current`, {
+          headers: requestHeaders(),
+        });
+        setActiveAcademicTerm(response.data);
+      } catch (err) {
+        setActiveAcademicTerm(null);
+        setError(err.response?.data?.message || 'No active academic term is configured');
+      }
+    };
+
+    fetchActiveAcademicTerm();
+  }, [apiUrl]);
 
   // Add axios interceptor for handling connection errors
   useEffect(() => {
@@ -269,14 +288,14 @@ const TeacherAssignmentPage = () => {
       fetchTeachers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDepartment, selectedProgram, selectedSemester]);
+  }, [selectedDepartment, selectedProgram, selectedSemester, activeAcademicTerm]);
 
   useEffect(() => {
     if (selectedCourse) {
       fetchSections();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCourse]);
+  }, [selectedCourse, activeAcademicTerm]);
 
   useEffect(() => {
     if (selectedSection) {
@@ -289,15 +308,37 @@ const TeacherAssignmentPage = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const encodedDepartment = encodeURIComponent(selectedDepartment);
-      const encodedProgram = encodeURIComponent(selectedProgram);
-      const encodedSemester = encodeURIComponent(selectedSemester);
-      
-      const token = sessionStorage.getItem('adminToken');
-      const response = await axios.get(`${apiUrl}/api/courses/department/${encodedDepartment}/program/${encodedProgram}/semester/${encodedSemester}`, {
-        headers: { 'x-auth-token': token }
+      if (!activeAcademicTerm?._id) {
+        setCourses([]);
+        setError('No active academic term is configured');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/api/course-offerings`, {
+        params: {
+          academicYearId: activeAcademicTerm._id,
+          isActive: true,
+        },
+        headers: requestHeaders(),
       });
-      setCourses(response.data);
+      const offerings = Array.isArray(response.data) ? response.data : [];
+      const scopedCourses = offerings
+        .filter((offering) => {
+          const departmentId = offering.department?._id || offering.department;
+          const programId = offering.program?._id || offering.program;
+          return (
+            String(departmentId) === String(selectedDepartment) &&
+            String(programId) === String(selectedProgram) &&
+            Number(offering.semester) === Number(selectedSemester)
+          );
+        })
+        .map((offering) => ({
+          ...(offering.courseId || {}),
+          offeringId: offering._id,
+        }))
+        .filter((course) => course._id);
+
+      setCourses(scopedCourses);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch courses. Please try again.');
     } finally {
@@ -307,9 +348,8 @@ const TeacherAssignmentPage = () => {
 
   const fetchTeachers = async () => {
     try {
-      const token = sessionStorage.getItem('adminToken');
       const response = await axios.get(`${apiUrl}/api/teachers`, {
-        headers: { 'x-auth-token': token }
+        headers: requestHeaders()
       });
       
       // Show all teachers regardless of department
@@ -324,9 +364,9 @@ const TeacherAssignmentPage = () => {
     
     try {
       setLoading(true);
-      const token = sessionStorage.getItem('adminToken');
       const response = await axios.get(`${apiUrl}/api/sections/course/${selectedCourse}`, {
-        headers: { 'x-auth-token': token }
+        params: { academicYearId: activeAcademicTerm?._id },
+        headers: requestHeaders()
       });
       
       setSections(response.data);
@@ -346,9 +386,9 @@ const TeacherAssignmentPage = () => {
     setError(null);
     
     try {
-      const token = sessionStorage.getItem('adminToken');
       await axios.get(`${apiUrl}/api/course-registrations/getStudents/${selectedSection}`, {
-        headers: { 'x-auth-token': token }
+        params: { academicYearId: activeAcademicTerm?._id },
+        headers: requestHeaders()
       });
     } catch (error) {
       if (error.response?.status === 404) {

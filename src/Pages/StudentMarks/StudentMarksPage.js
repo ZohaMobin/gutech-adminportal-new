@@ -14,12 +14,27 @@ const getPerformanceClass = (percentage) => {
   return "risk";
 };
 
+const getTermDisplayName = (term) => {
+  if (!term) return "Select academic term";
+  return term.displayName || `${term.semesterType} ${term.year}`;
+};
+
+const getTermStatusLabel = (status) => {
+  if (status === "active") return "Active";
+  if (status === "upcoming") return "Upcoming";
+  if (status === "closed") return "Closed";
+  if (status === "archived") return "Archived";
+  if (status === "completed") return "Closed";
+  return status || "Unknown";
+};
+
 const StudentMarksPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
   const { departments, programs, loading: deptProgLoading } = useDepartmentsAndPrograms();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [marksData, setMarksData] = useState([]);
+  const [academicTerms, setAcademicTerms] = useState([]);
   const [marksMeta, setMarksMeta] = useState({
     assessments: [],
     courseWeightage: 0,
@@ -28,6 +43,7 @@ const StudentMarksPage = () => {
   const [filters, setFilters] = useState({
     department: "",
     program: "",
+    academicYearId: "",
     semester: "",
     course: "",
     section: "",
@@ -39,20 +55,78 @@ const StudentMarksPage = () => {
   const [showHelp, setShowHelp] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const getAuthToken = () => sessionStorage.getItem("adminToken");
+  const getAuthToken = () => sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
+  const selectedAcademicTerm = academicTerms.find((term) => term._id === filters.academicYearId);
+
+  const requestHeaders = () => ({
+    "x-auth-token": getAuthToken(),
+    Authorization: `Bearer ${getAuthToken()}`,
+  });
+
+  useEffect(() => {
+    const fetchAcademicTerms = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await axios.get(`${apiUrl}/api/academic-years?includeInactive=true`, {
+          headers: requestHeaders(),
+        });
+
+        const terms = Array.isArray(response.data) ? response.data : [];
+        setAcademicTerms(terms);
+
+        const activeTerm = terms.find((term) => term.status === "active" || term.isCurrent);
+        const initialTerm = activeTerm || terms[0];
+        if (initialTerm) {
+          setFilters((prev) => ({ ...prev, academicYearId: initialTerm._id }));
+        }
+      } catch (err) {
+        setError("Failed to load academic terms. Please try again.");
+        console.error("Error loading academic terms:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAcademicTerms();
+  }, [apiUrl]);
 
   useEffect(() => {
     const fetchCourses = async () => {
-      if (!filters.department || !filters.program || !filters.semester) return;
+      if (!filters.academicYearId || !filters.department || !filters.program || !filters.semester) {
+        setAvailableFilters((prev) => ({ ...prev, courses: [], sections: [] }));
+        return;
+      }
 
       try {
         setLoading(true);
         setError(null);
-        const courseRes = await axios.get(
-          `${apiUrl}/api/courses/department/${encodeURIComponent(filters.department)}/program/${encodeURIComponent(filters.program)}/semester/${filters.semester}`,
-          { headers: { "x-auth-token": getAuthToken() } }
-        );
-        setAvailableFilters((prev) => ({ ...prev, courses: courseRes.data }));
+        const courseRes = await axios.get(`${apiUrl}/api/course-offerings`, {
+          params: {
+            academicYearId: filters.academicYearId,
+            isActive: true,
+          },
+          headers: requestHeaders(),
+        });
+
+        const offerings = Array.isArray(courseRes.data) ? courseRes.data : [];
+        const filteredCourses = offerings
+          .filter((offering) => {
+            const departmentId = offering.department?._id || offering.department;
+            const programId = offering.program?._id || offering.program;
+            return (
+              String(departmentId) === String(filters.department) &&
+              String(programId) === String(filters.program) &&
+              Number(offering.semester) === Number(filters.semester)
+            );
+          })
+          .map((offering) => ({
+            ...(offering.courseId || {}),
+            offeringId: offering._id,
+          }))
+          .filter((course) => course._id);
+
+        setAvailableFilters((prev) => ({ ...prev, courses: filteredCourses, sections: [] }));
       } catch (err) {
         setError("Failed to load courses. Please try again.");
         console.error("Error loading courses:", err);
@@ -62,7 +136,7 @@ const StudentMarksPage = () => {
     };
 
     fetchCourses();
-  }, [filters.department, filters.program, filters.semester, apiUrl]);
+  }, [filters.academicYearId, filters.department, filters.program, filters.semester, apiUrl]);
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -72,7 +146,10 @@ const StudentMarksPage = () => {
         setLoading(true);
         setError(null);
         const sectionRes = await axios.get(`${apiUrl}/api/sections/course-enrollment/${filters.course}`, {
-          headers: { "x-auth-token": getAuthToken() },
+          params: {
+            academicYearId: filters.academicYearId,
+          },
+          headers: requestHeaders(),
         });
         setAvailableFilters((prev) => ({
           ...prev,
@@ -87,11 +164,11 @@ const StudentMarksPage = () => {
     };
 
     fetchSections();
-  }, [filters.course, apiUrl]);
+  }, [filters.academicYearId, filters.course, apiUrl]);
 
   useEffect(() => {
     const fetchMarksData = async () => {
-      if (!filters.department || !filters.program || !filters.semester || !filters.course || !filters.section) {
+      if (!filters.academicYearId || !filters.department || !filters.program || !filters.semester || !filters.course || !filters.section) {
         setMarksData([]);
         setMarksMeta({ assessments: [], courseWeightage: 0, bonusWeightage: 0 });
         return;
@@ -102,7 +179,7 @@ const StudentMarksPage = () => {
       try {
         const response = await axios.get(`${apiUrl}/api/student-marks`, {
           params: filters,
-          headers: { "x-auth-token": getAuthToken() },
+          headers: requestHeaders(),
         });
         setMarksData(response.data.data || []);
         setMarksMeta({
@@ -121,12 +198,13 @@ const StudentMarksPage = () => {
     };
 
     fetchMarksData();
-  }, [filters.department, filters.program, filters.semester, filters.course, filters.section, apiUrl]);
+  }, [filters.academicYearId, filters.department, filters.program, filters.semester, filters.course, filters.section, apiUrl]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
       ...prev,
       [filterType]: value,
+      ...(filterType === "academicYearId" && { department: "", program: "", semester: "", course: "", section: "" }),
       ...(filterType === "department" && { program: "", semester: "", course: "", section: "" }),
       ...(filterType === "program" && { semester: "", course: "", section: "" }),
       ...(filterType === "semester" && { course: "", section: "" }),
@@ -138,6 +216,7 @@ const StudentMarksPage = () => {
     setFilters({
       department: "",
       program: "",
+      academicYearId: academicTerms.find((term) => term.status === "active" || term.isCurrent)?._id || academicTerms[0]?._id || "",
       semester: "",
       course: "",
       section: "",
@@ -227,7 +306,7 @@ const StudentMarksPage = () => {
   const selectedCourse = availableFilters.courses.find((c) => c._id === filters.course);
   const selectedSection = availableFilters.sections.find((s) => s.id === filters.section);
   const filtersComplete = Boolean(
-    filters.department && filters.program && filters.semester && filters.course && filters.section
+    filters.academicYearId && filters.department && filters.program && filters.semester && filters.course && filters.section
   );
 
   return (
@@ -235,7 +314,38 @@ const StudentMarksPage = () => {
       <div className="page-header">
         <div className="header-content">
           <h1>Student Marks</h1>
-          <p>Section-level oversight of obtained marks, weighted scores, and estimated grades</p>
+          <p>Choose an academic term first, then review section-level gradebooks</p>
+        </div>
+      </div>
+
+      <div className="term-selector-card">
+        <div className="term-selector-copy">
+          <span className="term-eyebrow">Academic Term</span>
+          <h2>{getTermDisplayName(selectedAcademicTerm)}</h2>
+          <p>
+            Marks below are scoped to the selected term. Choose a closed or archived term to audit historical results.
+          </p>
+        </div>
+        <div className="term-selector-control">
+          <label htmlFor="marks-academic-term">View marks for</label>
+          <select
+            id="marks-academic-term"
+            value={filters.academicYearId}
+            onChange={(e) => handleFilterChange("academicYearId", e.target.value)}
+            disabled={academicTerms.length === 0}
+          >
+            <option value="">Select academic term</option>
+            {academicTerms.map((term) => (
+              <option key={term._id} value={term._id}>
+                {getTermDisplayName(term)} - {getTermStatusLabel(term.status)}
+              </option>
+            ))}
+          </select>
+          {selectedAcademicTerm && (
+            <span className={`term-status-pill ${selectedAcademicTerm.status || "unknown"}`}>
+              {getTermStatusLabel(selectedAcademicTerm.status)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -268,7 +378,7 @@ const StudentMarksPage = () => {
               id="department"
               value={filters.department}
               onChange={(e) => handleFilterChange("department", e.target.value)}
-              disabled={deptProgLoading}
+              disabled={!filters.academicYearId || deptProgLoading}
             >
               <option value="">Select Department</option>
               {departments.map((dept) => (
@@ -285,7 +395,7 @@ const StudentMarksPage = () => {
               id="program"
               value={filters.program}
               onChange={(e) => handleFilterChange("program", e.target.value)}
-              disabled={!filters.department || deptProgLoading}
+              disabled={!filters.academicYearId || !filters.department || deptProgLoading}
             >
               <option value="">Select Program</option>
               {programs.map((prog) => (
@@ -302,7 +412,7 @@ const StudentMarksPage = () => {
               id="semester"
               value={filters.semester}
               onChange={(e) => handleFilterChange("semester", e.target.value)}
-              disabled={!filters.program}
+              disabled={!filters.academicYearId || !filters.program}
             >
               <option value="">Select Semester</option>
               {semesters.map((sem) => (

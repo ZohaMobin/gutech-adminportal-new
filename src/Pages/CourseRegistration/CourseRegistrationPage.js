@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
-import { semesters, getCurrentAcademicYear } from "../../config/academicConfig";
+import { semesters } from "../../config/academicConfig";
 import "./CourseRegistrationPage.css";
 import { FiSearch } from "react-icons/fi";
 import NoResultsFound from "../../Components/NoResultsFound";
@@ -29,6 +29,26 @@ const CourseRegistrationPage = () => {
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [newSection, setNewSection] = useState({ section: "", teacherId: "" });
+  const [activeAcademicTerm, setActiveAcademicTerm] = useState(null);
+
+  const getAuthToken = () => sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
+  const requestHeaders = () => ({ "x-auth-token": getAuthToken(), Authorization: `Bearer ${getAuthToken()}` });
+
+  useEffect(() => {
+    const fetchActiveAcademicTerm = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/api/academic-years/current`, {
+          headers: requestHeaders(),
+        });
+        setActiveAcademicTerm(response.data);
+      } catch (err) {
+        setActiveAcademicTerm(null);
+        setError(err.response?.data?.message || "No active academic term is configured");
+      }
+    };
+
+    fetchActiveAcademicTerm();
+  }, [apiUrl]);
 
   // Fetch semesters when program is selected
   useEffect(() => {
@@ -54,7 +74,7 @@ const CourseRegistrationPage = () => {
       fetchCourses();
       fetchTeachers();
     }
-  }, [selectedDepartment, selectedProgram, selectedSemester]);
+  }, [selectedDepartment, selectedProgram, selectedSemester, activeAcademicTerm]);
 
   useEffect(() => {
     if (selectedCourse) {
@@ -62,16 +82,42 @@ const CourseRegistrationPage = () => {
     } else {
       setExistingSections([]);
     }
-  }, [selectedCourse]);
+  }, [selectedCourse, activeAcademicTerm]);
 
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const token = sessionStorage.getItem("adminToken");
-      const response = await axios.get(`${apiUrl}/api/courses/department/${selectedDepartment}/program/${selectedProgram}/semester/${selectedSemester}`, {
-        headers: { "x-auth-token": token },
+      if (!activeAcademicTerm?._id) {
+        setCourses([]);
+        setError("No active academic term is configured");
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/api/course-offerings`, {
+        params: {
+          academicYearId: activeAcademicTerm._id,
+          isActive: true,
+        },
+        headers: requestHeaders(),
       });
-      setCourses(response.data);
+      const offerings = Array.isArray(response.data) ? response.data : [];
+      const scopedCourses = offerings
+        .filter((offering) => {
+          const departmentId = offering.department?._id || offering.department;
+          const programId = offering.program?._id || offering.program;
+          return (
+            String(departmentId) === String(selectedDepartment) &&
+            String(programId) === String(selectedProgram) &&
+            Number(offering.semester) === Number(selectedSemester)
+          );
+        })
+        .map((offering) => ({
+          ...(offering.courseId || {}),
+          offeringId: offering._id,
+        }))
+        .filter((course) => course._id);
+
+      setCourses(scopedCourses);
     } catch (error) {
       setError("Error fetching courses: " + error.message);
     } finally {
@@ -84,8 +130,10 @@ const CourseRegistrationPage = () => {
 
     try {
       setLoadingSections(true);
-      const token = sessionStorage.getItem("adminToken");
-      const response = await axios.get(`${apiUrl}/api/sections/course/${selectedCourse._id}`, { headers: { "x-auth-token": token } });
+      const response = await axios.get(`${apiUrl}/api/sections/course/${selectedCourse._id}`, {
+        params: { academicYearId: activeAcademicTerm?._id },
+        headers: requestHeaders(),
+      });
       setExistingSections(response.data);
     } catch (error) {
       console.error("Error fetching sections:", error);
@@ -97,9 +145,8 @@ const CourseRegistrationPage = () => {
 
   const fetchTeachers = async () => {
     try {
-      const token = sessionStorage.getItem("adminToken");
       const response = await axios.get(`${apiUrl}/api/teachers`, {
-        headers: { "x-auth-token": token },
+        headers: requestHeaders(),
       });
       const filteredTeachers = response.data.filter((teacher) => {
         const teacherDeptId = teacher.department?._id || teacher.department;
@@ -162,6 +209,11 @@ const CourseRegistrationPage = () => {
     e.preventDefault();
     e.stopPropagation();
 
+    if (!activeAcademicTerm?._id) {
+      setError("No active academic term is configured");
+      return;
+    }
+
     if (!selectedCourse || !file || preview.length === 0) {
       setError("Please select a course and upload a valid Excel file with student data");
       return;
@@ -173,7 +225,7 @@ const CourseRegistrationPage = () => {
       setSuccess(null);
       setProgress(0);
 
-      const token = sessionStorage.getItem("adminToken");
+      const token = getAuthToken();
 
       // Process students in batches
       const batchSize = 10;
@@ -225,7 +277,7 @@ const CourseRegistrationPage = () => {
                   courseId: selectedCourse._id,
                   sectionId: sectionResponse.data._id,
                   semester: parseInt(selectedSemester),
-                  academicYear: getCurrentAcademicYear(),
+                  academicYear: activeAcademicTerm?._id,
                 },
                 {
                   headers: {
@@ -277,7 +329,7 @@ const CourseRegistrationPage = () => {
 
     try {
       setLoading(true);
-      const token = sessionStorage.getItem("adminToken");
+      const token = getAuthToken();
 
       const response = await axios.post(
         `${apiUrl}/api/sections/course/${selectedCourse._id}/section/${newSection.section}`,

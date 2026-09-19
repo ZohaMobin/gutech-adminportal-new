@@ -38,6 +38,20 @@ const getAttendanceStatusLabel = (status) => {
   return "";
 };
 
+const getTermDisplayName = (term) => {
+  if (!term) return "Select academic term";
+  return term.displayName || `${term.semesterType} ${term.year}`;
+};
+
+const getTermStatusLabel = (status) => {
+  if (status === "active") return "Active";
+  if (status === "upcoming") return "Upcoming";
+  if (status === "closed") return "Closed";
+  if (status === "archived") return "Archived";
+  if (status === "completed") return "Closed";
+  return status || "Unknown";
+};
+
 const getWorksheetDataForSection = (sectionData, formatDateSlot) => {
   const header = ["Roll Number", "Name", ...sectionData.dates.map((date) => formatDateSlot(date))];
   const rows = sectionData.students.map((student) => {
@@ -58,6 +72,8 @@ const AttendancePage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   const [courses, setCourses] = useState([]);
+  const [academicTerms, setAcademicTerms] = useState([]);
+  const [selectedAcademicTermId, setSelectedAcademicTermId] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [sections, setSections] = useState([]);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
@@ -71,21 +87,83 @@ const AttendancePage = () => {
     return sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
   };
 
-  // Fetch all courses
-  const fetchCourses = async () => {
+  const selectedAcademicTerm = academicTerms.find((term) => term._id === selectedAcademicTermId);
+
+  const requestHeaders = () => ({
+    "x-auth-token": getAuthToken(),
+    Authorization: `Bearer ${getAuthToken()}`,
+  });
+
+  const resetAttendanceWorkspace = () => {
+    setSelectedCourse(null);
+    setSections([]);
+    setSelectedSectionId(null);
+    setSectionAttendanceData({});
+    setSectionSearchQueries({});
+  };
+
+  const fetchAcademicTerms = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await axios.get(`${apiUrl}/api/courses`, {
-        headers: {
-          "x-auth-token": getAuthToken(),
-        },
+      const response = await axios.get(`${apiUrl}/api/academic-years?includeInactive=true`, {
+        headers: requestHeaders(),
       });
 
-      if (response.data && Array.isArray(response.data)) {
-        setCourses(response.data);
+      const terms = Array.isArray(response.data) ? response.data : [];
+      setAcademicTerms(terms);
+
+      const activeTerm = terms.find((term) => term.status === "active" || term.isCurrent);
+      const initialTerm = activeTerm || terms[0];
+
+      if (initialTerm) {
+        setSelectedAcademicTermId(initialTerm._id);
       }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch courses offered in the selected academic term
+  const fetchCourses = async (academicYearId) => {
+    if (!academicYearId) {
+      setCourses([]);
+      resetAttendanceWorkspace();
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    resetAttendanceWorkspace();
+
+    try {
+      const response = await axios.get(`${apiUrl}/api/course-offerings`, {
+        params: {
+          academicYearId,
+          isActive: true,
+        },
+        headers: requestHeaders(),
+      });
+
+      const offerings = Array.isArray(response.data) ? response.data : [];
+      const courseMap = new Map();
+
+      offerings.forEach((offering) => {
+        const course = offering.courseId;
+        if (!course?._id) return;
+        courseMap.set(course._id, {
+          ...course,
+          offeringId: offering._id,
+          program: offering.program,
+          department: offering.department,
+          semester: offering.semester,
+        });
+      });
+
+      setCourses(Array.from(courseMap.values()));
     } catch (error) {
       handleApiError(error);
     } finally {
@@ -107,9 +185,10 @@ const AttendancePage = () => {
     try {
       // First, get all sections for this course
       const sectionsResponse = await axios.get(`${apiUrl}/api/sections/course/${courseId}`, {
-        headers: {
-          "x-auth-token": getAuthToken(),
+        params: {
+          academicYearId: selectedAcademicTermId,
         },
+        headers: requestHeaders(),
       });
 
       if (!sectionsResponse.data || !Array.isArray(sectionsResponse.data) || sectionsResponse.data.length === 0) {
@@ -134,10 +213,12 @@ const AttendancePage = () => {
 
         try {
           // Fetch attendance for this specific section
-          const attendanceResponse = await axios.get(`${apiUrl}/api/teachers/attendance?sectionId=${sectionId}`, {
-            headers: {
-              "x-auth-token": getAuthToken(),
+          const attendanceResponse = await axios.get(`${apiUrl}/api/teachers/attendance`, {
+            params: {
+              sectionId,
+              academicYearId: selectedAcademicTermId,
             },
+            headers: requestHeaders(),
           });
 
           // Fetch students for this section
@@ -294,9 +375,10 @@ const AttendancePage = () => {
   const fetchStudentsForSection = async (sectionId) => {
     try {
       const sectionStudentsResponse = await axios.get(`${apiUrl}/api/course-registrations/getStudents/${sectionId.toString()}`, {
-        headers: {
-          "x-auth-token": getAuthToken(),
+        params: {
+          academicYearId: selectedAcademicTermId,
         },
+        headers: requestHeaders(),
       });
 
       if (sectionStudentsResponse.data && Array.isArray(sectionStudentsResponse.data)) {
@@ -342,6 +424,10 @@ const AttendancePage = () => {
     setSelectedCourse(course);
     setSelectedSectionId(null);
     fetchCourseAttendance(course._id || course.id);
+  };
+
+  const handleAcademicTermChange = (termId) => {
+    setSelectedAcademicTermId(termId);
   };
 
   // Handle section selection
@@ -393,7 +479,8 @@ const AttendancePage = () => {
       // Generate filename
       const courseName = selectedCourse.name || "Course";
       const courseCode = selectedCourse.code || "";
-      const filename = `Attendance_${courseCode}_${courseName}_${sectionName}_${new Date().toISOString().split("T")[0]}.xlsx`;
+      const termName = getTermDisplayName(selectedAcademicTerm).replace(/\s+/g, "_");
+      const filename = `Attendance_${termName}_${courseCode}_${courseName}_${sectionName}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
       // Download
       XLSX.writeFile(wb, filename);
@@ -446,7 +533,8 @@ const AttendancePage = () => {
 
       const courseName = selectedCourse.name || "Course";
       const courseCode = selectedCourse.code || "";
-      const filename = `Attendance_${courseCode}_${courseName}_All_Sections_${new Date().toISOString().split("T")[0]}.xlsx`;
+      const termName = getTermDisplayName(selectedAcademicTerm).replace(/\s+/g, "_");
+      const filename = `Attendance_${termName}_${courseCode}_${courseName}_All_Sections_${new Date().toISOString().split("T")[0]}.xlsx`;
 
       XLSX.writeFile(workbook, filename);
       toast.success("Course attendance exported successfully!");
@@ -480,15 +568,19 @@ const AttendancePage = () => {
 
   // Initialize
   useEffect(() => {
-    fetchCourses();
+    fetchAcademicTerms();
   }, []);
+
+  useEffect(() => {
+    fetchCourses(selectedAcademicTermId);
+  }, [selectedAcademicTermId]);
 
   return (
     <div className="attendance-page">
       <div className="attendance-header">
         <div className="header-content">
           <h1>Attendance Management</h1>
-          <p>View attendance records course-wise</p>
+          <p>Choose an academic term first, then inspect attendance course-wise</p>
         </div>
         {selectedCourse && sections.some((section) => {
           const sectionId = section.id || section._id;
@@ -508,14 +600,47 @@ const AttendancePage = () => {
         </div>
       )}
 
+      <div className="term-selector-card">
+        <div className="term-selector-copy">
+          <span className="term-eyebrow">Academic Term</span>
+          <h2>{getTermDisplayName(selectedAcademicTerm)}</h2>
+          <p>
+            Attendance below is scoped to the selected term. Pick a closed or archived term to view historical records.
+          </p>
+        </div>
+        <div className="term-selector-control">
+          <label htmlFor="attendance-academic-term">View records for</label>
+          <select
+            id="attendance-academic-term"
+            value={selectedAcademicTermId}
+            onChange={(e) => handleAcademicTermChange(e.target.value)}
+            disabled={academicTerms.length === 0}
+          >
+            <option value="">Select academic term</option>
+            {academicTerms.map((term) => (
+              <option key={term._id} value={term._id}>
+                {getTermDisplayName(term)} - {getTermStatusLabel(term.status)}
+              </option>
+            ))}
+          </select>
+          {selectedAcademicTerm && (
+            <span className={`term-status-pill ${selectedAcademicTerm.status || "unknown"}`}>
+              {getTermStatusLabel(selectedAcademicTerm.status)}
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="attendance-content">
         {/* Course Selection Sidebar */}
         <div className="course-sidebar">
           <h3>Select Course</h3>
           {loading && courses.length === 0 ? (
             <div className="loading-text">Loading courses...</div>
+          ) : !selectedAcademicTermId ? (
+            <div className="empty-text">Select an academic term first</div>
           ) : courses.length === 0 ? (
-            <div className="empty-text">No courses available</div>
+            <div className="empty-text">No course offerings found for this term</div>
           ) : (
             <div className="course-list">
               {courses.map((course) => (
@@ -538,9 +663,11 @@ const AttendancePage = () => {
         <div className="attendance-main">
           {selectedCourse ? (
             <>
-              <div className="course-header">
-                <h2>{selectedCourse.name}</h2>
-                <p className="course-code-text">{selectedCourse.code}</p>
+                  <div className="course-header">
+                    <h2>{selectedCourse.name}</h2>
+                <p className="course-code-text">
+                  {selectedCourse.code} · {getTermDisplayName(selectedAcademicTerm)}
+                </p>
               </div>
 
               {loading ? (
