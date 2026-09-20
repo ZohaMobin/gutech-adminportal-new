@@ -169,7 +169,7 @@ const CoursePage = () => {
         setMessage({ text: "Course deleted successfully!", type: "success" });
         fetchCourses();
       } catch (error) {
-        setMessage({ text: "Failed to delete course.", type: "error" });
+        setMessage({ text: error.response?.data?.message || "Failed to delete course.", type: "error" });
       } finally {
         setLoading(false);
       }
@@ -242,7 +242,26 @@ const CoursePage = () => {
       setEditingCourse(null);
       fetchCourses(); // Refresh the courses list
     } catch (error) {
-      setMessage({ text: editingCourse ? "Failed to update course." : "Failed to create course.", type: "error" });
+      const data = error.response?.data;
+      const fallback = editingCourse ? "Failed to update course." : "Failed to create course.";
+
+      // The code belongs to a deleted course: offer to bring that course back instead.
+      if (data?.reason === "DELETED_DUPLICATE" && data.deletedCourseId) {
+        if (window.confirm(`${data.message}\n\nRestore the deleted course now?`)) {
+          try {
+            await axios.patch(`${apiUrl}/api/courses/${data.deletedCourseId}/restore`);
+            setMessage({ text: "Course restored. It is available again in the courses list.", type: "success" });
+            setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
+            fetchCourses();
+          } catch (restoreError) {
+            setMessage({ text: restoreError.response?.data?.message || "Failed to restore the course.", type: "error" });
+          }
+        } else {
+          setMessage({ text: data.message, type: "error" });
+        }
+      } else {
+        setMessage({ text: data?.message || fallback, type: "error" });
+      }
     } finally {
       setLoading(false);
     }
