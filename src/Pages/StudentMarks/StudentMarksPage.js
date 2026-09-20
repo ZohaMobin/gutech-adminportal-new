@@ -615,6 +615,9 @@ const StudentMarksPage = () => {
                         {student.percentage != null && (
                           <span className="grade-pct">{student.percentage.toFixed(1)}%</span>
                         )}
+                        {student.bonusCapped && (
+                          <span className="grade-pct" title="Bonus took this student above 100. Students see 100%.">capped at 100%</span>
+                        )}
                       </td>
                     </tr>
                   ))}
