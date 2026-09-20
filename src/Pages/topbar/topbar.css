@@ -175,6 +175,7 @@
 }
 
 .user-avatar {
+  position: relative;
   width: 36px;
   height: 36px;
   background-color: var(--primary-light);
@@ -345,4 +346,36 @@
   .logout-button {
     padding: 0.5rem;
   }
+}
+/* Pending-approvals indicators */
+.avatar-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  border: 2px solid var(--white);
+}
+
+.profile-menu-item {
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.menu-count {
+  float: right;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background-color: var(--primary-color);
+  color: var(--white);
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
 }

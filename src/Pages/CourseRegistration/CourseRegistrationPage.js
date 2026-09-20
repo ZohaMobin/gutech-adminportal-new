@@ -22,6 +22,7 @@ const CourseRegistrationPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [failures, setFailures] = useState([]); // [{ student, reason }] from the last registration run
   const [progress, setProgress] = useState(0);
   const [extractedSections, setExtractedSections] = useState([]);
   const [existingSections, setExistingSections] = useState([]);
@@ -220,9 +221,25 @@ const CourseRegistrationPage = () => {
     }
 
     try {
-      setLoading(true);
       setError(null);
       setSuccess(null);
+      setFailures([]);
+
+      // A section must exist (with a teacher) before students can be placed in it.
+      // Check first so the admin gets one clear message instead of a failure per student.
+      const normalize = (name) => String(name ?? "").trim().toLowerCase();
+      const known = new Set(existingSections.map((sec) => normalize(sec.section)));
+      const missing = [...new Set(preview.map((row) => String(row.section ?? "").trim()))].filter((name) => !known.has(normalize(name)));
+      if (missing.length > 0) {
+        const label = missing.map((name) => name || "(blank)").join(", ");
+        setError(
+          `${missing.length === 1 ? "Section" : "Sections"} ${label} ${missing.length === 1 ? "does" : "do"} not exist for ${selectedCourse.name} in the active term. ` +
+            `Create ${missing.length === 1 ? "it" : "them"} first in the "Create Section" form below (a teacher is required), then upload again.`
+        );
+        return;
+      }
+
+      setLoading(true);
       setProgress(0);
 
       const token = getAuthToken();
@@ -250,23 +267,15 @@ const CourseRegistrationPage = () => {
                 sectionResponse = await axios.get(`${apiUrl}/api/sections/course/${selectedCourse._id}/section/${student.section}`, { headers: { "x-auth-token": token } });
               } catch (error) {
                 if (error.response && error.response.status === 404) {
-                  const createSectionResponse = await axios.post(
-                    `${apiUrl}/api/sections/course/${selectedCourse._id}/section/${student.section}`,
-                    {},
-                    { headers: { "x-auth-token": token } }
-                  );
-                  sectionResponse = { data: createSectionResponse.data };
-                } else {
-                  throw error;
+                  failedRegistrations.push({ student: student.rollNumber, row: student, error: `Section ${student.section} does not exist` });
+                  return;
                 }
+                throw error;
               }
 
               if (!sectionResponse.data) {
                 console.error(`Section ${student.section} not found for student ${student.rollNumber}`);
-                failedRegistrations.push({
-                  student: student.rollNumber,
-                  error: "Section not found",
-                });
+                failedRegistrations.push({ student: student.rollNumber, row: student, error: "Section not found" });
                 return;
               }
 
@@ -290,10 +299,12 @@ const CourseRegistrationPage = () => {
               registeredCount++;
             } catch (error) {
               console.error(`Error registering student ${student.rollNumber}:`, error);
-              failedRegistrations.push({
-                student: student.rollNumber,
-                error: error.response?.data?.message || "Registration failed",
-              });
+              const status = error.response?.status;
+              const reason =
+                error.response?.data?.message ||
+                (status === 401 || status === 403 ? "You are not allowed to register students (please log in again)" : null) ||
+                (error.response ? `Registration failed (${status})` : "Could not reach the server");
+              failedRegistrations.push({ student: student.rollNumber, row: student, error: reason });
             }
           })
         );
@@ -303,16 +314,25 @@ const CourseRegistrationPage = () => {
         setProgress(percentCompleted);
       }
 
-      setSuccess(`Successfully registered ${registeredCount} out of ${preview.length} students for ${selectedCourse.name}`);
-      if (failedRegistrations.length > 0) {
-        setError(`Failed to register ${failedRegistrations.length} students. Check console for details.`);
+      if (registeredCount > 0) {
+        setSuccess(`Registered ${registeredCount} of ${preview.length} students for ${selectedCourse.name}.`);
       }
-
-      setFile(null);
-      setPreview([]);
-      setSelectedCourse(null);
-      setExtractedSections([]);
-      setExistingSections([]);
+      if (failedRegistrations.length > 0) {
+        setError(
+          registeredCount === 0
+            ? `No students were registered. ${failedRegistrations.length} failed:`
+            : `${failedRegistrations.length} student${failedRegistrations.length === 1 ? "" : "s"} could not be registered:`
+        );
+        setFailures(failedRegistrations.map((f) => ({ student: f.student, reason: f.error })));
+        // Keep only the failed rows so a retry does not touch students who already succeeded.
+        setPreview(failedRegistrations.map((f) => f.row));
+      } else {
+        setFile(null);
+        setPreview([]);
+        setSelectedCourse(null);
+        setExtractedSections([]);
+        setExistingSections([]);
+      }
     } catch (error) {
       console.error("Registration error:", error);
       setError(error.response?.data?.message || "Error registering students");
@@ -358,7 +378,20 @@ const CourseRegistrationPage = () => {
         <p className="header-description">Browse and register for available courses. Use the filters below to find specific courses by semester, department, or program.</p>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message" role="alert">
+          {error}
+          {failures.length > 0 && (
+            <ul className="failure-list">
+              {failures.map((f, index) => (
+                <li key={`${f.student}-${index}`}>
+                  <strong>{f.student}</strong>: {f.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       {success && <div className="success-message">{success}</div>}
 
       <div className="filters">
