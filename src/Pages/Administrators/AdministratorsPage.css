@@ -1,0 +1,48 @@
+.admin-add-form {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.admin-add-form h3 {
+  margin: 0 0 4px;
+}
+
+.admin-add-help {
+  margin: 0 0 12px;
+  color: #666;
+  font-size: 13px;
+}
+
+.admin-add-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-add-fields input {
+  flex: 1 1 200px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.admin-notice {
+  padding: 1rem;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.you-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 12px;
+}
