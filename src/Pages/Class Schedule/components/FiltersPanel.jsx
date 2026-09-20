@@ -1,6 +1,5 @@
 import React from 'react';
 import { useDepartmentsAndPrograms } from '../../../hooks/useDepartmentsAndPrograms';
-import { semesters } from '../../../config/academicConfig';
 import './FiltersPanel.css';
 
 const FiltersPanel = ({

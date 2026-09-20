@@ -12,7 +12,7 @@ import "./Class Schedule.css";
 function ClassSchedule() {
   const [sections, setSections] = useState([]);
   const [teachers, setTeachers] = useState([]);
-  const [rooms, setRooms] = useState(["Room 101", "Room 102", "Room 103", "Lab 1", "Lab 2", "Lab 3"]);
+  const [rooms] = useState(["Room 101", "Room 102", "Room 103", "Lab 1", "Lab 2", "Lab 3"]);
   const [selectedSection, setSelectedSection] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -226,17 +226,6 @@ function ClassSchedule() {
     return sectionColors[sectionId] || "#f8f9fa";
   };
 
-  const handleSectionChange = (section) => {
-    if (section) {
-      setSelectedSection(section);
-      fetchSchedules(section._id);
-    } else {
-      setSelectedSection(null);
-      // Don't clear schedules when deselecting a section
-      // This allows the user to see all schedules when no section is selected
-    }
-  };
-
   const checkConflicts = async (scheduleData) => {
     try {
       setLoading(true); // Show loader during API call
@@ -307,7 +296,7 @@ function ClassSchedule() {
 
       try {
         setLoading(true); // Show loader during API call
-        const response = await axios.post(`${apiUrl}/api/section-schedules`, scheduleData, {
+        await axios.post(`${apiUrl}/api/section-schedules`, scheduleData, {
           headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
         });
 
@@ -391,7 +380,7 @@ function ClassSchedule() {
 
       try {
         setLoading(true); // Show loader during API call
-        const response = await axios.put(`${apiUrl}/api/section-schedules/${selectedSchedule._id}`, scheduleData, {
+        await axios.put(`${apiUrl}/api/section-schedules/${selectedSchedule._id}`, scheduleData, {
           headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
         });
 

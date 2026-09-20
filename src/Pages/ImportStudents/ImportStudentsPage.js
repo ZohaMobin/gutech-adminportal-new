@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import "./ImportStudentsPage.css";
-import { FiSearch } from "react-icons/fi";
 import NoResultsFound from "../../Components/NoResultsFound";
 
 const ImportStudentsPage = () => {
@@ -13,7 +12,6 @@ const ImportStudentsPage = () => {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -119,7 +117,6 @@ const ImportStudentsPage = () => {
     }
 
     setLoading(true);
-    setProgress(0);
     setError("");
     setSuccess("");
 
@@ -206,7 +203,6 @@ const ImportStudentsPage = () => {
 
           setFile(null);
           setPreview([]);
-          setProgress(100);
         } catch (err) {
           if (err.response?.status === 401) {
             setError("Session expired. Please login again.");
