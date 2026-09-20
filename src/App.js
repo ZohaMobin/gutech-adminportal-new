@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/global.css"; // Single global CSS file
 import Signup from "./Pages/LoginSignUp/Signup";
 import ForgotPassword from "./Pages/ForgotPassword/ForgotPassword";
@@ -15,6 +15,8 @@ import DepartmentsPage from "./Pages/Departments/DepartmentsPage";
 import ProgramsPage from "./Pages/Programs/ProgramsPage";
 import AcademicYearsPage from "./Pages/AcademicYears/AcademicYearsPage";
 import AccountApprovalsPage from "./Pages/AccountApprovals/AccountApprovalsPage";
+import AdministratorsPage from "./Pages/Administrators/AdministratorsPage";
+import ChangePasswordPage from "./Pages/ChangePassword/ChangePasswordPage";
 import { AuthProvider } from "./Components/AuthContext";
 import PrivateRoute from "./Components/PrivateRoute";
 
@@ -29,6 +31,7 @@ function App() {
 
             <Route element={<PrivateRoute />}>
               <Route path="/*" element={<MainLayout />}>
+                <Route path="dashboard" element={<Navigate to="/attendance" replace />} />
                 <Route path="class-schedule" element={<ClassSchedule />} />
                 <Route path="Course" element={<CoursePage />} />
                 <Route path="course-registration" element={<CourseRegistrationPage />} />
@@ -40,6 +43,8 @@ function App() {
                 <Route path="programs" element={<ProgramsPage />} />
                 <Route path="academic-years" element={<AcademicYearsPage />} />
                 <Route path="account-approvals" element={<AccountApprovalsPage />} />
+                <Route path="administrators" element={<AdministratorsPage />} />
+                <Route path="change-password" element={<ChangePasswordPage />} />
               </Route>
             </Route>
           </Routes>

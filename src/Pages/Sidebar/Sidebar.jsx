@@ -8,7 +8,6 @@ const NAV_SECTIONS = [
     id: 'daily',
     label: 'Daily work',
     items: [
-      { id: 'dashboard', label: 'Dashboard', icon: '📊' },
       { id: 'attendance', label: 'Attendance', icon: '📅' },
       { id: 'marks', label: 'Marks', icon: '📄' },
       { id: 'class-schedule', label: 'Class Schedule', icon: '🗓️' },

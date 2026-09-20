@@ -29,7 +29,7 @@ const getTermStatusLabel = (status) => {
 };
 
 const StudentMarksPage = () => {
-  const apiUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = process.env.REACT_APP_BACKEND_URL;
   const { departments, programs, loading: deptProgLoading } = useDepartmentsAndPrograms();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
