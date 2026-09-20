@@ -28,7 +28,7 @@ const CourseRegistrationPage = () => {
   const [newSection, setNewSection] = useState({ section: "", teacherId: "" });
   const [activeAcademicTerm, setActiveAcademicTerm] = useState(null);
 
-  const getAuthToken = () => sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
+  const getAuthToken = () => sessionStorage.getItem("adminToken");
   const requestHeaders = () => ({ "x-auth-token": getAuthToken(), Authorization: `Bearer ${getAuthToken()}` });
 
   useEffect(() => {
@@ -235,77 +235,46 @@ const CourseRegistrationPage = () => {
       setLoading(true);
       setProgress(0);
 
-      const token = getAuthToken();
+      // The server does the enrolling as one stored job with a report for every row, so closing the tab or
+      // losing the connection cannot leave the list half done without a record. We start it and watch it.
+      const start = await axios.post(
+        `${apiUrl}/api/course-registrations/bulk-enroll`,
+        {
+          courseId: selectedCourse._id,
+          semester: parseInt(selectedSemester),
+          academicYear: activeAcademicTerm._id,
+          rows: preview.map((student) => ({ rollNumber: String(student.rollNumber), section: String(student.section ?? "") })),
+        },
+        { headers: requestHeaders() }
+      );
 
-      // Process students in batches
-      const batchSize = 10;
-      const batches = [];
-      for (let i = 0; i < preview.length; i += batchSize) {
-        batches.push(preview.slice(i, i + batchSize));
+      let job;
+      for (let attempt = 0; attempt < 600; attempt += 1) {
+        const poll = await axios.get(`${apiUrl}/api/course-registrations/bulk-enroll/${start.data.jobId}`, { headers: requestHeaders() });
+        job = poll.data;
+        setProgress(job.total ? Math.round((job.processed / job.total) * 100) : 100);
+        if (["done", "failed", "interrupted"].includes(job.status)) break;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
-      let registeredCount = 0;
-      let failedRegistrations = [];
-
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-
-        // Register students in the current batch
-        await Promise.all(
-          batch.map(async (student) => {
-            try {
-              // Get or create section
-              let sectionResponse;
-              try {
-                sectionResponse = await axios.get(`${apiUrl}/api/sections/course/${selectedCourse._id}/section/${student.section}`, { headers: { "x-auth-token": token } });
-              } catch (error) {
-                if (error.response && error.response.status === 404) {
-                  failedRegistrations.push({ student: student.rollNumber, row: student, error: `Section ${student.section} does not exist` });
-                  return;
-                }
-                throw error;
-              }
-
-              if (!sectionResponse.data) {
-                console.error(`Section ${student.section} not found for student ${student.rollNumber}`);
-                failedRegistrations.push({ student: student.rollNumber, row: student, error: "Section not found" });
-                return;
-              }
-
-              await axios.post(
-                `${apiUrl}/api/course-registrations/register`,
-                {
-                  studentId: student.rollNumber,
-                  courseId: selectedCourse._id,
-                  sectionId: sectionResponse.data._id,
-                  semester: parseInt(selectedSemester),
-                  academicYear: activeAcademicTerm?._id,
-                },
-                {
-                  headers: {
-                    "Content-Type": "application/json",
-                    "x-auth-token": token,
-                  },
-                }
-              );
-
-              registeredCount++;
-            } catch (error) {
-              console.error(`Error registering student ${student.rollNumber}:`, error);
-              const status = error.response?.status;
-              const reason =
-                error.response?.data?.message ||
-                (status === 401 || status === 403 ? "You are not allowed to register students (please log in again)" : null) ||
-                (error.response ? `Registration failed (${status})` : "Could not reach the server");
-              failedRegistrations.push({ student: student.rollNumber, row: student, error: reason });
-            }
-          })
-        );
-
-        // Update progress
-        const percentCompleted = Math.round(((i + 1) / batches.length) * 100);
-        setProgress(percentCompleted);
+      if (!["done", "failed", "interrupted"].includes(job.status)) {
+        setError("This is taking longer than expected. The enrolment is still running on the server; check the report in a few minutes before uploading again.");
+        return;
       }
+      if (job.status !== "done") {
+        setError(job.note || "The enrolment stopped before it finished. Rows already processed are saved; upload again to finish the rest.");
+      }
+
+      // Rows already enrolled count as done, so re-uploading a list is harmless.
+      const registeredCount = job.registered + job.alreadyRegistered;
+      const failedRegistrations = job.rows
+        .map((row, index) => ({ row, index }))
+        .filter(({ row }) => row.status === "failed" || row.status === "pending")
+        .map(({ row, index }) => ({
+          student: row.rollNumber,
+          row: preview[index],
+          error: row.message || "Not processed",
+        }));
 
       if (registeredCount > 0) {
         setSuccess(`Registered ${registeredCount} of ${preview.length} students for ${selectedCourse.name}.`);

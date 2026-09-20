@@ -84,7 +84,7 @@ const AttendancePage = () => {
 
   // Get auth token
   const getAuthToken = () => {
-    return sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
+    return sessionStorage.getItem("adminToken");
   };
 
   const selectedAcademicTerm = academicTerms.find((term) => term._id === selectedAcademicTermId);
