@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
 import { semesters } from "../../config/academicConfig";
-import { getEstimatedGrade } from "../../utils/gradingScale";
 import { formatSectionOptionLabel } from "../../utils/sectionTeachers";
 import "./StudentMarksPage.css";
 
@@ -279,7 +278,8 @@ const StudentMarksPage = () => {
         weightedTotal,
         percentage,
         missingMarks,
-        estimatedGrade: percentage == null ? "N/A" : getEstimatedGrade(percentage),
+        // The letter is worked out by the server, from the one grading scale.
+        estimatedGrade: percentage == null ? "N/A" : student.estimatedGrade || "N/A",
         performanceClass: getPerformanceClass(percentage),
       };
     });
