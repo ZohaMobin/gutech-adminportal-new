@@ -379,3 +379,14 @@
   line-height: 20px;
   text-align: center;
 }
+
+.profile-role {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fff4d6;
+  color: #8a5a00;
+  font-size: 11px;
+  font-weight: 600;
+}

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../Components/AuthContext';
 import usePendingApprovals from '../../hooks/usePendingApprovals';
@@ -11,6 +12,22 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
   
   const user = JSON.parse(sessionStorage.getItem('adminUser'));
   const pendingApprovals = usePendingApprovals();
+  const [isSuperAdmin, setIsSuperAdmin] = useState(user?.isSuperAdmin === true);
+
+  // Learn the current role from the server, so a session that started before someone was made
+  // super admin (or lost it) is correct without logging in again.
+  useEffect(() => {
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) return;
+    axios
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => {
+        setIsSuperAdmin(data.isSuperAdmin === true);
+        const stored = JSON.parse(sessionStorage.getItem('adminUser') || 'null');
+        if (stored) sessionStorage.setItem('adminUser', JSON.stringify({ ...stored, isSuperAdmin: data.isSuperAdmin === true }));
+      })
+      .catch(() => {});
+  }, []);
   const initials = (user?.name || 'Admin').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 
   const toggleProfileMenu = () => {
@@ -66,6 +83,7 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
                 <div className="profile-header">
                   <span className="profile-name">{user?.name}</span>
                   <span className="profile-email">{user?.email}</span>
+                  {isSuperAdmin && <span className="profile-role">Super admin</span>}
                 </div>
                   <button
                     type="button"
@@ -74,6 +92,22 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
                   >
                     Account Approvals
                     {pendingApprovals > 0 && <span className="menu-count">{pendingApprovals}</span>}
+                  </button>
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      className="profile-menu-item"
+                      onClick={() => { setIsProfileMenuOpen(false); navigate('/administrators'); }}
+                    >
+                      Administrators
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="profile-menu-item"
+                    onClick={() => { setIsProfileMenuOpen(false); navigate('/change-password'); }}
+                  >
+                    Change password
                   </button>
                   <button type="button" className="profile-menu-item logout" onClick={handleLogout}>
                     Logout
