@@ -18,7 +18,8 @@ const Sidebar = ({ isOpen, activePage, onNavClick }) => {
     { id: "class-schedule", label: "Class Schedule", icon: "📅", path: "class-schedule" },
     { id: "departments", label: "Departments", icon: "🏛️", path: "departments" },
     { id: "programs", label: "Programs", icon: "🎓", path: "programs" },
-    { id: "academic-years", label: "Academic Years", icon: "📆", path: "academic-years" }
+    { id: "academic-years", label: "Academic Years", icon: "📆", path: "academic-years" },
+    { id: "account-approvals", label: "Account Approvals", icon: "✅", path: "account-approvals" }
   ];
   
   return (

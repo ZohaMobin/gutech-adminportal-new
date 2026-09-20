@@ -15,6 +15,7 @@ import AttendancePage from "./Pages/Attendance/AttendancePage";
 import DepartmentsPage from "./Pages/Departments/DepartmentsPage";
 import ProgramsPage from "./Pages/Programs/ProgramsPage";
 import AcademicYearsPage from "./Pages/AcademicYears/AcademicYearsPage";
+import AccountApprovalsPage from "./Pages/AccountApprovals/AccountApprovalsPage";
 import { AuthProvider } from "./Components/AuthContext";
 import PrivateRoute from "./Components/PrivateRoute";
 
@@ -39,6 +40,7 @@ function App() {
                 <Route path="departments" element={<DepartmentsPage />} />
                 <Route path="programs" element={<ProgramsPage />} />
                 <Route path="academic-years" element={<AcademicYearsPage />} />
+                <Route path="account-approvals" element={<AccountApprovalsPage />} />
               </Route>
             </Route>
           </Routes>
