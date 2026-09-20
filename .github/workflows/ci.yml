@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [qa, staging, "w1/**", "chore/**", "fix/**"]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tests
+        run: npm test -- --watchAll=false --passWithNoTests
+        env:
+          CI: "true"
+      - name: Build
+        # Create React App turns warnings into errors when CI=true; this codebase still has
+        # hook-dependency warnings, so build with CI=false until those are cleaned up.
+        run: npm run build
+        env:
+          CI: "false"
+          REACT_APP_BACKEND_URL: https://api.example.invalid
