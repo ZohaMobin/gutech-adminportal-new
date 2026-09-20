@@ -268,7 +268,7 @@ const StudentMarksPage = () => {
         cells.reduce((sum, cell) => sum + (cell.weightedScore || 0), 0);
       const percentage =
         student.percentage ??
-        (courseWeightage > 0 ? (weightedTotal / courseWeightage) * 100 : null);
+        (courseWeightage > 0 ? Math.min(100, (weightedTotal / courseWeightage) * 100) : null);
       const missingMarks =
         student.missingMarks ?? cells.filter((cell) => !cell.hasMark).length;
 
