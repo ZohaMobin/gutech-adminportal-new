@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "../Programs/ProgramsPage.css";
+import { APPROVALS_CHANGED_EVENT } from "../../hooks/usePendingApprovals";
 
 const AccountApprovalsPage = () => {
   const [accounts, setAccounts] = useState([]);
@@ -37,6 +38,7 @@ const AccountApprovalsPage = () => {
       setBusyId(account._id);
       await axios.post(`${API_BASE_URL}/api/account-approvals/${account._id}/${decision}`, {}, { headers });
       setAccounts((prev) => prev.filter((a) => a._id !== account._id));
+      window.dispatchEvent(new Event(APPROVALS_CHANGED_EVENT));
       setError("");
     } catch (err) {
       setError(err.response?.data?.message || `Failed to ${verb} account`);
