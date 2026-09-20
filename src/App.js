@@ -29,7 +29,6 @@ function App() {
 
             <Route element={<PrivateRoute />}>
               <Route path="/*" element={<MainLayout />}>
-                <Route index element={<Navigate to="/attendance" replace />} />
                 <Route path="dashboard" element={<Navigate to="/attendance" replace />} />
                 <Route path="class-schedule" element={<ClassSchedule />} />
                 <Route path="Course" element={<CoursePage />} />
