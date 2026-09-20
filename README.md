@@ -1,70 +1,83 @@
-# Getting Started with Create React App
+# Gutech LMS — Admin Portal
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React web app (Create React App) for **administrators**.
+Administrators: enrollment and student import, courses, terms, attendance, marks view, class schedule, account approvals, and (super admin only) managing administrators.
 
-## Available Scripts
+> **Keep this file up to date.** If a hosting account, URL, environment variable or branch rule
+> changes, change it here in the same pull request.
 
-In the project directory, you can run:
+## Where everything runs
 
-### `npm start`
+| Part | Host | Address | Account |
+|---|---|---|---|
+| **Backend API** | **Render** — service `gutech-lms-backend` | https://gutech-lms-backend.onrender.com | **zohamobin@gmail.com** |
+| Admin portal | **Vercel** | https://gutech-adminportal-new.vercel.app | **zohamobin@gmail.com** |
+| Teacher portal | **Vercel** | https://gutech-teacherportal.vercel.app | **zohamobin@gmail.com** |
+| Student portal | **Vercel** | https://gutech-studentportal-ten.vercel.app | **zohamobin@gmail.com** |
+| Database | MongoDB Atlas (`Cluster0`), database `GuPortalQA` = live data | used only by the backend | — |
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **This portal (https://gutech-adminportal-new.vercel.app)** is hosted on **Vercel**, under the account **zohamobin@gmail.com**.
+  Deploys, environment variables and logs are managed there.
+- It calls the **Render** backend. (A second, unused copy of the backend exists on Railway; changing
+  Railway settings does not affect this portal.)
+- Full backend, database and release details are in the backend repo:
+  https://github.com/ZohaMobin/Gutech-LMS-Backend
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Configuration
 
-### `npm test`
+The only setting is the backend address:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+| Variable | Live value | Where it is set |
+|---|---|---|
+| `REACT_APP_BACKEND_URL` | `https://gutech-lms-backend.onrender.com` | **Vercel → this project → Settings → Environment Variables** |
 
-### `npm run build`
+- It is **baked in when the portal is built**, so after changing it in Vercel you must **redeploy**.
+- The `.env` file committed in this repo contains only a `localhost` placeholder and is **not** what
+  the live site uses.
+- If the browser shows a **CORS error** on login, this portal's address (`https://gutech-adminportal-new.vercel.app`, exactly, with
+  `https://` and no trailing slash) must be in the backend's `CORS_ORIGINS` variable on Render.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Branches and releases
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| Branch | Meaning |
+|---|---|
+| `qa` | **What Vercel deploys to real users.** |
+| `staging` | Integration branch: work is merged here and tested locally first. |
+| `w1/…`, `fix/…`, `chore/…` | One small change each. |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Release: feature branch → `staging` → test locally → merge `staging` into `qa`. To undo a release,
+revert the merge on `qa` (`git revert -m 1 <merge commit>`) and push. GitHub Actions runs the tests
+and a production build on every push.
 
-### `npm run eject`
+## Local development
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Requirements: Node 18 or newer (CI runs Node 22).
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm ci
+echo "REACT_APP_BACKEND_URL=http://localhost:5001" > .env.development.local   # git-ignored
+PORT=3001 npm start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Run the backend locally against the **staging** database (see the backend README) — never against
+live data. Other commands:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+npm test -- --watchAll=false     # unit tests
+npm run build                    # production build
+```
 
-## Learn More
+## Admin-specific notes
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- **Login only.** There is no sign-up here. Administrator accounts are created by the **super admin**
+  from the profile menu → *Administrators*, or for the very first admin with
+  `scripts/create-admin.js` in the backend repo.
+- The profile menu (top right) holds **Account Approvals**, **Administrators** (super admin only),
+  **Change password** and **Logout**.
+- A missing `REACT_APP_BACKEND_URL` makes the app show a clear message instead of a blank page.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Maintaining this README
 
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Update it whenever the hosting provider or account, the portal's address, the backend address, or
+the release rules change. The "Where everything runs" table is the same in all four repos; keep
+them consistent.
