@@ -89,7 +89,7 @@ const Signup = () => {
         role: 'admin', // Set role as admin
       };
       
-      const response = await axios.post(`${apiUrl}/api/auth/register`, userData);
+      await axios.post(`${apiUrl}/api/auth/register`, userData);
 
       // Reset form after successful registration
       setSignupForm({

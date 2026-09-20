@@ -8,7 +8,6 @@ import ClassSchedule from "./Pages/Class Schedule/Class Schedule.jsx";
 import ImportStudentsPage from "./Pages/ImportStudents/ImportStudentsPage";
 import StudentDirectoryPage from "./Pages/StudentDirectory/StudentDirectoryPage";
 import CoursePage from "./Pages/Course/CoursePage.js";
-import AssignSectionPage from "./Pages/AssignSection/AssignSectionPage.js";
 import CourseRegistrationPage from "./Pages/CourseRegistration/CourseRegistrationPage";
 import StudentMarksPage from "./Pages/StudentMarks/StudentMarksPage";
 import AttendancePage from "./Pages/Attendance/AttendancePage";

@@ -4,7 +4,6 @@ import { toast } from 'react-toastify';
 import './StudentDirectoryPage.css';
 import { FiSearch, FiFilter, FiX } from 'react-icons/fi'; // Import icons
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
-import LoadingSpinner from '../../Components/LoadingSpinner';
 import NoResultsFound from '../../Components/NoResultsFound';
 
 const StudentDirectoryPage = () => {

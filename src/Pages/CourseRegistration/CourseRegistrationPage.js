@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
-import { semesters } from "../../config/academicConfig";
 import "./CourseRegistrationPage.css";
-import { FiSearch } from "react-icons/fi";
 import NoResultsFound from "../../Components/NoResultsFound";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
 
@@ -24,11 +22,9 @@ const CourseRegistrationPage = () => {
   const [success, setSuccess] = useState(null);
   const [failures, setFailures] = useState([]); // [{ student, reason }] from the last registration run
   const [progress, setProgress] = useState(0);
-  const [extractedSections, setExtractedSections] = useState([]);
   const [existingSections, setExistingSections] = useState([]);
   const [loadingSections, setLoadingSections] = useState(false);
   const [teachers, setTeachers] = useState([]);
-  const [selectedTeacher, setSelectedTeacher] = useState("");
   const [newSection, setNewSection] = useState({ section: "", teacherId: "" });
   const [activeAcademicTerm, setActiveAcademicTerm] = useState(null);
 
@@ -177,9 +173,6 @@ const CourseRegistrationPage = () => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // Extract unique sections
-        const sections = [...new Set(jsonData.map((row) => row.section))];
-        setExtractedSections(sections);
 
         setPreview(jsonData);
       } catch (error) {
@@ -330,7 +323,6 @@ const CourseRegistrationPage = () => {
         setFile(null);
         setPreview([]);
         setSelectedCourse(null);
-        setExtractedSections([]);
         setExistingSections([]);
       }
     } catch (error) {
@@ -351,7 +343,7 @@ const CourseRegistrationPage = () => {
       setLoading(true);
       const token = getAuthToken();
 
-      const response = await axios.post(
+      await axios.post(
         `${apiUrl}/api/sections/course/${selectedCourse._id}/section/${newSection.section}`,
         {
           teacherId: newSection.teacherId,

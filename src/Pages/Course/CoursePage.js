@@ -3,9 +3,8 @@ import axios from "axios";
 import "./CoursePage.css";
 import { toast } from "react-hot-toast";
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
-import { getCurrentAcademicYear } from '../../config/academicConfig';
 import TeacherAssignmentPage from '../TeacherAssignment/TeacherAssignmentPage';
-import { FiSearch, FiFilter, FiDownload, FiInfo, FiX, FiEdit2, FiTrash2, FiPlus, FiToggleLeft, FiToggleRight } from "react-icons/fi";
+import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "react-icons/fi";
 import LoadingSpinner from '../../Components/LoadingSpinner';
 import NoResultsFound from '../../Components/NoResultsFound';
 
@@ -43,7 +42,6 @@ const CoursePage = () => {
   const [showCreateHelp, setShowCreateHelp] = useState(true);
   const [showOfferingsHelp, setShowOfferingsHelp] = useState(true);
   const [showManageHelp, setShowManageHelp] = useState(true);
-  const [showAssignmentsHelp, setShowAssignmentsHelp] = useState(true);
   const [selectedOfferingAcademicYear, setSelectedOfferingAcademicYear] = useState("");
   
   // New state for manage courses tab

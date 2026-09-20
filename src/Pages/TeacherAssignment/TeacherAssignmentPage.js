@@ -17,14 +17,6 @@ const getAssignedTeacherIds = (section) => {
   return [];
 };
 
-const formatTeacherNames = (teachersList = []) => {
-  if (!Array.isArray(teachersList) || teachersList.length === 0) {
-    return 'Unassigned';
-  }
-
-  return teachersList.map((teacher) => teacher.name || 'Unknown Teacher').join(', ');
-};
-
 const TeacherPicker = ({ teachers, selectedTeacherIds, onAddTeacher, onRemoveTeacher, emptyLabel }) => {
   const [pendingTeacherId, setPendingTeacherId] = useState('');
 
@@ -222,7 +214,7 @@ const TeacherAssignmentPage = () => {
   const [selectedProgram, setSelectedProgram] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedSection, setSelectedSection] = useState(null);
+  const [selectedSection] = useState(null);
   const [showHelp, setShowHelp] = useState(true);
   const [newSection, setNewSection] = useState({ section: '', teacherIds: [] });
   const [activeAcademicTerm, setActiveAcademicTerm] = useState(null);
@@ -399,15 +391,6 @@ const TeacherAssignmentPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleNewSectionTeacher = (teacherId) => {
-    setNewSection((prev) => ({
-      ...prev,
-      teacherIds: prev.teacherIds.includes(teacherId)
-        ? prev.teacherIds.filter((id) => id !== teacherId)
-        : [...prev.teacherIds, teacherId],
-    }));
   };
 
   const addNewSectionTeacher = (teacherId) => {
