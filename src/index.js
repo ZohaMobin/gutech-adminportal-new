@@ -3,11 +3,14 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { assertEnv } from './config/env';
+import { installAuthInterceptor } from './api/authInterceptor';
 
 const container = document.getElementById('root');
 
 try {
   assertEnv();
+  // Central token header + 401 handling for every axios call in the portal.
+  installAuthInterceptor({ tokenKey: 'adminToken', userKey: 'adminUser' });
   ReactDOM.createRoot(container).render(
     <React.StrictMode>
       <App />
