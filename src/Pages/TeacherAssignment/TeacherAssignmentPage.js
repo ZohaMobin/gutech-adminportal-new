@@ -220,7 +220,7 @@ const TeacherAssignmentPage = () => {
   const [activeAcademicTerm, setActiveAcademicTerm] = useState(null);
 
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
-  const getAuthToken = () => sessionStorage.getItem('adminToken') || sessionStorage.getItem('token');
+  const getAuthToken = () => sessionStorage.getItem('adminToken');
   const requestHeaders = () => ({ 'x-auth-token': getAuthToken(), Authorization: `Bearer ${getAuthToken()}` });
 
   useEffect(() => {

@@ -54,7 +54,7 @@ const StudentMarksPage = () => {
   const [showHelp, setShowHelp] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const getAuthToken = () => sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
+  const getAuthToken = () => sessionStorage.getItem("adminToken");
   const selectedAcademicTerm = academicTerms.find((term) => term._id === filters.academicYearId);
 
   const requestHeaders = () => ({
