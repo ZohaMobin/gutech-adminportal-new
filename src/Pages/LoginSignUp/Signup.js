@@ -139,8 +139,8 @@ const Signup = () => {
       // Use the login function from AuthContext
       login(response.data.user, response.data.token);
       
-      // Navigate to dashboard
-      navigate("/dashboard");
+      // There is no dashboard page; land on the first real one.
+      navigate("/attendance");
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
