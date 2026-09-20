@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/global.css"; // Single global CSS file
 import Signup from "./Pages/LoginSignUp/Signup";
 import ForgotPassword from "./Pages/ForgotPassword/ForgotPassword";
@@ -29,6 +29,8 @@ function App() {
 
             <Route element={<PrivateRoute />}>
               <Route path="/*" element={<MainLayout />}>
+                <Route index element={<Navigate to="/attendance" replace />} />
+                <Route path="dashboard" element={<Navigate to="/attendance" replace />} />
                 <Route path="class-schedule" element={<ClassSchedule />} />
                 <Route path="Course" element={<CoursePage />} />
                 <Route path="course-registration" element={<CourseRegistrationPage />} />
