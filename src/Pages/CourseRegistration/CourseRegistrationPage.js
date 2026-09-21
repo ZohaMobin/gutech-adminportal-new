@@ -218,8 +218,8 @@ const CourseRegistrationPage = () => {
       if (done > 0) {
         // Say what really happened: students who were already enrolled were not enrolled again.
         const plural = (n) => `${n} student${n === 1 ? "" : "s"}`;
-        if (job.registered === 0) setSuccess(job.alreadyRegistered === 1 ? `That student was already enrolled in ${course.name}. Nothing was changed.` : `All ${job.alreadyRegistered} students were already enrolled in ${course.name}. Nothing was changed.`);
-        else if (job.alreadyRegistered > 0) setSuccess(`Enrolled ${plural(job.registered)} in ${course.name}. ${job.alreadyRegistered} ${job.alreadyRegistered === 1 ? "was" : "were"} already enrolled and left unchanged.`);
+        if (job.registered === 0) setSuccess(job.alreadyRegistered === 1 ? `That student is already registered in ${course.name}. Nothing was changed.` : `All ${job.alreadyRegistered} students are already registered in ${course.name}. Nobody was enrolled again.`);
+        else if (job.alreadyRegistered > 0) setSuccess(`Enrolled ${plural(job.registered)} in ${course.name}. ${job.alreadyRegistered} ${job.alreadyRegistered === 1 ? "was" : "were"} already registered in this course and left unchanged.`);
         else setSuccess(`Enrolled ${job.registered} of ${students.length} students in ${course.name}.`);
         setSuccessTone(job.registered === 0 ? "info" : "ok");
       }
