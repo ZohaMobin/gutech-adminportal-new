@@ -2,7 +2,7 @@
 // a short job feels instant, then backs off, and slows right down while the browser tab is hidden (the job keeps running on
 // the server whether or not anyone is watching). The caller fetches the full report once, at the end.
 export const TERMINAL = ["done", "failed", "interrupted"];
-export const DELAYS = [1000, 1500, 2000, 3000, 5000];
+export const DELAYS = [400, 800, 1500, 2500, 4000];
 export const HIDDEN_DELAY = 10000;
 
 export async function pollJob({

@@ -6,6 +6,7 @@ import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import { messageOf } from "../../utils/apiMessage";
 import { pollJob } from "../../utils/pollJob";
 import EligibilityPreview from "./EligibilityPreview";
+import EnrollmentHistory from "./EnrollmentHistory";
 import { parseStudentSheet, ISSUES } from "./parseStudentSheet";
 import "./CourseRegistrationPage.css";
 
@@ -49,7 +50,8 @@ const CourseRegistrationPage = () => {
   const [teachers, setTeachers] = useState(null);             // fetched only when a section is being added
   const [addingSection, setAddingSection] = useState(false);
   const [newSection, setNewSection] = useState({ section: "", teacherId: "" });
-  const [sheet, setSheet] = useState(null);                   // { fileName, parsed }
+  const [sheet, setSheet] = useState(null);                   // { fileName, rowsInFile, parsed }
+  const [historyKey, setHistoryKey] = useState(0);           // bumped after an upload so the history reloads
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -143,7 +145,8 @@ const CourseRegistrationPage = () => {
       try {
         const workbook = XLSX.read(event.target.result, { type: "array" });
         const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
-        setSheet({ fileName: file.name, parsed: parseStudentSheet(rows) });
+        const parsed = parseStudentSheet(rows);
+        setSheet({ fileName: file.name, rowsInFile: parsed.students.length, parsed });
       } catch (err) {
         setSheet(null);
         setError("That file could not be read. Check that it is a normal Excel file, then try again.");
@@ -190,6 +193,8 @@ const CourseRegistrationPage = () => {
       const start = await axios.post(`${API}/api/course-registrations/bulk-enroll`, {
         courseId: course._id, semester: parseInt(semester, 10), academicYear: term._id,
         rows: students.map((s) => ({ rollNumber: s.rollNumber, section: s.section })),
+        // For the enrolment history: which file this was and how many of its rows were left out on the way.
+        fileName: sheet.fileName, rowsInFile: sheet.rowsInFile ?? students.length, leftOut: Math.max(0, (sheet.rowsInFile ?? students.length) - students.length),
       }, { headers: headers() });
 
       // Ask for progress only (a few bytes), gently backing off; the full report is downloaded once, when the job is over.
@@ -219,7 +224,7 @@ const CourseRegistrationPage = () => {
       }
     } catch (err) {
       setError(messageOf(err, "The students could not be enrolled."));
-    } finally { setBusy(false); }
+    } finally { setBusy(false); setHistoryKey((key) => key + 1); }
   };
 
   const clearFilters = () => { setDepartment(""); setProgram(""); setSemester(""); setSelectedCourseId(""); };
@@ -419,6 +424,8 @@ const CourseRegistrationPage = () => {
           </div>
         </Step>
       )}
+
+      <EnrollmentHistory apiUrl={API} headers={headers} refreshKey={historyKey} />
     </div>
   );
 };

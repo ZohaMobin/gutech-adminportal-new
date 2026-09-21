@@ -165,11 +165,25 @@ test("enrolling sends only roll numbers and sections, watches the job, and repor
   await wait(30);
   const [url, body] = axios.post.mock.calls[0];
   expect(url).toContain("/course-registrations/bulk-enroll");
-  expect(body).toEqual({ courseId: "c-CS101", semester: 1, academicYear: "t1", rows: [{ rollNumber: "2023001", section: "A" }, { rollNumber: "2023002", section: "A" }] });
+  expect(body).toEqual({ courseId: "c-CS101", semester: 1, academicYear: "t1", rows: [{ rollNumber: "2023001", section: "A" }, { rollNumber: "2023002", section: "A" }], fileName: "class-list.xlsx", rowsInFile: 2, leftOut: 0 });
   expect(container.querySelector(".enr-banner.ok").textContent).toContain("Enrolled 2 of 2 students in Programming.");
   const asked = axios.get.mock.calls.filter(([u]) => u.includes("/bulk-enroll/"));
   expect(asked.map(([, c]) => c?.params?.view || "full")).toEqual(["progress", "full"]);          // progress while waiting, the full report once
   expect(container.querySelector(".enr-table")).toBeNull();                    // finished: the form resets
+});
+
+test("the upload records its file name and how many rows of the file were left out", async () => {
+  await mount();
+  await chooseCourse();
+  await upload([{ "Roll Number": "1", Section: "A" }, { "Roll Number": "2", Section: "A" }, { "Roll Number": "", Section: "A" }]);
+  await click(button("Leave out the"));
+  state.job = { status: "done", total: 2, processed: 2, registered: 2, alreadyRegistered: 0, rows: [{ rollNumber: "1", status: "registered" }, { rollNumber: "2", status: "registered" }] };
+  axios.post.mockResolvedValueOnce({ data: { jobId: "j1" } });
+  await click(button("Enroll 2 students"));
+  await wait(30);
+  const body = axios.post.mock.calls[0][1];
+  expect([body.fileName, body.rowsInFile, body.leftOut]).toEqual(["class-list.xlsx", 3, 1]);
+  expect(gets("/course-registrations/bulk-enroll?") + axios.get.mock.calls.filter(([u]) => /bulk-enroll$/.test(u)).length).toBe(2);   // history loaded once, and again after the upload
 });
 
 test("students who could not be enrolled are listed with their reasons, and only they stay for a retry", async () => {
