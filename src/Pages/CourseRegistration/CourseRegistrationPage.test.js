@@ -204,6 +204,30 @@ test("the upload records its file name and how many rows of the file were left o
   expect(gets("/course-registrations/bulk-enroll?") + axios.get.mock.calls.filter(([u]) => /bulk-enroll$/.test(u)).length).toBe(2);   // history loaded once, and again after the upload
 });
 
+test("uploading students who are all already enrolled says so, instead of claiming they were enrolled", async () => {
+  await mount();
+  await chooseCourse();
+  await upload([{ "Roll Number": "1", Section: "A" }, { "Roll Number": "2", Section: "A" }]);
+  state.job = { status: "done", total: 2, processed: 2, registered: 0, alreadyRegistered: 2, rows: [{ rollNumber: "1", status: "already-registered" }, { rollNumber: "2", status: "already-registered" }] };
+  axios.post.mockResolvedValueOnce({ data: { jobId: "j1" } });
+  await click(button("Enroll 2 students"));
+  await wait(30);
+  const banner = container.querySelector(".enr-banner.info");
+  expect(banner.textContent).toBe("All 2 students were already enrolled in Programming. Nothing was changed.");
+  expect(container.querySelector(".enr-banner.ok")).toBeNull();
+});
+
+test("a mix of new and already-enrolled students is reported as both", async () => {
+  await mount();
+  await chooseCourse();
+  await upload([{ "Roll Number": "1", Section: "A" }, { "Roll Number": "2", Section: "A" }]);
+  state.job = { status: "done", total: 2, processed: 2, registered: 1, alreadyRegistered: 1, rows: [{ rollNumber: "1", status: "registered" }, { rollNumber: "2", status: "already-registered" }] };
+  axios.post.mockResolvedValueOnce({ data: { jobId: "j1" } });
+  await click(button("Enroll 2 students"));
+  await wait(30);
+  expect(container.querySelector(".enr-banner.ok").textContent).toBe("Enrolled 1 student in Programming. 1 was already enrolled and left unchanged.");
+});
+
 test("students who could not be enrolled are listed with their reasons, and only they stay for a retry", async () => {
   await mount();
   await chooseCourse();

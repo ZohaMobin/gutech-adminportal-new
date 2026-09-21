@@ -58,6 +58,7 @@ const CourseRegistrationPage = () => {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [successTone, setSuccessTone] = useState("ok");         // "info" when nobody new was enrolled
   const [failures, setFailures] = useState([]);
   const started = useRef(false);
   const sectionRequest = useRef(0);
@@ -214,7 +215,14 @@ const CourseRegistrationPage = () => {
       // Rows already enrolled count as done, so uploading a list again is harmless.
       const done = job.registered + job.alreadyRegistered;
       const failed = job.rows.map((row, index) => ({ row, student: students[index] })).filter(({ row }) => row.status === "failed" || row.status === "pending");
-      if (done > 0) setSuccess(`Enrolled ${done} of ${students.length} students in ${course.name}.`);
+      if (done > 0) {
+        // Say what really happened: students who were already enrolled were not enrolled again.
+        const plural = (n) => `${n} student${n === 1 ? "" : "s"}`;
+        if (job.registered === 0) setSuccess(job.alreadyRegistered === 1 ? `That student was already enrolled in ${course.name}. Nothing was changed.` : `All ${job.alreadyRegistered} students were already enrolled in ${course.name}. Nothing was changed.`);
+        else if (job.alreadyRegistered > 0) setSuccess(`Enrolled ${plural(job.registered)} in ${course.name}. ${job.alreadyRegistered} ${job.alreadyRegistered === 1 ? "was" : "were"} already enrolled and left unchanged.`);
+        else setSuccess(`Enrolled ${job.registered} of ${students.length} students in ${course.name}.`);
+        setSuccessTone(job.registered === 0 ? "info" : "ok");
+      }
       if (failed.length > 0) {
         setError(done === 0 ? `No students were enrolled. ${failed.length} failed:` : `${failed.length} student${failed.length === 1 ? "" : "s"} could not be enrolled:`);
         setFailures(failed.map(({ row }) => ({ student: row.rollNumber, reason: row.message || "Not processed" })));
@@ -258,7 +266,7 @@ const CourseRegistrationPage = () => {
           </div>
         </div>
       )}
-      {success && <div className="enr-banner ok" role="status"><CheckIcon /><p>{success}</p></div>}
+      {success && <div className={`enr-banner ${successTone === "info" ? "info" : "ok"}`} role="status"><CheckIcon /><p>{success}</p></div>}
 
       <div className="enr-layout">
       <div className="enr-main">
