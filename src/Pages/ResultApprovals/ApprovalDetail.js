@@ -14,14 +14,14 @@ const upgradeLabel = (generation) => {
 };
 
 // One plain line saying where this stands, in place of a progress bar and a banner.
-const statusLine = (batch) => {
+const statusLine = (batch, amendedCount = 0) => {
   const when = (state) => { const h = (batch.history || []).filter((x) => x.state === state).pop(); return h ? dateTimeText(h.at) : ""; };
   switch (batch.state) {
     case "SUBMITTED": return `Submitted ${when("SUBMITTED")} · waiting for your review`;
     case "UNDER_REVIEW": return "Under review · approve it into the record, or return it to the teacher";
     case "APPROVED": return `Approved ${when("APPROVED")} · on record, not yet visible to students`;
     case "PUBLISHED": return `Published ${when("PUBLISHED")} · students can see their grades on the transcript`;
-    case "AMENDED": return "Published, with an amendment on record";
+    case "AMENDED": return `Published · ${amendedCount} result${amendedCount === 1 ? "" : "s"} amended since, each with a reason on record`;
     default: return "";
   }
 };
@@ -49,6 +49,9 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
   const [reason, setReason] = useState("");
   const [decisions, setDecisions] = useState({});        // registrationId -> { grade, reason }
   const [showReason, setShowReason] = useState(false);
+  const [amending, setAmending] = useState(null);       // the row being corrected
+  const [amendForm, setAmendForm] = useState({ mode: "total", total: "", reason: "" });
+  const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");           // all | upgraded | failing | nomarks
   const [sort, setSort] = useState({ key: "roll", dir: 1 });
@@ -56,7 +59,7 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
   const load = useCallback(async () => {
     try { setLoadError(""); const { data } = await axios.get(base); setBatch(data); } catch (err) { setLoadError(messageOf(err)); }
   }, [base]);
-  useEffect(() => { setBatch(null); setDecisions({}); setSearch(""); setFilter("all"); setShowReason(false); setSort({ key: "roll", dir: 1 }); load(); }, [load]);
+  useEffect(() => { setBatch(null); setDecisions({}); setSearch(""); setFilter("all"); setShowReason(false); setAmending(null); setNotice(""); setSort({ key: "roll", dir: 1 }); load(); }, [load]);
 
   const act = async (work) => {
     setBusy(true); setError("");
@@ -102,6 +105,22 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
   const doApprove = async () => {
     const nonNumeric = pending.map((r) => ({ registrationId: r.registrationId, grade: decisionOf(r).grade, reason: decisionOf(r).reason.trim() }));
     if (await act(() => axios.post(`${base}/approve`, { nonNumeric }))) setModal(null);
+  };
+  const isPublished = state === "PUBLISHED" || state === "AMENDED";
+  const openAmend = (row) => { setError(""); setNotice(""); setAmending(row); setAmendForm({ mode: "total", total: row.total === null || row.total === undefined ? "" : String(row.total), reason: "" }); };
+  const gradeFor = (total) => {
+    const value = Number(total);
+    if (amendForm.mode !== "total") return amendForm.mode;
+    if (amendForm.total === "" || !Number.isFinite(value) || value < 0 || value > 100) return null;
+    return ((sheet?.bands || []).find((b) => value >= b.minPercentage) || {}).grade || null;
+  };
+  const amendTotalOk = amendForm.mode !== "total" || (amendForm.total !== "" && Number.isFinite(Number(amendForm.total)) && Number(amendForm.total) >= 0 && Number(amendForm.total) <= 100);
+  const newGrade = amending ? gradeFor(amendForm.total) : null;
+  const unchanged = amending && newGrade !== null && newGrade === amending.grade && (amendForm.mode !== "total" || Number(amendForm.total) === amending.total);
+  const amendReady = amending && amendTotalOk && amendForm.reason.trim().length >= 5 && !unchanged && !busy;
+  const doAmend = async () => {
+    const body = { registrationId: amending.registrationId, reason: amendForm.reason.trim(), ...(amendForm.mode === "total" ? { finalPercentage: Number(amendForm.total) } : { grade: amendForm.mode }) };
+    if (await act(() => axios.post(`${base}/amend`, body))) { setNotice(`Result amended for ${amending.name}. The transcript now shows ${newGrade}.`); setAmending(null); }
   };
   const doPublish = async () => { if (await act(() => axios.post(`${base}/publish`, {}))) setModal(null); };
 
@@ -155,11 +174,12 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
             )}
           </div>
         </div>
-        <p className="ra-status-line">{statusLine(batch)}</p>
+        <p className="ra-status-line">{statusLine(batch, rows.filter((r) => r.amended).length)}</p>
       </header>
 
       {!workflowOn && <div className="ra-banner info" role="status"><AlertIcon /><p><strong>Results processing isn't switched on yet.</strong> You can look at this result, but returning, approving and publishing will work once a system administrator turns it on.</p></div>}
-      {error && !modal && <div className="ra-error" role="alert">{error}</div>}
+      {notice && <div className="ra-banner ok" role="status"><LockIcon /><p>{notice}</p></div>}
+      {error && !modal && !amending && <div className="ra-error" role="alert">{error}</div>}
       {weightsBad && <div className="ra-banner warn" role="alert"><AlertIcon /><p>The regular weightage is {fmt(batch.readiness.weights.regularWeight)}%, not 100%, so these results cannot be approved. Return them to the teacher to fix it.</p></div>}
       {batch.stale && canDecide && <div className="ra-banner warn" role="alert"><AlertIcon /><p>The marks no longer match what the teacher submitted. Return the section so the grading can be generated again.</p></div>}
 
@@ -209,7 +229,7 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
         {noticeText && <p className={`ra-notice ${decisionsReady ? "" : "needs"}`} role="status"><AlertIcon />{noticeText}</p>}
 
         {rows.length === 0 ? <p className="ra-muted">This section has no students.</p> : shown.length === 0 ? <p className="ra-muted ra-nomatch">No student matches.</p> : (
-          <div className={`ra-table ${sheet.hasUpgrade ? "has-upgrade" : ""}`} role="table" aria-label="Class result sheet" style={{ "--parts": partCount }}>
+          <div className={`ra-table ${sheet.hasUpgrade ? "has-upgrade" : ""} ${isPublished && workflowOn ? "can-amend" : ""}`} role="table" aria-label="Class result sheet" style={{ "--parts": partCount }}>
             <div className="ra-row ra-thead" role="row">
               <span role="columnheader" className="idx">#</span>
               <button type="button" role="columnheader" aria-sort={ariaSort("roll")} className="sortable roll" onClick={() => toggleSort("roll")}>Roll no{arrow("roll")}</button>
@@ -224,10 +244,12 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
               const d = decisionOf(r);
               const failing = isFailing(r);
               return (
-                <div className={`ra-row ${r.upgrade > 0 ? "changed" : ""} ${failing ? "failing" : ""}`} role="row" key={r.registrationId}>
+                <div className={`ra-row ${r.upgrade > 0 ? "changed" : ""} ${failing ? "failing" : ""} ${r.amended ? "amended" : ""}`} role="row" key={r.registrationId}>
                   <span role="cell" className="idx">{i + 1}</span>
                   <span role="cell" className="roll">{r.rollNumber}</span>
-                  <span role="cell" className="name"><strong>{r.name}</strong><small className="roll-inline">{r.rollNumber}</small></span>
+                  <span role="cell" className="name"><strong>{r.name}</strong><small className="roll-inline">{r.rollNumber}</small>
+                    {r.amended && <span className="ra-amended-tag" title={`Was ${r.amended.fromGrade}${r.amended.fromTotal !== null && r.amended.fromTotal !== undefined ? ` (${fmt(r.amended.fromTotal)})` : ""}. ${r.amended.reason}`}>Amended · was {r.amended.fromGrade}{r.amended.fromTotal !== null && r.amended.fromTotal !== undefined ? ` (${fmt(r.amended.fromTotal)})` : ""}</span>}
+                  </span>
                   {r.noMarks ? (
                     <span role="cell" className="ra-nomarks-cell" style={{ gridColumn: `span ${partCount + (sheet.hasUpgrade ? 1 : 0) + 1}` }}>
                       {undecided ? (
@@ -244,6 +266,7 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
                   {sheet.hasUpgrade && !r.noMarks && <span role="cell" className="num" data-label="Upgrade">{r.upgrade > 0 ? <b className="ra-added">+{fmt(r.upgrade)}</b> : <span className="ra-muted">–</span>}</span>}
                   {!r.noMarks && <span role="cell" className="num total" data-label="Total">{fmt(r.total)}</span>}
                   <span role="cell" className="grade" data-label="Grade">
+                    {isPublished && workflowOn && <button type="button" className="ra-amend-btn" onClick={() => openAmend(r)} aria-label={`Amend the result of ${r.name}`}>Amend</button>}
                     <span className={`ra-letter ${failing ? "fail" : ""} ${r.noMarks ? "special" : ""}`}>{r.noMarks ? (undecided ? d.grade : r.grade || "–") : r.grade}</span>
                   </span>
                 </div>
@@ -262,6 +285,42 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
           ))}
         </ol>
       </details>
+
+      {amending && (
+        <div className="ra-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) setAmending(null); }}>
+          <div className="ra-modal ra-amend" role="dialog" aria-modal="true" aria-labelledby="ra-amend-title">
+            <h3 id="ra-amend-title">Amend a published result</h3>
+            <p className="ra-amend-who"><strong>{amending.name}</strong> · {amending.rollNumber}</p>
+            <div className="ra-amend-now"><span>Now</span><strong>{amending.noMarks ? "No total" : `Total ${fmt(amending.total)}`}</strong><b className="ra-letter">{amending.grade}</b></div>
+
+            <fieldset className="ra-amend-modes">
+              <legend>Change it to</legend>
+              <label className={amendForm.mode === "total" ? "is-on" : ""}><input type="radio" name="amend-mode" checked={amendForm.mode === "total"} onChange={() => setAmendForm({ ...amendForm, mode: "total" })} /><span>A corrected total</span></label>
+              <label className={amendForm.mode === "I" ? "is-on" : ""}><input type="radio" name="amend-mode" checked={amendForm.mode === "I"} onChange={() => setAmendForm({ ...amendForm, mode: "I" })} /><span>Incomplete (I)</span></label>
+              <label className={amendForm.mode === "W" ? "is-on" : ""}><input type="radio" name="amend-mode" checked={amendForm.mode === "W"} onChange={() => setAmendForm({ ...amendForm, mode: "W" })} /><span>Withdrawn (W)</span></label>
+            </fieldset>
+
+            {amendForm.mode === "total" && (
+              <label className="ra-field"><span>Corrected total (out of 100)</span>
+                <input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={amendForm.total} onChange={(e) => setAmendForm({ ...amendForm, total: e.target.value })} aria-invalid={!amendTotalOk} />
+              </label>
+            )}
+            {amendForm.mode === "total" && amendForm.total !== "" && !amendTotalOk && <p className="ra-problem" role="alert">The total must be a number from 0 to 100.</p>}
+            {newGrade && !unchanged && <p className="ra-amend-result">The new grade will be <b className="ra-letter up">{newGrade}</b></p>}
+            {unchanged && <p className="ra-problem" role="alert">That is the same as the current result, so there is nothing to change.</p>}
+
+            <label className="ra-field"><span>Why is this being changed? <em>(kept on record)</em></span>
+              <textarea rows={3} maxLength={500} value={amendForm.reason} onChange={(e) => setAmendForm({ ...amendForm, reason: e.target.value })} placeholder="For example: the midterm was added up wrongly" />
+            </label>
+            <p className="ra-amend-note"><LockIcon /> The original result stays on record. The student's transcript shows the new grade straight away.</p>
+            {error && <div className="ra-error" role="alert">{error}</div>}
+            <div className="ra-modal-buttons">
+              <button type="button" className="ra-btn" onClick={() => setAmending(null)} disabled={busy}>Cancel</button>
+              <button type="button" className="ra-btn ra-btn-primary" onClick={doAmend} disabled={!amendReady}>{busy ? "Amending…" : "Amend result"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modal && (
         <div className="ra-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}>

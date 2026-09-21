@@ -36,7 +36,7 @@ const stats = { students: 4, graded: 3, noMarks: 1, average: 56.33, highest: 92,
 const batch = (over = {}) => ({ sectionId: "s1", course: { code: "CS101", name: "Programming" }, sectionName: "A", program: bscs, term: "Fall 2026", teachers: ["Dr. Ada Lovelace"], state: "SUBMITTED", submittedAt: "2026-09-20T10:00:00Z", returnedReason: null, stale: false, ledger: null,
   readiness: { weights: { ready: true, regularWeight: 100 } }, history: [{ state: "SUBMITTED", at: "2026-09-20T10:00:00Z", note: "Submitted for approval" }],
   generation: { scheme: { type: "ADD_MARKS", marks: 2 }, description: "Add 2 marks to every student", reason: "The final was harder than planned", rows: [] },
-  sheet: { columns, passingGradePoints: 1, hasUpgrade: true, rows: sheetRows, stats }, ...over });
+  sheet: { columns, passingGradePoints: 1, bands: [{ grade: "A", minPercentage: 86 }, { grade: "C", minPercentage: 62 }, { grade: "D", minPercentage: 50 }, { grade: "F", minPercentage: 0 }], hasUpgrade: true, rows: sheetRows, stats }, ...over });
 const noUpgradeSheet = () => ({ columns, passingGradePoints: 1, hasUpgrade: false, rows: sheetRows.map((r) => ({ ...r, upgrade: 0, total: r.entered })), stats: { ...stats, upgraded: 0 } });
 
 let container; let root;
@@ -329,4 +329,106 @@ test("a failed load is explained in plain words: no connection, a server fault, 
   expect(await failWith({ request: {} })).toContain("Couldn't reach the server. Check your internet connection and try again.");
   expect(await failWith({ response: { status: 500, data: {} } })).toContain("Something went wrong on our side. Please try again in a moment.");
   expect(await failWith({ response: { status: 401, data: {} } })).toContain("Your session has ended. Please sign in again.");
+});
+
+
+// ---------- amending a published result ----------
+
+const publishedBatch = (over = {}) => batch({ state: "PUBLISHED", history: [{ state: "PUBLISHED", at: "2026-09-21T10:00:00Z", note: "Published to students" }], ...over,
+  sheet: { ...batch().sheet, rows: sheetRows.map((r) => (r.noMarks ? { ...r, grade: "I" } : r)), ...(over.sheet || {}) } });
+const openPublished = async (detail) => { await setup({ list: [item({ state: "PUBLISHED" })], detail }); await click([...container.querySelectorAll(".ra-tab")][2]); await click(button("View")); };
+const dialog = () => container.querySelector(".ra-amend");
+const amendButton = (name) => container.querySelector(`button[aria-label="Amend the result of ${name}"]`);
+
+test("every row of a published section has an Amend button; a section that is not yet published has none", async () => {
+  await openPublished(publishedBatch());
+  expect(container.querySelectorAll(".ra-amend-btn")).toHaveLength(4);
+  await setup();
+  await click(container.querySelector(".ra-card .ra-btn"));
+  expect(container.querySelector(".ra-amend-btn")).toBeNull();
+});
+
+test("the dialog shows the current result, works out the new grade as the total is typed, and needs a reason", async () => {
+  await openPublished(publishedBatch());
+  await click(amendButton("Ayesha Khan"));
+  expect(dialog().textContent).toContain("Ayesha Khan");
+  expect(dialog().querySelector(".ra-amend-now").textContent).toContain("Total 50");
+  expect(button("Amend result").disabled).toBe(true);
+  await type(dialog().querySelector('input[type="number"]'), "64");
+  expect(dialog().querySelector(".ra-amend-result").textContent).toContain("The new grade will be C");
+  expect(button("Amend result").disabled).toBe(true);                       // still no reason
+  await type(dialog().querySelector("textarea"), "The midterm was added up wrongly");
+  expect(button("Amend result").disabled).toBe(false);
+});
+
+test("amending sends the corrected total and the reason, and tells the administrator what the transcript now shows", async () => {
+  await openPublished(publishedBatch());
+  await click(amendButton("Ayesha Khan"));
+  await type(dialog().querySelector('input[type="number"]'), "64");
+  await type(dialog().querySelector("textarea"), "The midterm was added up wrongly");
+  await click(button("Amend result"));
+  const call = posts().find((p) => p.url.endsWith("/amend"));
+  expect(call.body).toEqual({ registrationId: "r1", reason: "The midterm was added up wrongly", finalPercentage: 64 });
+  expect(container.querySelector(".ra-banner.ok").textContent).toContain("Result amended for Ayesha Khan. The transcript now shows C.");
+  expect(dialog()).toBeNull();
+});
+
+test("a student can be changed to Incomplete or Withdrawn instead, with no total", async () => {
+  await openPublished(publishedBatch());
+  await click(amendButton("Bilal Ahmed"));
+  await click(dialog().querySelectorAll('input[name="amend-mode"]')[2]);
+  expect(dialog().querySelector('input[type="number"]')).toBeNull();
+  expect(dialog().querySelector(".ra-amend-result").textContent).toContain("The new grade will be W");
+  await type(dialog().querySelector("textarea"), "The student withdrew before the deadline");
+  await click(button("Amend result"));
+  expect(posts().find((p) => p.url.endsWith("/amend")).body).toEqual({ registrationId: "r2", reason: "The student withdrew before the deadline", grade: "W" });
+});
+
+test("a result that would not change is refused with an explanation, and so is a total outside 0 to 100", async () => {
+  await openPublished(publishedBatch());
+  await click(amendButton("Ayesha Khan"));
+  await type(dialog().querySelector("textarea"), "Checking the result again");
+  expect(dialog().textContent).toContain("That is the same as the current result");
+  expect(button("Amend result").disabled).toBe(true);
+  await type(dialog().querySelector('input[type="number"]'), "150");
+  expect(dialog().textContent).toContain("The total must be a number from 0 to 100.");
+  expect(button("Amend result").disabled).toBe(true);
+});
+
+test("an Incomplete can be resolved with a total", async () => {
+  await openPublished(publishedBatch());
+  await click(amendButton("Sana Butt"));
+  expect(dialog().querySelector(".ra-amend-now").textContent).toContain("No total");
+  await type(dialog().querySelector('input[type="number"]'), "64");
+  await type(dialog().querySelector("textarea"), "Completed the missing exam");
+  await click(button("Amend result"));
+  expect(posts().find((p) => p.url.endsWith("/amend")).body).toEqual({ registrationId: "r3", reason: "Completed the missing exam", finalPercentage: 64 });
+});
+
+test("a corrected row carries an 'amended' tag saying what it was and why, and the status line counts the corrections", async () => {
+  const rows2 = sheetRows.map((r) => (r.registrationId === "r1" ? { ...r, total: 64, grade: "C", gradePoints: 2, amended: { fromGrade: "D", fromTotal: 50, reason: "The midterm was added up wrongly", at: "2026-09-21T11:00:00Z" } } : r.noMarks ? { ...r, grade: "I" } : r));
+  await openPublished(batch({ state: "AMENDED", sheet: { ...batch().sheet, rows: rows2 } }));
+  const tag = container.querySelector(".ra-amended-tag");
+  expect(tag.title).toBe("Was D (50). The midterm was added up wrongly");
+  expect(tag.textContent).toBe("Amended · was D (50)");
+  expect(tag.closest(".name")).not.toBeNull();                                  // in the name cell, so it never crowds the grade column
+  expect(container.querySelectorAll(".ra-amended-tag")).toHaveLength(1);
+  expect(container.querySelector(".ra-row.amended .name strong").textContent).toBe("Ayesha Khan");
+  expect(container.querySelector(".ra-status-line").textContent).toContain("1 result amended since");
+  expect(container.querySelector(".ra-head-actions")).toBeNull();
+});
+
+test("the server's refusal is shown inside the dialog, which stays open", async () => {
+  await openPublished(publishedBatch());
+  await click(amendButton("Ayesha Khan"));
+  await type(dialog().querySelector('input[type="number"]'), "64");
+  await type(dialog().querySelector("textarea"), "The midterm was added up wrongly");
+  axios.post.mockImplementation(() => Promise.reject({ response: { data: { message: "This result was just changed by someone else. Refresh and try again." } } }));
+  await click(button("Amend result"));
+  expect(dialog().querySelector("[role=alert]").textContent).toContain("just changed by someone else");
+});
+
+test("with results processing switched off there is no Amend button", async () => {
+  await openPublished(publishedBatch({ workflowEnabled: false }));
+  expect(container.querySelector(".ra-amend-btn")).toBeNull();
 });
