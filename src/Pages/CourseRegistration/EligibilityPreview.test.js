@@ -122,3 +122,12 @@ test("a new list clears the previous answer", async () => {
   await render({ students: [{ rollNumber: "R-NEW", section: "B" }] });
   expect(container.textContent).not.toContain("R-FAIL");
 });
+
+test("a row that could not be checked says so, with the reason, and is not labelled 'not found'", async () => {
+  axios.post.mockResolvedValue({ data: { courseOfferingId: "o", summary: { total: 1, unavailable: 1 }, results: [{ rollNumber: "R-1", section: "A", verdict: "UNAVAILABLE", message: "No academic policy is configured for this program and date", checks: [] }] } });
+  await render();
+  await click(button("Check eligibility"));
+  expect(container.textContent).toContain("Could not be checked");
+  expect(container.textContent).toContain("No academic policy is configured");
+  expect(container.textContent).not.toContain("Not found");
+});
