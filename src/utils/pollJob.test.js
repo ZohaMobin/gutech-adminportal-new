@@ -11,9 +11,9 @@ test("a job that is already finished is asked about once, with no waiting", asyn
 test("it starts quickly and then backs off, up to a cap", async () => {
   const delays = []; const fetchProgress = jobs(...Array(9).fill("running"), "done");
   await pollJob({ fetchProgress, sleep: async (ms) => { delays.push(ms); } });
-  expect(delays).toEqual([1000, 1500, 2000, 3000, 5000, 5000, 5000, 5000, 5000]);
+  expect(delays).toEqual([400, 800, 1500, 2500, 4000, 4000, 4000, 4000, 4000]);
   expect(delays[0]).toBe(DELAYS[0]);
-  expect(Math.max(...delays)).toBe(5000);
+  expect(Math.max(...delays)).toBe(4000);
 });
 
 test("far fewer requests than a fixed one-second rhythm: a 60-second job takes about a dozen, not sixty", async () => {
