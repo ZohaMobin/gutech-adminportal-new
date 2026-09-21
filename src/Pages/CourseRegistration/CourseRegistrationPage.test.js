@@ -213,7 +213,7 @@ test("uploading students who are all already enrolled says so, instead of claimi
   await click(button("Enroll 2 students"));
   await wait(30);
   const banner = container.querySelector(".enr-banner.info");
-  expect(banner.textContent).toBe("All 2 students were already enrolled in Programming. Nothing was changed.");
+  expect(banner.textContent).toBe("All 2 students are already registered in Programming. Nobody was enrolled again.");
   expect(container.querySelector(".enr-banner.ok")).toBeNull();
 });
 
@@ -225,7 +225,7 @@ test("a mix of new and already-enrolled students is reported as both", async () 
   axios.post.mockResolvedValueOnce({ data: { jobId: "j1" } });
   await click(button("Enroll 2 students"));
   await wait(30);
-  expect(container.querySelector(".enr-banner.ok").textContent).toBe("Enrolled 1 student in Programming. 1 was already enrolled and left unchanged.");
+  expect(container.querySelector(".enr-banner.ok").textContent).toBe("Enrolled 1 student in Programming. 1 was already registered in this course and left unchanged.");
 });
 
 test("students who could not be enrolled are listed with their reasons, and only they stay for a retry", async () => {
