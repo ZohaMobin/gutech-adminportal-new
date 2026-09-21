@@ -31,6 +31,7 @@ const NAV_SECTIONS = [
       { id: 'departments', label: 'Departments', icon: '🏛️' },
       { id: 'programs', label: 'Programs', icon: '🎓' },
       { id: 'academic-years', label: 'Academic Years', icon: '📆' },
+      { id: 'prerequisites', label: 'Prerequisites', icon: '🔗' },
     ],
   },
 ];
