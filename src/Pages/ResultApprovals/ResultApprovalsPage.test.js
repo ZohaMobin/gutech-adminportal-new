@@ -178,6 +178,7 @@ test("the sheet can be downloaded as a spreadsheet file", async () => {
   let text = "";
   global.URL.createObjectURL = jest.fn((blob) => { const reader = new FileReader(); reader.onload = () => { text = reader.result; }; reader.readAsText(blob); return "blob:x"; });
   global.URL.revokeObjectURL = jest.fn();
+  jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});     // jsdom cannot navigate to a download
   await setup();
   await open();
   await click(button("Download CSV"));
@@ -293,4 +294,39 @@ test("the server's refusal is shown in the dialog in plain words", async () => {
 test("opening a section by its link goes straight to the detail", async () => {
   await setup({ start: "section=s1" });
   expect(container.textContent).toContain("CS101 Programming");
+});
+
+// ---------- messages a person can act on ----------
+
+test("when results processing is switched off the administrator is told up front and cannot return, approve or publish", async () => {
+  await setup({ detail: batch({ workflowEnabled: false, sheet: { ...batch().sheet, rows: sheetRows.filter((r) => !r.noMarks) } }) });
+  await open();
+  expect(container.textContent).toContain("Results processing isn't switched on yet.");
+  expect(container.textContent).toContain("system administrator turns it on");
+  expect(container.textContent).not.toMatch(/workflow|flag|resultBatches/i);
+  for (const label of ["Return to teacher", "Start review", "Approve"]) expect(button(label).disabled).toBe(true);
+});
+
+test("with processing switched on there is no such notice", async () => {
+  await setup();
+  await open();
+  expect(container.textContent).not.toContain("isn't switched on yet");
+});
+
+test("a failed load is explained in plain words: no connection, a server fault, or a signed-out session", async () => {
+  let n = 0;
+  const failWith = async (error) => {
+    axios.get.mockImplementation((url) => (url.includes("/section/") ? Promise.reject(error) : Promise.resolve({ data: { items: [item({ sectionId: `s${++n}` })], counts: { SUBMITTED: 1 } } })));
+    axios.post.mockImplementation(() => Promise.resolve({ data: {} }));
+    __setSearch("");
+    await act(async () => { root.render(<ResultApprovalsPage />); });
+    await flush();
+    await click(container.querySelector(".ra-card .ra-btn"));
+    const text = container.querySelector(".ra-error").textContent;
+    act(() => root.unmount()); root = createRoot(container);
+    return text;
+  };
+  expect(await failWith({ request: {} })).toContain("Couldn't reach the server. Check your internet connection and try again.");
+  expect(await failWith({ response: { status: 500, data: {} } })).toContain("Something went wrong on our side. Please try again in a moment.");
+  expect(await failWith({ response: { status: 401, data: {} } })).toContain("Your session has ended. Please sign in again.");
 });

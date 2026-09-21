@@ -117,7 +117,8 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
   const columns = sheet?.columns || [];
   const partCount = columns.length;
   const meta = [batch.program?.name, batch.term, batch.teachers?.length ? batch.teachers.join(", ") : null].filter(Boolean).join(" · ");
-  const blockedApprove = busy || !decisionsReady || weightsBad || batch.stale;
+  const workflowOn = batch.workflowEnabled !== false;
+  const blockedApprove = busy || !workflowOn || !decisionsReady || weightsBad || batch.stale;
   const spread = stats ? stats.distribution.grades.filter((g) => stats.distribution.counts[g] > 0).map((g) => `${g} ${stats.distribution.counts[g]}`).join(" · ") : "";
   const noticeText = canDecide && pending.length > 0
     ? (decisionsReady ? `${pending.length} student${pending.length === 1 ? " has" : "s have"} no marks and will be recorded as chosen below.` : `${pending.length} student${pending.length === 1 ? " has" : "s have"} no marks. Choose how to record each one, with a reason, in the sheet below. This is needed before you can approve.`)
@@ -146,10 +147,10 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
             <span className={`ra-state ${STATE_TONE[state]}`}>{STATE_LABEL[state]}</span>
             {state !== "PUBLISHED" && state !== "AMENDED" && (
               <div className="ra-head-actions">
-                {canDecide && <button type="button" className="ra-btn" onClick={() => { setError(""); setModal("return"); }} disabled={busy}>Return to teacher</button>}
-                {state === "SUBMITTED" && <button type="button" className="ra-btn" onClick={doReview} disabled={busy}>Start review</button>}
+                {canDecide && <button type="button" className="ra-btn" onClick={() => { setError(""); setModal("return"); }} disabled={busy || !workflowOn}>Return to teacher</button>}
+                {state === "SUBMITTED" && <button type="button" className="ra-btn" onClick={doReview} disabled={busy || !workflowOn}>Start review</button>}
                 {canDecide && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("approve"); }} disabled={blockedApprove}>Approve</button>}
-                {state === "APPROVED" && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("publish"); }} disabled={busy}>Publish to students</button>}
+                {state === "APPROVED" && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("publish"); }} disabled={busy || !workflowOn}>Publish to students</button>}
               </div>
             )}
           </div>
@@ -157,6 +158,7 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
         <p className="ra-status-line">{statusLine(batch)}</p>
       </header>
 
+      {!workflowOn && <div className="ra-banner info" role="status"><AlertIcon /><p><strong>Results processing isn't switched on yet.</strong> You can look at this result, but returning, approving and publishing will work once a system administrator turns it on.</p></div>}
       {error && !modal && <div className="ra-error" role="alert">{error}</div>}
       {weightsBad && <div className="ra-banner warn" role="alert"><AlertIcon /><p>The regular weightage is {fmt(batch.readiness.weights.regularWeight)}%, not 100%, so these results cannot be approved. Return them to the teacher to fix it.</p></div>}
       {batch.stale && canDecide && <div className="ra-banner warn" role="alert"><AlertIcon /><p>The marks no longer match what the teacher submitted. Return the section so the grading can be generated again.</p></div>}
