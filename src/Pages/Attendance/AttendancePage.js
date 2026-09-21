@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { Download, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
+import Loading from "../../Components/Loading/Loading";
 import "./AttendancePage.css";
 
 const getAttendanceItems = (payload) => {
@@ -72,6 +73,9 @@ const AttendancePage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
   const [courses, setCourses] = useState([]);
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [programFilter, setProgramFilter] = useState("");
+  const [courseQuery, setCourseQuery] = useState("");
   const [academicTerms, setAcademicTerms] = useState([]);
   const [selectedAcademicTermId, setSelectedAcademicTermId] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -154,12 +158,18 @@ const AttendancePage = () => {
       offerings.forEach((offering) => {
         const course = offering.courseId;
         if (!course?._id) return;
+        // One course can be offered to several programs: keep them all, so it shows under each program's filter.
+        const known = courseMap.get(course._id);
+        const programs = [...(known?.programs || [])];
+        if (offering.program?._id && !programs.some((p) => p._id === offering.program._id)) programs.push({ ...offering.program, semester: offering.semester });
         courseMap.set(course._id, {
           ...course,
-          offeringId: offering._id,
-          program: offering.program,
-          department: offering.department,
-          semester: offering.semester,
+          offeringId: known?.offeringId || offering._id,
+          program: known?.program || offering.program,
+          department: known?.department || offering.department,
+          departmentIds: [...new Set([...(known?.departmentIds || []), offering.department?._id].filter(Boolean))],
+          semester: known?.semester ?? offering.semester,
+          programs,
         });
       });
 
@@ -428,6 +438,7 @@ const AttendancePage = () => {
 
   const handleAcademicTermChange = (termId) => {
     setSelectedAcademicTermId(termId);
+    setDepartmentFilter(""); setProgramFilter(""); setCourseQuery("");
   };
 
   // Handle section selection
@@ -566,6 +577,18 @@ const AttendancePage = () => {
     return `${dateLabel} (S${slotNumber})`;
   };
 
+  // What can be filtered on comes from the term's own offerings, so there is never an empty choice.
+  const departmentOptions = [...new Map(courses.flatMap((c) => (c.department?._id ? [[c.department._id, c.department]] : []))).values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const programOptions = [...new Map(courses
+    .filter((c) => !departmentFilter || (c.departmentIds || []).includes(departmentFilter))
+    .flatMap((c) => (c.programs || []).map((p) => [p._id, p]))).values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const visibleCourses = courses.filter((c) => {
+    if (departmentFilter && !(c.departmentIds || []).includes(departmentFilter)) return false;
+    if (programFilter && !(c.programs || []).some((p) => p._id === programFilter)) return false;
+    const needle = courseQuery.trim().toLowerCase();
+    return !needle || `${c.code} ${c.name}`.toLowerCase().includes(needle);
+  }).sort((a, b) => String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
+
   // Initialize
   useEffect(() => {
     fetchAcademicTerms();
@@ -600,58 +623,64 @@ const AttendancePage = () => {
         </div>
       )}
 
-      <div className="term-selector-card">
-        <div className="term-selector-copy">
-          <span className="term-eyebrow">Academic Term</span>
-          <h2>{getTermDisplayName(selectedAcademicTerm)}</h2>
-          <p>
-            Attendance below is scoped to the selected term. Pick a closed or archived term to view historical records.
-          </p>
-        </div>
-        <div className="term-selector-control">
-          <label htmlFor="attendance-academic-term">View records for</label>
-          <select
-            id="attendance-academic-term"
-            value={selectedAcademicTermId}
-            onChange={(e) => handleAcademicTermChange(e.target.value)}
-            disabled={academicTerms.length === 0}
-          >
+      <section className="att-filters" aria-label="Find a course">
+        <label className="att-f">
+          <span>Academic term</span>
+          <select id="attendance-academic-term" value={selectedAcademicTermId} onChange={(e) => handleAcademicTermChange(e.target.value)} disabled={academicTerms.length === 0}>
             <option value="">Select academic term</option>
             {academicTerms.map((term) => (
-              <option key={term._id} value={term._id}>
-                {getTermDisplayName(term)} - {getTermStatusLabel(term.status)}
-              </option>
+              <option key={term._id} value={term._id}>{getTermDisplayName(term)} · {getTermStatusLabel(term.status)}</option>
             ))}
           </select>
-          {selectedAcademicTerm && (
-            <span className={`term-status-pill ${selectedAcademicTerm.status || "unknown"}`}>
-              {getTermStatusLabel(selectedAcademicTerm.status)}
-            </span>
-          )}
-        </div>
-      </div>
+        </label>
+        <label className="att-f">
+          <span>Department</span>
+          <select value={departmentFilter} onChange={(e) => { setDepartmentFilter(e.target.value); setProgramFilter(""); }} disabled={!selectedAcademicTermId || departmentOptions.length === 0}>
+            <option value="">All departments</option>
+            {departmentOptions.map((d) => <option key={d._id} value={d._id}>{d.name}</option>)}
+          </select>
+        </label>
+        <label className="att-f">
+          <span>Program</span>
+          <select value={programFilter} onChange={(e) => setProgramFilter(e.target.value)} disabled={!selectedAcademicTermId || programOptions.length === 0}>
+            <option value="">All programs</option>
+            {programOptions.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
+          </select>
+        </label>
+        <label className="att-f att-f-search">
+          <span>Search</span>
+          <input type="search" value={courseQuery} onChange={(e) => setCourseQuery(e.target.value)} placeholder="Course code or name" disabled={!selectedAcademicTermId} />
+        </label>
+        {selectedAcademicTerm && <span className={`term-status-pill ${selectedAcademicTerm.status || "unknown"}`}>{getTermStatusLabel(selectedAcademicTerm.status)}</span>}
+      </section>
 
       <div className="attendance-content">
-        {/* Course Selection Sidebar */}
-        <div className="course-sidebar">
-          <h3>Select Course</h3>
+        {/* Course list: filtered, scrollable, with a count */}
+        <div className="att-sidebar">
+          <h3>Courses {courses.length > 0 && <span className="att-count">{visibleCourses.length === courses.length ? courses.length : `${visibleCourses.length} of ${courses.length}`}</span>}</h3>
           {loading && courses.length === 0 ? (
-            <div className="loading-text">Loading courses...</div>
+            <Loading variant="list" rows={6} label="Loading courses" />
           ) : !selectedAcademicTermId ? (
             <div className="empty-text">Select an academic term first</div>
           ) : courses.length === 0 ? (
             <div className="empty-text">No course offerings found for this term</div>
+          ) : visibleCourses.length === 0 ? (
+            <div className="empty-text">No course matches these filters. <button type="button" className="att-clear" onClick={() => { setDepartmentFilter(""); setProgramFilter(""); setCourseQuery(""); }}>Clear filters</button></div>
           ) : (
-            <div className="course-list">
-              {courses.map((course) => (
+            <div className="att-courses">
+              {visibleCourses.map((course) => (
                 <div
                   key={course._id || course.id}
-                  className={`course-item ${selectedCourse?._id === course._id || selectedCourse?.id === course.id ? "active" : ""}`}
+                  className={`att-course ${selectedCourse && (selectedCourse._id || selectedCourse.id) === (course._id || course.id) ? "is-on" : ""}`}
                   onClick={() => handleCourseChange(course)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCourseChange(course); } }}
                 >
-                  <div className="course-info">
-                    <div className="course-name">{course.name}</div>
-                    <div className="course-code">{course.code}</div>
+                  <div className="att-course-info">
+                    <div className="att-course-code">{course.code}</div>
+                    <div className="att-course-name">{course.name}</div>
+                    {course.programs?.length > 0 && <div className="att-course-meta">{course.programs.map((p) => `${p.code || p.name}${p.semester !== undefined ? ` · Sem ${p.semester}` : ""}`).join(", ")}</div>}
                   </div>
                 </div>
               ))}
@@ -671,7 +700,7 @@ const AttendancePage = () => {
               </div>
 
               {loading ? (
-                <div className="loading">Loading attendance data...</div>
+                <Loading variant="table" rows={8} label="Loading attendance" />
               ) : sections.length === 0 ? (
                 <div className="empty-state">
                   <Calendar size={48} />

@@ -586,3 +586,26 @@ tr:hover {
   }
 }
   
+
+/* ---------- second pass: filters, pager, collapsible offering groups ---------- */
+.muted-cell { color: #9aa1ad; font-size: 0.85rem; }
+.courses-pager { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0.25rem 0; font-size: 0.85rem; color: #6b7280; flex-wrap: wrap; }
+.courses-pager div { display: flex; gap: 0.5rem; }
+.courses-pager button { padding: 0.4rem 0.9rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 0.85rem; cursor: pointer; }
+.courses-pager button:disabled { opacity: 0.5; cursor: not-allowed; }
+.offering-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0.75rem 0; padding: 0.7rem 0.8rem; background: #fff; border: 1px solid #e6e8ec; border-radius: 0.75rem; }
+.offering-filters select, .offering-filters input { height: 2.3rem; padding: 0 0.7rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 0.9rem; min-width: 9rem; flex: 1 1 9rem; }
+.offering-filters input { flex: 1.5 1 12rem; }
+.offering-count { margin-left: auto; padding: 0.15rem 0.6rem; border-radius: 999px; background: #eef0f4; color: #4b5563; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+details.offerings-group { margin-bottom: 0.6rem; border: 1px solid #e6e8ec; border-radius: 0.75rem; background: #fff; overflow: hidden; }
+details.offerings-group > summary.group-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.65rem 0.9rem; cursor: pointer; list-style: none; font-size: 0.95rem; font-weight: 600; background: #f8f9fb; margin: 0; }
+details.offerings-group > summary.group-title::-webkit-details-marker { display: none; }
+details.offerings-group > summary.group-title::before { content: "▸"; color: #8b1538; margin-right: 0.5rem; transition: transform 0.15s; }
+details.offerings-group[open] > summary.group-title::before { transform: rotate(90deg); }
+details.offerings-group > summary .group-count { margin-left: auto; font-size: 0.78rem; font-weight: 600; color: #6b7280; }
+.group-scroll { overflow-x: auto; }
+details.offerings-group table { width: 100%; min-width: 640px; table-layout: fixed; }
+details.offerings-group th:nth-child(1) { width: 34%; }
+details.offerings-group th:nth-child(4) { width: 9%; }
+details.offerings-group th:nth-child(6) { width: 9%; }
+details.offerings-group td { overflow-wrap: anywhere; }

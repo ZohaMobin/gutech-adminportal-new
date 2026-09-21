@@ -1,3 +1,4 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./ProgramsPage.css";
@@ -111,7 +112,7 @@ const ProgramsPage = () => {
   };
 
   if (loading) {
-    return <div className="programs-page loading">Loading programs...</div>;
+    return <div className="programs-page"><Loading variant="table" rows={6} label="Loading programs" /></div>;
   }
 
   return (

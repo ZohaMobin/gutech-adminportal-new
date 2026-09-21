@@ -1,3 +1,4 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "../Programs/ProgramsPage.css";
@@ -88,7 +89,7 @@ const AccountApprovalsPage = () => {
       {error && <div className="error-message">{error}</div>}
 
       {loading ? (
-        <p>Loading...</p>
+        <Loading variant="list" rows={3} label="Loading accounts" />
       ) : accounts.length === 0 ? (
         <p>{isRejectedTab ? "No rejected accounts." : "No accounts are waiting for approval."}</p>
       ) : (

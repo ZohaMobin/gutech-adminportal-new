@@ -1,3 +1,4 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./DepartmentsPage.css";
@@ -105,7 +106,7 @@ const DepartmentsPage = () => {
   };
 
   if (loading) {
-    return <div className="departments-page loading">Loading departments...</div>;
+    return <div className="departments-page"><Loading variant="table" rows={6} label="Loading departments" /></div>;
   }
 
   return (

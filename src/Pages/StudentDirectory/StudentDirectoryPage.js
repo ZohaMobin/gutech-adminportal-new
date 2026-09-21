@@ -1,3 +1,4 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -263,10 +264,7 @@ const StudentDirectoryPage = () => {
         </div>
 
         {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading students...</p>
-          </div>
+          <Loading variant="table" rows={8} label="Loading students" />
         ) : (
           <div className="students-table-container">
             {students.length > 0 ? (
