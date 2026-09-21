@@ -1,0 +1,10 @@
+.ld { display: grid; gap: 10px; width: 100%; padding: 4px 0; }
+.ld-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ld-bar { border-radius: 10px; background: linear-gradient(90deg, #f1f5f9 25%, #e8edf3 37%, #f1f5f9 63%); background-size: 400% 100%; animation: ld-shimmer 1.4s ease infinite; }
+.ld-title { height: 28px; width: 40%; }
+.ld-head { height: 34px; }
+.ld-row { height: 40px; border-radius: 8px; }
+.ld-card { height: 64px; }
+.ld-line { height: 16px; width: 60%; }
+@keyframes ld-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@media (prefers-reduced-motion: reduce) { .ld-bar { animation: none; } }
