@@ -131,3 +131,21 @@ test("a row that could not be checked says so, with the reason, and is not label
   expect(container.textContent).toContain("No academic policy is configured");
   expect(container.textContent).not.toContain("Not found");
 });
+
+test("a student in a section that does not exist is never shown as able to enrol, whatever the rules say", async () => {
+  axios.post.mockResolvedValue({ data: { courseOfferingId: "o", summary: { total: 1, eligible: 1 }, results: [{ rollNumber: "R-9", section: "Z", sectionFound: false, verdict: "ELIGIBLE", message: "Eligible.", checks: [] }] } });
+  await render();
+  await click(button("Check eligibility"));
+  const row = container.querySelector("tbody tr");
+  expect(row.textContent).toContain("Section not found");
+  expect(row.textContent).toContain("Create it first");
+  expect(row.textContent).not.toContain("Can enrol");
+  expect(row.textContent).not.toContain("Meets every requirement");
+});
+
+test("a student who meets every requirement is told so in words, not with the bare word 'Eligible.'", async () => {
+  axios.post.mockResolvedValue({ data: answer });
+  await render();
+  await click(button("Check eligibility"));
+  expect(container.textContent).toContain("Meets every requirement.");
+});

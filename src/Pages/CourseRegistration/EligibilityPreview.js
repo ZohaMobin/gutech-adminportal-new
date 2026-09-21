@@ -19,7 +19,19 @@ const RULE_NAMES = {
   CREDIT_LOAD: "Credit load", CAPACITY: "Seats", TIME_CONFLICT: "Timetable",
 };
 const CAN_WAIVE = ["PREREQ", "COREQ", "ATTEMPT_CAP", "CREDIT_LOAD", "TIME_CONFLICT"];
-const STATUS_MARK = { PASS: "✓", FAIL: "✗", PENDING: "…", OVERRIDDEN: "!", SKIPPED: "–" };
+
+
+const Svg = ({ children, size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{children}</svg>
+);
+const ShieldIcon = () => <Svg size={20}><path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6l8-3z" /><path d="M9 12l2 2 4-4" /></Svg>;
+const ChevronIcon = ({ open }) => <Svg size={14}><path d={open ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} /></Svg>;
+const CheckIcon = () => <Svg size={14}><path d="M5 12l5 5 9-10" /></Svg>;
+const CrossIcon = () => <Svg size={14}><path d="M6 6l12 12M18 6L6 18" /></Svg>;
+const ClockIcon = () => <Svg size={14}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>;
+const DashIcon = () => <Svg size={14}><path d="M6 12h12" /></Svg>;
+const FlagIcon = () => <Svg size={14}><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></Svg>;
+const STATUS_ICON = { PASS: CheckIcon, FAIL: CrossIcon, PENDING: ClockIcon, OVERRIDDEN: FlagIcon, SKIPPED: DashIcon };
 
 const EligibilityPreview = ({ apiUrl, courseId, semester, academicYear, students, headers }) => {
   const [data, setData] = useState(null);
@@ -78,9 +90,12 @@ const EligibilityPreview = ({ apiUrl, courseId, semester, academicYear, students
   return (
     <div className="elig-panel">
       <div className="elig-head">
-        <div>
-          <h3>Check eligibility</h3>
-          <p>See who can be enrolled before you register anyone, and why anyone cannot.</p>
+        <div className="elig-title">
+          <span className="elig-icon"><ShieldIcon /></span>
+          <div>
+            <h3>Check eligibility</h3>
+            <p>See who can be enrolled before you register anyone, and why anyone cannot.</p>
+          </div>
         </div>
         <button type="button" className="elig-btn elig-btn-primary" onClick={check} disabled={busy || students.length === 0}>
           {busy && !data ? "Checking…" : data ? "Check again" : "Check eligibility"}
@@ -101,32 +116,46 @@ const EligibilityPreview = ({ apiUrl, courseId, semester, academicYear, students
           </div>
           <div className="elig-table-wrap">
             <table className="elig-table">
-              <thead><tr><th>Roll number</th><th>Section</th><th>Result</th><th>Why</th><th /></tr></thead>
+              <thead><tr><th scope="col">Roll number</th><th scope="col">Section</th><th scope="col">Result</th><th scope="col">Why</th><th scope="col"><span className="elig-sr">Actions</span></th></tr></thead>
               <tbody>
                 {data.results.map((row) => {
-                  const v = VERDICTS[row.verdict] || VERDICTS.NOT_FOUND;
+                  const noSection = row.sectionFound === false;
+                  // A student cannot be placed in a section that does not exist, whatever the rules say.
+                  const v = noSection ? { label: "Section not found", tone: "bad" } : VERDICTS[row.verdict] || VERDICTS.NOT_FOUND;
                   const canGrant = row.verdict === "NEEDS_OVERRIDE" && row.checks.some((c) => c.status === "FAIL" && CAN_WAIVE.includes(c.rule));
+                  const isOpen = open === row.rollNumber;
+                  const plain = !noSection && row.verdict === "ELIGIBLE" && row.message === "Eligible.";
                   return (
                     <React.Fragment key={`${row.rollNumber}-${row.section}`}>
-                      <tr>
-                        <td>{row.rollNumber}</td>
-                        <td>{row.section || "—"}{row.sectionFound === false && <span className="elig-hint"> (no such section)</span>}</td>
-                        <td><span className={`elig-chip elig-${v.tone}`}>{v.label}</span></td>
-                        <td className="elig-why">{row.message}</td>
+                      <tr className={isOpen || granting === row.rollNumber ? "elig-row elig-row-open" : "elig-row"}>
+                        <td data-label="Roll number" className="elig-roll">{row.rollNumber}</td>
+                        <td data-label="Section" className="elig-section">{row.section || "—"}</td>
+                        <td data-label="Result"><span className={`elig-chip elig-${v.tone}`}>{v.label}</span></td>
+                        <td data-label="Why" className="elig-why">
+                          {plain ? <span className="elig-muted">Meets every requirement.</span> : noSection ? <span className="elig-muted">The rules are met.</span> : row.message}
+                          {row.sectionFound === false && <span className="elig-warning"><FlagIcon /> Section “{row.section}” was not found for this course. Create it first, or correct the section in the file.</span>}
+                        </td>
                         <td className="elig-actions">
-                          {row.checks.length > 0 && <button type="button" className="elig-link" onClick={() => setOpen(open === row.rollNumber ? null : row.rollNumber)}>{open === row.rollNumber ? "Hide checks" : "All checks"}</button>}
-                          {canGrant && <button type="button" className="elig-btn" onClick={() => { setGranting(row.rollNumber); setReason(""); setGrantError(""); }}>Grant exception…</button>}
+                          {canGrant && <button type="button" className="elig-btn elig-btn-outline" onClick={() => { setGranting(row.rollNumber); setReason(""); setGrantError(""); }}>Grant exception…</button>}
+                          {row.checks.length > 0 && (
+                            <button type="button" className="elig-link" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : row.rollNumber)}>
+                              {isOpen ? "Hide checks" : "All checks"} <ChevronIcon open={isOpen} />
+                            </button>
+                          )}
                         </td>
                       </tr>
-                      {open === row.rollNumber && (
+                      {isOpen && (
                         <tr className="elig-detail-row"><td colSpan={5}>
                           <ul className="elig-checks">
-                            {row.checks.map((c) => (
-                              <li key={c.rule} className={`elig-check elig-check-${c.status.toLowerCase()}`}>
-                                <span className="elig-mark" aria-hidden="true">{STATUS_MARK[c.status]}</span>
-                                <strong>{RULE_NAMES[c.rule] || c.rule}:</strong> {c.message}
-                              </li>
-                            ))}
+                            {row.checks.map((c) => {
+                              const Icon = STATUS_ICON[c.status] || DashIcon;
+                              return (
+                                <li key={c.rule} className={`elig-check elig-check-${c.status.toLowerCase()}`}>
+                                  <span className="elig-mark"><Icon /></span>
+                                  <span><strong>{RULE_NAMES[c.rule] || c.rule}:</strong> {c.message}</span>
+                                </li>
+                              );
+                            })}
                           </ul>
                         </td></tr>
                       )}

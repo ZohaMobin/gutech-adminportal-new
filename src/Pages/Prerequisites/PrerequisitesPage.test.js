@@ -105,3 +105,24 @@ test("with no curriculum versions it says what to do instead of showing an empty
   await act(async () => { root.render(<PrerequisitesPage />); });
   expect(container.textContent).toContain("No curriculum versions exist yet");
 });
+
+test("the 'Needs attention' filter shows only the courses that still have nothing entered, and says how many", async () => {
+  await setup();
+  const rows = () => [...container.querySelectorAll("tbody tr.pre-row")].map((r) => r.textContent);
+  expect(rows()).toHaveLength(3);
+  await click([...container.querySelectorAll(".pre-filter")].find((b) => b.textContent.startsWith("Needs attention")));
+  expect(rows()).toHaveLength(1);
+  expect(rows()[0]).toContain("CS301");
+  expect(container.textContent).toContain("Needs attention 1");
+});
+
+test("when nothing needs attention the filter says so instead of showing an empty table", async () => {
+  await setup(version({ completion: { declared: 3, total: 3, percent: 100 }, courses: version().courses.map((c) => ({ ...c, prerequisitesDeclared: true })) }));
+  await click([...container.querySelectorAll(".pre-filter")].find((b) => b.textContent.startsWith("Needs attention")));
+  expect(container.textContent).toContain("Every course has its prerequisites entered.");
+});
+
+test("the publish button explains why it is disabled", async () => {
+  await setup();
+  expect(container.textContent).toContain("Enter prerequisites for the 1 remaining course to publish this version.");
+});
