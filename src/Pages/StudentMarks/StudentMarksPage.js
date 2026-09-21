@@ -1,3 +1,4 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
@@ -518,10 +519,7 @@ const StudentMarksPage = () => {
 
         <div className="table-container">
           {loading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <p>Loading marks data...</p>
-            </div>
+            <Loading variant="table" rows={8} label="Loading marks" />
           ) : !filtersComplete ? (
             <div className="no-data-container">
               <p>Select all filters to view the section gradebook.</p>
