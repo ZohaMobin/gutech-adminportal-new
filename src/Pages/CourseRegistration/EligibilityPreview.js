@@ -11,6 +11,7 @@ const VERDICTS = {
   BLOCKED: { label: "Cannot enrol", tone: "bad" },
   PENDING_RESULTS: { label: "Waiting for results", tone: "wait" },
   NOT_FOUND: { label: "Not found", tone: "bad" },
+  UNAVAILABLE: { label: "Could not be checked", tone: "wait" },
 };
 const RULE_NAMES = {
   OFFERING_VALID: "Course is open to this student", WINDOW_OPEN: "Registration window", HOLDS_CLEAR: "No holds", NOT_DUPLICATE: "Not already registered",
@@ -94,7 +95,7 @@ const EligibilityPreview = ({ apiUrl, courseId, semester, academicYear, students
       {summary && (
         <>
           <div className="elig-summary">
-            {Object.entries({ eligible: "ELIGIBLE", needsOverride: "NEEDS_OVERRIDE", blocked: "BLOCKED", pendingResults: "PENDING_RESULTS", notFound: "NOT_FOUND" })
+            {Object.entries({ eligible: "ELIGIBLE", needsOverride: "NEEDS_OVERRIDE", blocked: "BLOCKED", pendingResults: "PENDING_RESULTS", notFound: "NOT_FOUND", unavailable: "UNAVAILABLE" })
               .filter(([key]) => summary[key] > 0)
               .map(([key, verdict]) => <span key={key} className={`elig-chip elig-${VERDICTS[verdict].tone}`}>{summary[key]} {VERDICTS[verdict].label.toLowerCase()}</span>)}
           </div>
