@@ -1,237 +1,265 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { BackIcon, CheckIcon, LockIcon, AlertIcon, fmt, dateTimeText, STATE_LABEL, STATE_TONE, messageOf } from "./shared";
+import { BackIcon, LockIcon, AlertIcon, Svg, fmt, dateTimeText, STATE_LABEL, STATE_TONE, messageOf } from "./shared";
 
 const API = process.env.REACT_APP_BACKEND_URL;
-const STEPS = ["Submitted", "Under review", "Approved", "Published"];
-const STEP_OF = { SUBMITTED: 0, UNDER_REVIEW: 1, APPROVED: 2, PUBLISHED: 3, AMENDED: 3 };
-const NEXT_INFO = {
-  SUBMITTED: "The teacher has submitted these results. Start a review, or approve them directly if they look right.",
-  UNDER_REVIEW: "You are reviewing these results. Approve them into the record, or return them to the teacher with a reason.",
-  APPROVED: "Approved and on record. Students cannot see anything until you publish.",
-  PUBLISHED: "Published. Students can see their grades on their transcript.",
-  AMENDED: "Published, with an amendment on record.",
-};
 const SPECIAL = { I: "Incomplete", W: "Withdrawn" };
 
-const Tile = ({ label, before, after, hint }) => (
-  <div className="ra-tile">
-    <span className="ra-tile-label">{label}</span>
-    <strong>{after}</strong>
-    {before !== undefined && before !== after && <span className="ra-tile-was">was {before}</span>}
-    {hint && <span className="ra-tile-hint">{hint}</span>}
-  </div>
-);
-
-const Distribution = ({ distribution }) => {
-  if (!distribution) return null;
-  const { grades, before, after } = distribution;
-  const peak = Math.max(1, ...grades.map((g) => Math.max(before[g] || 0, after[g] || 0)));
-  return (
-    <div className="ra-dist" role="group" aria-label="Students at each grade, as entered and after grading">
-      <div className="ra-dist-legend"><span><i className="before" />As entered</span><span><i className="after" />After grading</span></div>
-      {grades.map((g) => (
-        <div className="ra-dist-row" key={g}>
-          <b>{g}</b>
-          <div><span className="bar before" style={{ width: `${((before[g] || 0) / peak) * 100}%` }} /><span className="bar after" style={{ width: `${((after[g] || 0) / peak) * 100}%` }} /></div>
-          <em>{before[g] || 0} → {after[g] || 0}</em>
-        </div>
-      ))}
-    </div>
-  );
+const upgradeLabel = (generation) => {
+  const scheme = generation?.scheme;
+  if (scheme?.type === "ADD_MARKS") return `+${fmt(scheme.marks)} marks`;
+  if (scheme?.type === "TARGET_AVERAGE") return `to average ${fmt(scheme.target)}`;
+  if (scheme?.type === "MULTIPLY") return `× ${fmt(scheme.factor)}`;
+  return "applied";
 };
 
-const ApprovalDetail = ({ sectionId, onBack, onChanged }) => {
+// One plain line saying where this stands, in place of a progress bar and a banner.
+const statusLine = (batch) => {
+  const when = (state) => { const h = (batch.history || []).filter((x) => x.state === state).pop(); return h ? dateTimeText(h.at) : ""; };
+  switch (batch.state) {
+    case "SUBMITTED": return `Submitted ${when("SUBMITTED")} · waiting for your review`;
+    case "UNDER_REVIEW": return "Under review · approve it into the record, or return it to the teacher";
+    case "APPROVED": return `Approved ${when("APPROVED")} · on record, not yet visible to students`;
+    case "PUBLISHED": return `Published ${when("PUBLISHED")} · students can see their grades on the transcript`;
+    case "AMENDED": return "Published, with an amendment on record";
+    default: return "";
+  }
+};
+
+const csvCell = (value) => { const text = value === null || value === undefined ? "" : String(value); return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text; };
+const downloadCsv = (batch, rows) => {
+  const { columns, hasUpgrade } = batch.sheet;
+  const head = ["Roll no", "Name", ...columns.map((c) => `${c.label}${c.weight ? ` (/${c.weight})` : ""}`), "Entered total", ...(hasUpgrade ? ["Upgrade"] : []), "Total", "Grade"];
+  const lines = [head, ...rows.map((r) => [r.rollNumber, r.name, ...columns.map((c) => r.parts[c.key]), r.entered, ...(hasUpgrade ? [r.upgrade] : []), r.total, r.grade])];
+  const blob = new Blob([lines.map((l) => l.map(csvCell).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${batch.course?.code || "results"}-${batch.sectionName || "section"}-results.csv`;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+};
+
+const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) => {
   const base = `${API}/api/result-batches/section/${sectionId}`;
   const [batch, setBatch] = useState(null);
-  const [letters, setLetters] = useState(new Map());     // registrationId -> { before, after } (or the recorded letter)
   const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [modal, setModal] = useState(null);              // return | approve | publish
   const [reason, setReason] = useState("");
   const [decisions, setDecisions] = useState({});        // registrationId -> { grade, reason }
+  const [showReason, setShowReason] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");           // all | upgraded | failing | nomarks
+  const [sort, setSort] = useState({ key: "roll", dir: 1 });
 
   const load = useCallback(async () => {
-    try {
-      setLoadError("");
-      const { data } = await axios.get(base);
-      setBatch(data);
-      if (data.ledger) {
-        setLetters(new Map(data.ledger.map((l) => [String(l.registrationId), { recorded: l.letterGrade }])));
-      } else if (data.generation) {
-        try {
-          const preview = await axios.post(`${base}/preview`, { scheme: data.generation.scheme });
-          setLetters(new Map(preview.data.rows.map((r) => [String(r.registrationId), { before: r.rawGrade?.grade, after: r.finalGrade?.grade }])));
-        } catch { setLetters(new Map()); }
-      }
-    } catch (err) {
-      setLoadError(messageOf(err));
-    }
+    try { setLoadError(""); const { data } = await axios.get(base); setBatch(data); } catch (err) { setLoadError(messageOf(err)); }
   }, [base]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { setBatch(null); setDecisions({}); setSearch(""); setFilter("all"); setShowReason(false); setSort({ key: "roll", dir: 1 }); load(); }, [load]);
 
   const act = async (work) => {
     setBusy(true); setError("");
     try { await work(); await load(); onChanged?.(); return true; } catch (err) { setError(messageOf(err)); return false; } finally { setBusy(false); }
   };
 
-  const rows = batch?.generation?.rows || [];
-  const noMarks = useMemo(() => rows.filter((r) => r.raw === null), [rows]);
-  const decisionOf = (r) => decisions[r.registrationId] || { grade: "I", reason: "" };
-  const decisionsReady = noMarks.every((r) => decisionOf(r).reason.trim().length >= 5);
-  const summary = batch?.generation?.summary;
+  const sheet = batch?.sheet;
+  const rows = useMemo(() => sheet?.rows || [], [sheet]);
   const state = batch?.state;
   const canDecide = state === "SUBMITTED" || state === "UNDER_REVIEW";
+  const pending = useMemo(() => rows.filter((r) => r.noMarks && !["I", "W"].includes(r.grade)), [rows]);   // no marks, not yet recorded
+  const decisionOf = (r) => decisions[r.registrationId] || { grade: "I", reason: "" };
+  const decisionsReady = !canDecide || pending.every((r) => decisionOf(r).reason.trim().length >= 5);
+  const passing = sheet?.passingGradePoints ?? 1;
+  const isFailing = (r) => !r.noMarks && r.gradePoints !== null && r.gradePoints < passing;
+
+  const counts = useMemo(() => ({
+    all: rows.length,
+    upgraded: rows.filter((r) => r.upgrade > 0).length,
+    failing: rows.filter((r) => !r.noMarks && r.gradePoints !== null && r.gradePoints < passing).length,
+    nomarks: rows.filter((r) => r.noMarks).length,
+  }), [rows, passing]);
+
+  const shown = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    const keep = rows.filter((r) => {
+      if (filter === "upgraded" && !(r.upgrade > 0)) return false;
+      if (filter === "failing" && !(!r.noMarks && r.gradePoints !== null && r.gradePoints < passing)) return false;
+      if (filter === "nomarks" && !r.noMarks) return false;
+      return !needle || `${r.name} ${r.rollNumber}`.toLowerCase().includes(needle);
+    });
+    const by = { roll: (a, b) => String(a.rollNumber).localeCompare(String(b.rollNumber), undefined, { numeric: true }), name: (a, b) => String(a.name).localeCompare(String(b.name)), total: (a, b) => (a.total ?? -1) - (b.total ?? -1) }[sort.key];
+    return [...keep].sort((a, b) => by(a, b) * sort.dir);
+  }, [rows, search, filter, sort, passing]);
+
+  const toggleSort = (key) => setSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: key === "total" ? -1 : 1 }));
+  const ariaSort = (key) => (sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none");
+  const arrow = (key) => (sort.key === key ? (sort.dir === 1 ? " ↑" : " ↓") : "");
 
   const closeModal = () => { if (!busy) { setModal(null); setReason(""); setError(""); } };
   const doReview = () => act(() => axios.post(`${base}/review`, {}));
   const doReturn = async () => { if (await act(() => axios.post(`${base}/return`, { reason: reason.trim() }))) { setModal(null); setReason(""); } };
   const doApprove = async () => {
-    const nonNumeric = noMarks.map((r) => ({ registrationId: r.registrationId, grade: decisionOf(r).grade, reason: decisionOf(r).reason.trim() }));
+    const nonNumeric = pending.map((r) => ({ registrationId: r.registrationId, grade: decisionOf(r).grade, reason: decisionOf(r).reason.trim() }));
     if (await act(() => axios.post(`${base}/approve`, { nonNumeric }))) setModal(null);
   };
   const doPublish = async () => { if (await act(() => axios.post(`${base}/publish`, {}))) setModal(null); };
 
+  const position = queue.indexOf(sectionId);
+  const prevId = position > 0 ? queue[position - 1] : null;
+  const nextId = position >= 0 && position < queue.length - 1 ? queue[position + 1] : null;
+
   if (loadError) return <div className="ra-page"><button type="button" className="ra-back" onClick={onBack}><BackIcon /> All approvals</button><div className="ra-error" role="alert">{loadError} <button type="button" className="ra-link" onClick={load}>Try again</button></div></div>;
   if (!batch) return <div className="ra-page"><div className="ra-skeletons" aria-busy="true"><div className="ra-skel" /><div className="ra-skel" /><div className="ra-skel" /></div></div>;
 
-  const at = STEP_OF[state] ?? 0;
   const weightsBad = batch.readiness && !batch.readiness.weights.ready;
+  const stats = sheet?.stats;
+  const columns = sheet?.columns || [];
+  const partCount = columns.length;
+  const meta = [batch.program?.name, batch.term, batch.teachers?.length ? batch.teachers.join(", ") : null].filter(Boolean).join(" · ");
+  const blockedApprove = busy || !decisionsReady || weightsBad || batch.stale;
+  const spread = stats ? stats.distribution.grades.filter((g) => stats.distribution.counts[g] > 0).map((g) => `${g} ${stats.distribution.counts[g]}`).join(" · ") : "";
+  const noticeText = canDecide && pending.length > 0
+    ? (decisionsReady ? `${pending.length} student${pending.length === 1 ? " has" : "s have"} no marks and will be recorded as chosen below.` : `${pending.length} student${pending.length === 1 ? " has" : "s have"} no marks. Choose how to record each one, with a reason, in the sheet below. This is needed before you can approve.`)
+    : null;
 
   return (
     <div className="ra-page ra-detail">
-      <button type="button" className="ra-back" onClick={onBack}><BackIcon /> All approvals</button>
+      <div className="ra-detail-top">
+        <button type="button" className="ra-back" onClick={onBack}><BackIcon /> All approvals</button>
+        {queue.length > 1 && position >= 0 && (
+          <div className="ra-pager" aria-label="Move between sections in this list">
+            <button type="button" className="ra-btn ra-btn-sm" onClick={() => onOpen(prevId)} disabled={!prevId || busy}>‹ Previous</button>
+            <span>{position + 1} of {queue.length}</span>
+            <button type="button" className="ra-btn ra-btn-sm" onClick={() => onOpen(nextId)} disabled={!nextId || busy}>Next ›</button>
+          </div>
+        )}
+      </div>
 
-      <header className="ra-detail-head">
-        <div>
-          <p className="ra-eyebrow">Result approval</p>
-          <h1>{batch.course?.code ? `${batch.course.code} ${batch.course.name}` : "Section results"}{batch.sectionName ? <span> Section {batch.sectionName}</span> : null}</h1>
-          <p className="ra-sub">{batch.generation?.description || "As entered (no upgrade)"}{batch.submittedAt ? ` · submitted ${dateTimeText(batch.submittedAt)}` : ""}</p>
+      <header className="ra-bar">
+        <div className="ra-bar-main">
+          <div className="ra-bar-title">
+            <h1>{batch.course?.code ? `${batch.course.code} ${batch.course.name}` : "Section results"}{batch.sectionName ? <span> Section {batch.sectionName}</span> : null}</h1>
+            {meta && <p className="ra-sub">{meta}</p>}
+          </div>
+          <div className="ra-bar-side">
+            <span className={`ra-state ${STATE_TONE[state]}`}>{STATE_LABEL[state]}</span>
+            {state !== "PUBLISHED" && state !== "AMENDED" && (
+              <div className="ra-head-actions">
+                {canDecide && <button type="button" className="ra-btn" onClick={() => { setError(""); setModal("return"); }} disabled={busy}>Return to teacher</button>}
+                {state === "SUBMITTED" && <button type="button" className="ra-btn" onClick={doReview} disabled={busy}>Start review</button>}
+                {canDecide && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("approve"); }} disabled={blockedApprove}>Approve</button>}
+                {state === "APPROVED" && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("publish"); }} disabled={busy}>Publish to students</button>}
+              </div>
+            )}
+          </div>
         </div>
-        <span className={`ra-state ${STATE_TONE[state]}`}>{STATE_LABEL[state]}</span>
+        <p className="ra-status-line">{statusLine(batch)}</p>
       </header>
 
-      <ol className="ra-steps" aria-label="Progress of these results">
-        {STEPS.map((label, i) => (
-          <li key={label} className={`${i < at ? "done" : ""} ${i === at ? "current" : ""}`} aria-current={i === at ? "step" : undefined}>
-            <span className="ra-step-dot">{i < at || (i === at && at === 3) ? <CheckIcon size={12} /> : i + 1}</span><span className="ra-step-label">{label}</span>
-          </li>
-        ))}
-      </ol>
-
-      <div className={`ra-banner ${state === "PUBLISHED" || state === "AMENDED" ? "ok" : "info"}`} role="status">
-        {state === "APPROVED" || state === "PUBLISHED" ? <LockIcon /> : <AlertIcon />}<p>{NEXT_INFO[state]}</p>
-      </div>
+      {error && !modal && <div className="ra-error" role="alert">{error}</div>}
       {weightsBad && <div className="ra-banner warn" role="alert"><AlertIcon /><p>The regular weightage is {fmt(batch.readiness.weights.regularWeight)}%, not 100%, so these results cannot be approved. Return them to the teacher to fix it.</p></div>}
       {batch.stale && canDecide && <div className="ra-banner warn" role="alert"><AlertIcon /><p>The marks no longer match what the teacher submitted. Return the section so the grading can be generated again.</p></div>}
 
-      <div className="ra-grid">
-        <section className="ra-panel">
-          <h2>What the teacher chose</h2>
-          <p className="ra-choice">{batch.generation?.description || "As entered (no upgrade)"}</p>
-          {batch.generation?.reason
-            ? <blockquote className="ra-reason"><span>Reason given</span>{batch.generation.reason}</blockquote>
-            : <p className="ra-muted">No upgrade, so no reason was needed.</p>}
-          <p className="ra-private"><LockIcon /> Students never see upgrades. After publication they see their grades on the transcript only.</p>
-        </section>
-
-        <section className="ra-panel">
-          <h2>Effect on the class</h2>
-          {summary ? (
-            <>
-              <div className="ra-tiles">
-                <Tile label="Class average" before={fmt(summary.classAverageBefore)} after={fmt(summary.classAverageAfter)} />
-                <Tile label="Passing" before={summary.passingBefore} after={summary.passingAfter} hint={`of ${summary.gradedCount} with marks`} />
-                <Tile label="Moved up a grade" after={summary.studentsMovedUp} hint={`${summary.studentsUpgraded} received marks`} />
-                <Tile label="Held at 100" after={summary.studentsAtCeiling} hint="nobody above 100" />
-              </div>
-              <Distribution distribution={summary.distribution} />
-            </>
-          ) : <p className="ra-muted">No summary was saved.</p>}
-        </section>
-      </div>
-
-      {canDecide && noMarks.length > 0 && (
-        <section className="ra-panel ra-decisions">
-          <h2><AlertIcon /> {noMarks.length} student{noMarks.length === 1 ? " has" : "s have"} no marks at all</h2>
-          <p className="ra-muted">Marks cannot give these students a grade. Decide what goes on the record, and say why. This is required before you can approve.</p>
-          <ul>
-            {noMarks.map((r) => {
-              const d = decisionOf(r);
-              return (
-                <li key={r.registrationId}>
-                  <div className="ra-who"><strong>{r.name}</strong><small>{r.rollNumber}</small></div>
-                  <label><span>Record as</span>
-                    <select value={d.grade} onChange={(e) => setDecisions({ ...decisions, [r.registrationId]: { ...d, grade: e.target.value } })}>
-                      {Object.entries(SPECIAL).map(([k, v]) => <option key={k} value={k}>{v} ({k})</option>)}
-                    </select>
-                  </label>
-                  <label className="ra-grow"><span>Reason <em>(kept on record)</em></span>
-                    <input value={d.reason} maxLength={500} onChange={(e) => setDecisions({ ...decisions, [r.registrationId]: { ...d, reason: e.target.value } })} placeholder="For example: absent all term, medical leave on file" />
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
+      {stats && (
+        <section className="ra-panel ra-strip" aria-label="Overall result of this section">
+          <div className="ra-strip-row">
+            <div className="ra-strip-stat"><span>Students</span><strong>{stats.students}</strong></div>
+            <div className="ra-strip-stat"><span>Average</span><strong>{fmt(stats.average)}</strong></div>
+            <div className="ra-strip-stat"><span>Highest</span><strong>{fmt(stats.highest)}</strong></div>
+            <div className="ra-strip-stat"><span>Lowest</span><strong>{fmt(stats.lowest)}</strong></div>
+            <div className="ra-strip-stat"><span>Pass rate</span><strong>{stats.passRate === null ? "–" : `${stats.passRate}%`}</strong></div>
+            <div className="ra-strip-upgrade">
+              {sheet.hasUpgrade
+                ? <button type="button" className="ra-upgrade-chip" onClick={() => setShowReason((v) => !v)} aria-expanded={showReason}>Upgrade {upgradeLabel(batch.generation)} <i aria-hidden="true">{showReason ? "▴" : "▾"}</i></button>
+                : <span className="ra-muted">No upgrade</span>}
+            </div>
+          </div>
+          {spread && <p className="ra-spreadline" aria-label="Number of students at each grade">{spread}</p>}
+          {showReason && sheet.hasUpgrade && (
+            <div className="ra-reason-box">
+              <p><b>{batch.generation?.description}</b> · {stats.upgraded} of {stats.students} students received marks.</p>
+              {batch.generation?.reason && <blockquote className="ra-reason"><span>Reason given by the teacher</span>{batch.generation.reason}</blockquote>}
+              <p className="ra-private"><LockIcon /> Students never see upgrades, only their final grade on the transcript.</p>
+            </div>
+          )}
         </section>
       )}
 
-      <section className="ra-panel">
-        <h2>Students <span className="ra-count">{rows.length}</span></h2>
-        {rows.length === 0 ? <p className="ra-muted">No students.</p> : (
-          <div className="ra-table" role="table" aria-label="Every student's marks before and after grading">
-            <div className="ra-row ra-thead" role="row"><span role="columnheader">Student</span><span role="columnheader" className="num">Entered</span><span role="columnheader" className="num">Added</span><span role="columnheader" className="num">Final</span><span role="columnheader" className="grade">Grade</span></div>
-            {rows.map((r) => {
-              const letter = letters.get(String(r.registrationId)) || {};
-              const none = r.raw === null;
-              const moved = letter.before && letter.after && letter.before !== letter.after;
-              const decided = none && !letter.recorded ? decisionOf(r).grade : null;
+      <section className="ra-panel ra-sheet-panel">
+        <div className="ra-sheet-head">
+          <h2>Result sheet <span className="ra-count">{rows.length}</span></h2>
+          <div className="ra-sheet-tools">
+            <label className="ra-search">
+              <Svg size={16}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></Svg>
+              <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find a student" aria-label="Find a student by name or roll number" />
+            </label>
+            <button type="button" className="ra-btn ra-btn-sm" onClick={() => downloadCsv(batch, shown)} disabled={!rows.length}>Download CSV</button>
+          </div>
+        </div>
+        {(counts.upgraded > 0 || counts.failing > 0 || counts.nomarks > 0) && (
+          <div className="ra-chips" role="group" aria-label="Filter students">
+            {[["all", "All"], ["upgraded", "Upgraded"], ["failing", "Not passing"], ["nomarks", "No marks"]].filter(([k]) => k === "all" || counts[k] > 0).map(([k, label]) => (
+              <button key={k} type="button" className={`ra-chipbtn ${filter === k ? "is-active" : ""}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}<span>{counts[k]}</span></button>
+            ))}
+          </div>
+        )}
+        {noticeText && <p className={`ra-notice ${decisionsReady ? "" : "needs"}`} role="status"><AlertIcon />{noticeText}</p>}
+
+        {rows.length === 0 ? <p className="ra-muted">This section has no students.</p> : shown.length === 0 ? <p className="ra-muted ra-nomatch">No student matches.</p> : (
+          <div className={`ra-table ${sheet.hasUpgrade ? "has-upgrade" : ""}`} role="table" aria-label="Class result sheet" style={{ "--parts": partCount }}>
+            <div className="ra-row ra-thead" role="row">
+              <span role="columnheader" className="idx">#</span>
+              <button type="button" role="columnheader" aria-sort={ariaSort("roll")} className="sortable roll" onClick={() => toggleSort("roll")}>Roll no{arrow("roll")}</button>
+              <button type="button" role="columnheader" aria-sort={ariaSort("name")} className="sortable" onClick={() => toggleSort("name")}>Name{arrow("name")}</button>
+              {columns.map((c) => <span role="columnheader" className="num" key={c.key}>{c.label}{c.weight ? <small>/{fmt(c.weight)}</small> : null}</span>)}
+              {sheet.hasUpgrade && <span role="columnheader" className="num">Upgrade</span>}
+              <button type="button" role="columnheader" aria-sort={ariaSort("total")} className="sortable num" onClick={() => toggleSort("total")}>Total<small>/100</small>{arrow("total")}</button>
+              <span role="columnheader" className="grade">Grade</span>
+            </div>
+            {shown.map((r, i) => {
+              const undecided = canDecide && r.noMarks && !["I", "W"].includes(r.grade);
+              const d = decisionOf(r);
+              const failing = isFailing(r);
               return (
-                <div className={`ra-row ${r.upgrade > 0 ? "changed" : ""}`} role="row" key={r.registrationId}>
-                  <span role="cell" className="ra-student"><strong>{r.name}</strong><small>{r.rollNumber}</small></span>
-                  <span role="cell" className="num" data-label="Entered">{none ? <em className="ra-muted">No marks</em> : fmt(r.raw)}</span>
-                  <span role="cell" className="num" data-label="Added">{r.upgrade > 0 ? <b className="ra-added">+{fmt(r.upgrade)}</b> : <span className="ra-muted">–</span>}</span>
-                  <span role="cell" className="num" data-label="Final"><strong>{fmt(r.final)}</strong></span>
+                <div className={`ra-row ${r.upgrade > 0 ? "changed" : ""} ${failing ? "failing" : ""}`} role="row" key={r.registrationId}>
+                  <span role="cell" className="idx">{i + 1}</span>
+                  <span role="cell" className="roll">{r.rollNumber}</span>
+                  <span role="cell" className="name"><strong>{r.name}</strong><small className="roll-inline">{r.rollNumber}</small></span>
+                  {r.noMarks ? (
+                    <span role="cell" className="ra-nomarks-cell" style={{ gridColumn: `span ${partCount + (sheet.hasUpgrade ? 1 : 0) + 1}` }}>
+                      {undecided ? (
+                        <span className="ra-inline-decision">
+                          <span className="ra-muted">No marks. Record as</span>
+                          <select aria-label={`Record ${r.name} as`} value={d.grade} onChange={(e) => setDecisions({ ...decisions, [r.registrationId]: { ...d, grade: e.target.value } })}>
+                            {Object.entries(SPECIAL).map(([k, v]) => <option key={k} value={k}>{v} ({k})</option>)}
+                          </select>
+                          <input aria-label={`Reason for ${r.name}`} value={d.reason} maxLength={500} onChange={(e) => setDecisions({ ...decisions, [r.registrationId]: { ...d, reason: e.target.value } })} placeholder="Reason, kept on record" />
+                        </span>
+                      ) : "No marks entered"}
+                    </span>
+                  ) : columns.map((c) => <span role="cell" className="num part" data-label={c.label} key={c.key}>{fmt(r.parts[c.key])}</span>)}
+                  {sheet.hasUpgrade && !r.noMarks && <span role="cell" className="num" data-label="Upgrade">{r.upgrade > 0 ? <b className="ra-added">+{fmt(r.upgrade)}</b> : <span className="ra-muted">–</span>}</span>}
+                  {!r.noMarks && <span role="cell" className="num total" data-label="Total">{fmt(r.total)}</span>}
                   <span role="cell" className="grade" data-label="Grade">
-                    {letter.recorded ? <span className="ra-letter">{letter.recorded}</span>
-                      : none ? <span className="ra-letter special">{decided}</span>
-                        : moved ? <span className="ra-move"><s>{letter.before}</s><span className="ra-letter up">{letter.after}</span></span>
-                          : <span className="ra-letter">{letter.after || "–"}</span>}
+                    <span className={`ra-letter ${failing ? "fail" : ""} ${r.noMarks ? "special" : ""}`}>{r.noMarks ? (undecided ? d.grade : r.grade || "–") : r.grade}</span>
                   </span>
                 </div>
               );
             })}
           </div>
         )}
+        <p className="ra-table-foot">Each column shows marks earned out of its weight. Missing marks count as zero.{shown.length !== rows.length ? ` Showing ${shown.length} of ${rows.length}.` : ""}</p>
       </section>
 
-      <section className="ra-panel">
-        <h2>History</h2>
+      <details className="ra-history-box">
+        <summary>History <span className="ra-count">{(batch.history || []).length}</span></summary>
         <ol className="ra-history">
           {(batch.history || []).slice().reverse().map((h, i) => (
             <li key={`${h.state}-${h.at}-${i}`}><span className={`ra-state ${STATE_TONE[h.state]}`}>{STATE_LABEL[h.state]}</span><span>{h.note || ""}</span><time>{dateTimeText(h.at)}</time></li>
           ))}
         </ol>
-      </section>
-
-      {state !== "PUBLISHED" && state !== "AMENDED" && (
-        <div className="ra-actions">
-          <p className="ra-actions-hint">
-            {state === "APPROVED" ? "Publishing makes these grades visible on students' transcripts."
-              : !decisionsReady ? "Give a reason for each student with no marks before you approve."
-                : weightsBad ? "The weightage must total 100% before approval."
-                  : "Approving writes these results to the permanent record."}
-          </p>
-          <div className="ra-buttons">
-            {canDecide && <button type="button" className="ra-btn" onClick={() => { setError(""); setModal("return"); }} disabled={busy}>Return to teacher</button>}
-            {state === "SUBMITTED" && <button type="button" className="ra-btn" onClick={doReview} disabled={busy}>Start review</button>}
-            {canDecide && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("approve"); }} disabled={busy || !decisionsReady || weightsBad || batch.stale}>Approve</button>}
-            {state === "APPROVED" && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("publish"); }} disabled={busy}>Publish to students</button>}
-          </div>
-        </div>
-      )}
-      {error && !modal && <div className="ra-error" role="alert">{error}</div>}
+      </details>
 
       {modal && (
         <div className="ra-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
@@ -245,9 +273,9 @@ const ApprovalDetail = ({ sectionId, onBack, onChanged }) => {
             )}
             {modal === "approve" && (
               <>
-                <h3 id="ra-modal-title">Approve these results?</h3>
+                <h3 id="ra-modal-title">Approve this class result?</h3>
                 <ul className="ra-modal-list">
-                  <li>{rows.length} result{rows.length === 1 ? "" : "s"} are written to the permanent record{noMarks.length ? `, including ${noMarks.length} recorded as ${[...new Set(noMarks.map((r) => decisionOf(r).grade))].join("/")}` : ""}.</li>
+                  <li>{rows.length} result{rows.length === 1 ? "" : "s"} are written to the permanent record{pending.length ? `, including ${pending.length} recorded as ${[...new Set(pending.map((r) => decisionOf(r).grade))].join("/")}` : ""}.</li>
                   <li>The grading scale is frozen, so its ranges can no longer be edited.</li>
                   <li>Students still see nothing until you publish.</li>
                 </ul>

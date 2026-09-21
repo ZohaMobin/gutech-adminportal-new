@@ -28,6 +28,7 @@ const ResultApprovalsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [programId, setProgramId] = useState("all");
   const selected = params.get("section");
 
   const load = useCallback(async () => {
@@ -45,19 +46,37 @@ const ResultApprovalsPage = () => {
   useEffect(() => { load(); }, [load]);
 
   const current = TABS.find((t) => t.id === tab);
+  const programs = useMemo(() => {
+    const seen = new Map();
+    for (const item of items) { const key = item.program ? String(item.program.id) : "none"; if (!seen.has(key)) seen.set(key, item.program ? item.program.name : "Program not set"); }
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [items]);
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return items.filter((item) => {
       if (current.states && !current.states.includes(item.state)) return false;
+      if (programId !== "all" && (item.program ? String(item.program.id) : "none") !== programId) return false;
       if (!needle) return true;
-      return `${item.course.code} ${item.course.name} ${item.section} ${(item.teachers || []).join(" ")}`.toLowerCase().includes(needle);
+      return `${item.course.code} ${item.course.name} ${item.section} ${(item.teachers || []).join(" ")} ${item.program?.name || ""}`.toLowerCase().includes(needle);
     });
-  }, [items, current, query]);
+  }, [items, current, query, programId]);
+  // Program by program, then course and section, so a long list stays easy to scan.
+  const groups = useMemo(() => {
+    const byProgram = new Map();
+    for (const item of shown) {
+      const key = item.program ? String(item.program.id) : "none";
+      if (!byProgram.has(key)) byProgram.set(key, { name: item.program ? item.program.name : "Program not set", code: item.program?.code || null, items: [] });
+      byProgram.get(key).items.push(item);
+    }
+    for (const g of byProgram.values()) g.items.sort((a, b) => String(a.course.code).localeCompare(String(b.course.code), undefined, { numeric: true }) || String(a.section).localeCompare(String(b.section)));
+    return [...byProgram.values()].sort((a, b) => (a.name === "Program not set") - (b.name === "Program not set") || a.name.localeCompare(b.name));
+  }, [shown]);
+  const queue = useMemo(() => groups.flatMap((g) => g.items.map((i) => String(i.sectionId))), [groups]);
 
-  const open = (sectionId) => setParams({ section: sectionId });
+  const open = (sectionId) => setParams({ section: String(sectionId) });
   const close = () => { setParams({}); load(); };
 
-  if (selected) return <ApprovalDetail sectionId={selected} onBack={close} onChanged={load} />;
+  if (selected) return <ApprovalDetail sectionId={selected} queue={queue} onOpen={open} onBack={close} onChanged={load} />;
 
   return (
     <div className="ra-page">
@@ -81,10 +100,21 @@ const ResultApprovalsPage = () => {
             </button>
           ))}
         </div>
-        <label className="ra-search">
+        <div className="ra-filters">
+          {programs.length > 1 && (
+            <label className="ra-select">
+              <span className="ra-sr">Program</span>
+              <select value={programId} onChange={(e) => setProgramId(e.target.value)} aria-label="Filter by program">
+                <option value="all">All programs</option>
+                {programs.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+              </select>
+            </label>
+          )}
+          <label className="ra-search">
           <Svg size={16}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></Svg>
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search course, section or teacher" aria-label="Search submitted results" />
-        </label>
+          </label>
+        </div>
       </div>
 
       {loading ? (
@@ -92,36 +122,44 @@ const ResultApprovalsPage = () => {
       ) : shown.length === 0 ? (
         <Empty>{query ? "No submitted section matches that search." : current.empty}</Empty>
       ) : (
-        <ul className="ra-list">
-          {shown.map((item) => (
-            <li key={item.sectionId} className="ra-card">
-              <div className="ra-card-main">
-                <div className="ra-card-course">
-                  <strong>{item.course.code}</strong>
-                  <span>{item.course.name}</span>
-                  <small>Section {item.section || "–"}{item.term ? ` · ${item.term}` : ""}{item.teachers?.length ? ` · ${item.teachers.join(", ")}` : ""}</small>
-                </div>
-                <div className="ra-card-choice">
-                  <span className={`ra-chip ${item.upgraded ? "up" : ""}`}>{item.upgraded ? item.description : "As entered"}</span>
-                  {item.classAverageBefore !== null && (
-                    <span className="ra-metrics">
-                      Average <strong>{fmt(item.classAverageBefore)}{item.classAverageBefore !== item.classAverageAfter ? ` → ${fmt(item.classAverageAfter)}` : ""}</strong>
-                      <i aria-hidden="true">·</i>
-                      Passing <strong>{item.passingBefore !== item.passingAfter ? `${item.passingBefore} → ${item.passingAfter}` : item.passingAfter}</strong>
-                      <i aria-hidden="true">·</i>
-                      {item.studentCount} students
-                    </span>
-                  )}
-                </div>
-                <div className="ra-card-side">
-                  <span className={`ra-state ${STATE_TONE[item.state]}`}>{STATE_LABEL[item.state]}</span>
-                  <small>{item.submittedAt ? `Submitted ${dateText(item.submittedAt)}` : ""}</small>
-                </div>
-                <button type="button" className={`ra-btn ${item.state === "SUBMITTED" || item.state === "UNDER_REVIEW" || item.state === "APPROVED" ? "ra-btn-primary" : ""}`} onClick={() => open(item.sectionId)}>{ACTION[item.state]}</button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="ra-groups">
+          {groups.map((group) => {
+            const waiting = group.items.filter((i) => i.state === "SUBMITTED" || i.state === "UNDER_REVIEW").length;
+            return (
+              <section key={group.name} className="ra-group" aria-label={group.name}>
+                <h2 className="ra-group-head">
+                  <span>{group.name}{group.code ? <em>{group.code}</em> : null}</span>
+                  <small>{group.items.length} section{group.items.length === 1 ? "" : "s"}{waiting ? ` · ${waiting} to review` : ""}</small>
+                </h2>
+                <ul className="ra-list">
+                  {group.items.map((item) => (
+                    <li key={item.sectionId} className="ra-card">
+                      <div className="ra-card-main">
+                        <div className="ra-card-course">
+                          <strong>{item.course.code} <span>{item.course.name}</span></strong>
+                          <small>Section {item.section || "–"}{item.term ? ` · ${item.term}` : ""}{item.teachers?.length ? ` · ${item.teachers.join(", ")}` : ""}{item.otherPrograms?.length ? ` · also ${item.otherPrograms.map((p) => p.code || p.name).join(", ")}` : ""}</small>
+                        </div>
+                        <div className="ra-card-choice">
+                          {item.classAverageAfter !== null && (
+                            <span className="ra-metrics">
+                              <b>{item.studentCount}</b> students<i aria-hidden="true">·</i>Average <b>{fmt(item.classAverageAfter)}</b><i aria-hidden="true">·</i>Pass rate <b>{item.gradedCount ? `${Math.round((item.passingAfter / item.gradedCount) * 100)}%` : "–"}</b>
+                            </span>
+                          )}
+                          {item.upgraded && <span className="ra-chip up" title={item.description}>Upgrade applied</span>}
+                        </div>
+                        <div className="ra-card-side">
+                          <span className={`ra-state ${STATE_TONE[item.state]}`}>{STATE_LABEL[item.state]}</span>
+                          <small>{item.submittedAt ? `Submitted ${dateText(item.submittedAt)}` : ""}</small>
+                        </div>
+                        <button type="button" className={`ra-btn ${item.state === "SUBMITTED" || item.state === "UNDER_REVIEW" || item.state === "APPROVED" ? "ra-btn-primary" : ""}`} onClick={() => open(item.sectionId)}>{ACTION[item.state]}</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       )}
     </div>
   );
