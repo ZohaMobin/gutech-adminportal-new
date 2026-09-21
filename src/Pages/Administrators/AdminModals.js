@@ -1,3 +1,4 @@
+import { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useEffect, useRef, useState } from "react";
 
 // A small accessible modal: dialog role, closes on Escape or a click on the backdrop.
@@ -51,7 +52,7 @@ export const AdminFormModal = ({ admin, saving, error, onSubmit, onClose }) => {
             Cancel
           </button>
           <button type="submit" form="admin-form" className="am-btn am-btn-primary" disabled={saving || !valid}>
-            {saving ? "Saving…" : editing ? "Save changes" : "Add administrator"}
+            <BusyLabel busy={saving} busyText="Saving…" idle={editing ? "Save changes" : "Add administrator"} />
           </button>
         </>
       }
@@ -98,7 +99,7 @@ export const ConfirmModal = ({ title, body, confirmLabel, danger = false, busy, 
           Cancel
         </button>
         <button type="button" className={`am-btn ${danger ? "am-btn-danger" : "am-btn-primary"}`} onClick={onConfirm} disabled={busy}>
-          {busy ? "Working…" : confirmLabel}
+          <BusyLabel busy={busy} busyText="Working…" idle={confirmLabel} />
         </button>
       </>
     }

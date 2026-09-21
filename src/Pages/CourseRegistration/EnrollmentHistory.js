@@ -1,3 +1,4 @@
+import Loading, { Refreshing } from '../../Components/Loading/Loading';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { messageOf } from "../../utils/apiMessage";
@@ -34,15 +35,19 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
   const [reports, setReports] = useState({});     // jobId -> { rows } | { error } | "loading"
   const [filter, setFilter] = useState("all");      // all | attention | running
   const [query, setQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setError("");
+      setRefreshing(true);
       const { data } = await axios.get(`${apiUrl}/api/course-registrations/bulk-enroll`, { params: { limit: 20 }, headers: headers() });
       setItems(data.items || []);
     } catch (err) {
       setError(messageOf(err, "The enrolment history could not be loaded."));
       setItems((current) => current || []);
+    } finally {
+      setRefreshing(false);
     }
   }, [apiUrl, headers]);
   useEffect(() => { load(); }, [load, refreshKey]);
@@ -124,6 +129,7 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
       ) : shown.length === 0 ? (
         <p className="enh-empty">No upload matches that.</p>
       ) : (
+        <Refreshing active={refreshing}>
         <ul className="enh-list">
           {shown.map((item) => {
             const open = openId === item.jobId;
@@ -150,7 +156,7 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
                 </button>
                 {open && (
                   <div className="enh-report">
-                    {report === "loading" || !report ? <p className="enh-muted">Loading the report…</p>
+                    {report === "loading" || !report ? <Loading variant="table" rows={4} label="Loading the report" />
                       : report.error ? <p className="enh-error" role="alert">{report.error}</p>
                       : (
                         <div className="enh-table">
@@ -176,6 +182,7 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
             );
           })}
         </ul>
+        </Refreshing>
       )}
     </section>
   );

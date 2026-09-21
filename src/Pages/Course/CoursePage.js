@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
 import TeacherAssignmentPage from '../TeacherAssignment/TeacherAssignmentPage';
 import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "react-icons/fi";
-import Loading from '../../Components/Loading/Loading';
+import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import NoResultsFound from '../../Components/NoResultsFound';
 
 const COURSES_PER_PAGE = 25;
@@ -644,7 +644,7 @@ const CoursePage = () => {
                   </button>
                 )}
           <button className="submit-btn" type="submit" disabled={loading}>
-                  {loading ? "Saving..." : editingCourse ? "Update Course" : "Create Course"}
+                  <BusyLabel busy={loading} busyText="Saving…" idle={editingCourse ? "Update Course" : "Create Course"} />
           </button>
               </div>
         </form>

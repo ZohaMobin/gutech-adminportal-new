@@ -1,3 +1,4 @@
+import { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./EligibilityPreview.css";
@@ -168,7 +169,7 @@ const EligibilityPreview = ({ apiUrl, courseId, semester, academicYear, students
                             {grantError && <div className="elig-error" role="alert">{grantError}</div>}
                             <div className="elig-grant-buttons">
                               <button type="button" className="elig-btn" onClick={() => setGranting(null)} disabled={busy}>Cancel</button>
-                              <button type="button" className="elig-btn elig-btn-primary" onClick={() => grant(row)} disabled={busy || reason.trim().length < 5}>{busy ? "Saving…" : "Grant exception"}</button>
+                              <button type="button" className="elig-btn elig-btn-primary" onClick={() => grant(row)} disabled={busy || reason.trim().length < 5}><BusyLabel busy={busy} busyText="Saving…" idle="Grant exception" /></button>
                             </div>
                           </div>
                         </td></tr>

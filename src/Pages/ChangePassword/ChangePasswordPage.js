@@ -1,3 +1,4 @@
+import { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useState } from "react";
 import axios from "axios";
 import { Toaster } from "react-hot-toast";
@@ -74,7 +75,7 @@ const ChangePasswordPage = () => {
         {error && <div className="am-error" role="alert">{error}</div>}
         <div style={{ marginTop: 16 }}>
           <button type="submit" className="am-btn am-btn-primary" disabled={saving}>
-            {saving ? "Saving…" : "Change password"}
+            <BusyLabel busy={saving} busyText="Saving…" idle="Change password" />
           </button>
         </div>
       </form>
