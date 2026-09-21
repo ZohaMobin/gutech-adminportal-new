@@ -15,6 +15,7 @@ import DepartmentsPage from "./Pages/Departments/DepartmentsPage";
 import ProgramsPage from "./Pages/Programs/ProgramsPage";
 import AcademicYearsPage from "./Pages/AcademicYears/AcademicYearsPage";
 import PrerequisitesPage from './Pages/Prerequisites/PrerequisitesPage';
+import ResultApprovalsPage from './Pages/ResultApprovals/ResultApprovalsPage';
 import AccountApprovalsPage from "./Pages/AccountApprovals/AccountApprovalsPage";
 import AdministratorsPage from "./Pages/Administrators/AdministratorsPage";
 import ChangePasswordPage from "./Pages/ChangePassword/ChangePasswordPage";
@@ -44,6 +45,7 @@ function App() {
                 <Route path="programs" element={<ProgramsPage />} />
                 <Route path="academic-years" element={<AcademicYearsPage />} />
                 <Route path="prerequisites" element={<PrerequisitesPage />} />
+                <Route path="result-approvals" element={<ResultApprovalsPage />} />
                 <Route path="account-approvals" element={<AccountApprovalsPage />} />
                 <Route path="administrators" element={<AdministratorsPage />} />
                 <Route path="change-password" element={<ChangePasswordPage />} />
