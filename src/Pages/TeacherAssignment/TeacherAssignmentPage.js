@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { FiX, FiCheck, FiPlus, FiEdit2, FiSearch, FiUser } from 'react-icons/fi';
-import Loading from '../../Components/Loading/Loading';
+import Loading, { BusyLabel, Refreshing } from '../../Components/Loading/Loading';
 import { messageOf } from '../../utils/apiMessage';
 import './TeacherAssignmentPage.css';
 
@@ -64,7 +64,7 @@ const SectionCard = ({ section, teachers, onAssign, saving }) => {
           <TeacherPicker teachers={teachers} selectedTeacherIds={ids} onAddTeacher={(id) => setIds((prev) => (prev.includes(id) ? prev : [...prev, id]))} onRemoveTeacher={(id) => setIds((prev) => prev.filter((x) => x !== id))} />
           <div className="ta-actions">
             <button type="button" className="ta-btn" onClick={() => { setIds(initial); setEditing(false); }} disabled={saving}>Cancel</button>
-            <button type="button" className="ta-btn ta-primary" onClick={() => onAssign(section, ids)} disabled={!changed || ids.length === 0 || saving}>{saving ? 'Saving…' : 'Save'}</button>
+            <button type="button" className="ta-btn ta-primary" onClick={() => onAssign(section, ids)} disabled={!changed || ids.length === 0 || saving}><BusyLabel busy={saving} busyText="Saving…" idle="Save" /></button>
           </div>
         </>
       )}
@@ -268,9 +268,11 @@ const TeacherAssignmentPage = () => {
               </div>
               {loadingSections ? <Loading variant="list" rows={2} label="Loading sections" /> : (
                 <>
+                  <Refreshing active={saving}>
                   <div className="ta-sections">
                     {sections.length ? sections.map((section) => <SectionCard key={section._id || section.id} section={section} teachers={teachers} onAssign={assign} saving={saving} />) : <p className="ta-empty">This course has no sections in this term yet. Add the first one below.</p>}
                   </div>
+                  </Refreshing>
                   <section className="ta-add" aria-label="Add a section">
                     <h4><FiPlus /> Add a section</h4>
                     <div className="ta-add-row">
@@ -280,7 +282,7 @@ const TeacherAssignmentPage = () => {
                           onAddTeacher={(id) => setNewSection((prev) => ({ ...prev, teacherIds: prev.teacherIds.includes(id) ? prev.teacherIds : [...prev.teacherIds, id] }))}
                           onRemoveTeacher={(id) => setNewSection((prev) => ({ ...prev, teacherIds: prev.teacherIds.filter((x) => x !== id) }))} />
                       </div>
-                      <button type="button" className="ta-btn ta-primary" onClick={addSection} disabled={saving || !newSection.section.trim() || newSection.teacherIds.length === 0}>{saving ? 'Adding…' : 'Add section'}</button>
+                      <button type="button" className="ta-btn ta-primary" onClick={addSection} disabled={saving || !newSection.section.trim() || newSection.teacherIds.length === 0}><BusyLabel busy={saving} busyText="Adding…" idle="Add section" /></button>
                     </div>
                   </section>
                 </>

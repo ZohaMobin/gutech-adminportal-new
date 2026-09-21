@@ -1,3 +1,4 @@
+import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -294,7 +295,7 @@ const CourseRegistrationPage = () => {
           </label>
         </div>
 
-        {department && program && semester && offerings === null && <p className="enr-muted" aria-busy="true">Loading courses…</p>}
+        {department && program && semester && offerings === null && <Loading variant="list" rows={2} label="Loading courses" />}
         {department && program && semester && offerings !== null && courses.length === 0 && (
           <div className="enr-empty">
             <strong>No courses found</strong>
@@ -315,7 +316,7 @@ const CourseRegistrationPage = () => {
 
       {course && (
         <Step number={2} title={`Sections of ${course.name}`} done={sections.length > 0} hint="Students are placed in a section, which must exist first and have a teacher.">
-          {loadingSections ? <p className="enr-muted" aria-busy="true">Loading sections…</p> : sections.length > 0 ? (
+          {loadingSections ? <Loading variant="list" rows={2} label="Loading sections" /> : sections.length > 0 ? (
             <div className="enr-sections">
               {sections.map((s) => (
                 <div key={s._id || s.id} className="enr-section">
@@ -449,7 +450,7 @@ const CourseRegistrationPage = () => {
         <div className="enr-enroll">
           {course && sheet?.parsed.usable && <p>{canEnroll ? `Ready to enroll ${students.length} student${students.length === 1 ? "" : "s"} in ${course.name}.` : dataProblems > 0 ? "Fix or leave out the rows with a problem to continue." : unknownSections.length > 0 ? "Add the missing sections to continue." : "Working…"}</p>}
           {sheet?.parsed.usable
-            ? <button type="button" className="enr-btn enr-btn-primary enr-btn-lg" onClick={enroll} disabled={!canEnroll}>{busy ? "Enrolling…" : `Enroll ${students.length} student${students.length === 1 ? "" : "s"}`}</button>
+            ? <button type="button" className="enr-btn enr-btn-primary enr-btn-lg" onClick={enroll} disabled={!canEnroll}><BusyLabel busy={busy} busyText="Enrolling…" idle={`Enroll ${students.length} student${students.length === 1 ? "" : "s"}`} /></button>
             : <p className="enr-hint">{course ? "Upload a class list to continue." : "Choose a course to begin."}</p>}
         </div>
       </aside>
