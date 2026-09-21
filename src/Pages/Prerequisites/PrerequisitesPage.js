@@ -25,6 +25,17 @@ const STEPS = [
   { title: "Enrolment enforces it", body: "A student who has not met a rule cannot be enrolled, unless an administrator records an exception with a reason." },
 ];
 
+// Rules as blocks. Prerequisites that share a group are alternatives, shown together; each other rule stands alone.
+const ruleBlocks = (rules) => {
+  const blocks = []; const byKey = new Map();
+  for (const rule of rules) {
+    if (rule.type !== "PREREQ") { blocks.push({ key: rule.id, type: rule.type, rules: [rule] }); continue; }
+    if (!byKey.has(rule.groupKey)) { const block = { key: `g-${rule.groupKey}`, type: "PREREQ", groupKey: rule.groupKey, rules: [] }; byKey.set(rule.groupKey, block); blocks.push(block); }
+    byKey.get(rule.groupKey).rules.push(rule);
+  }
+  return blocks.map((block) => ({ ...block, key: block.groupKey || block.key }));
+};
+
 // Where an administrator says what each course requires. A version is finished when every course has its prerequisites
 // declared (a rule, or an explicit "none"); only then can it be published. Rules are never edited: to change one you
 // close it and add the new one, so what a student was held to on any day can be reconstructed.
@@ -37,7 +48,8 @@ const PrerequisitesPage = () => {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [adding, setAdding] = useState(null);     // course being given a rule
-  const [form, setForm] = useState({ type: "PREREQ", requiredCourseId: "", minGrade: "D", groupKey: "default", minCreditsEarned: "" });
+  const blankForm = (minGrade = "D") => ({ type: "PREREQ", selected: [], mode: "all", joinGroup: null, minGrade, minCreditsEarned: "", filter: "" });
+  const [form, setForm] = useState(blankForm());
   const [closing, setClosing] = useState(null);   // { ruleId, label }
   const [closeReason, setCloseReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -79,18 +91,40 @@ const PrerequisitesPage = () => {
   const choose = (id) => { setVersionId(id); setAdding(null); setClosing(null); setFilter("all"); setQuery(""); run(() => loadVersion(id)); };
   const refresh = async () => { await loadVersion(versionId); setVersions((await axios.get(`${API}/api/admin/curriculum-versions`)).data); };
 
-  const openAdd = (course) => {
+  const defaultGrade = letters.includes("D") ? "D" : letters[letters.length - 1] || "";
+  // joinGroup: add an alternative to an existing either-or block instead of a new requirement.
+  const openAdd = (course, joinGroup = null) => {
     setClosing(null);
     setAdding(course);
-    setForm({ type: "PREREQ", requiredCourseId: "", minGrade: letters.includes("D") ? "D" : letters[letters.length - 1] || "", groupKey: "default", minCreditsEarned: "" });
+    setForm({ ...blankForm(defaultGrade), joinGroup });
   };
-  const saveRule = () => run(async () => {
-    await axios.post(`${API}/api/admin/curriculum-versions/${versionId}/courses/${adding.id}/rules`, {
-      type: form.type, groupKey: form.groupKey.trim() || "default", requiredCourseId: form.requiredCourseId,
-      ...(form.type === "PREREQ" ? { minGrade: form.minGrade } : {}),
-      ...(form.minCreditsEarned !== "" ? { minCreditsEarned: Number(form.minCreditsEarned) } : {}),
-    });
-    setAdding(null); setNotice("Rule added."); await refresh();
+  const toggleCourse = (id) => setForm((f) => ({ ...f, selected: f.selected.includes(id) ? f.selected.filter((x) => x !== id) : [...f.selected, id] }));
+
+  // Rules that share a group are alternatives (any one is enough); different groups must ALL be met. So a new
+  // requirement always gets a group of its own, and only "any one of these" (or adding to an either-or block) shares one.
+  const saveRules = () => run(async () => {
+    const taken = new Set(adding.rules.map((r) => r.groupKey));
+    let n = 0;
+    const fresh = () => { do { n += 1; } while (taken.has(`g${n}`)); taken.add(`g${n}`); return `g${n}`; };
+    const shared = form.joinGroup || (form.selected.length > 1 && form.type === "PREREQ" && form.mode === "any" ? fresh() : null);
+    const saved = [];
+    try {
+      for (const requiredCourseId of form.selected) {
+        await axios.post(`${API}/api/admin/curriculum-versions/${versionId}/courses/${adding.id}/rules`, {
+          type: form.type, groupKey: shared || fresh(), requiredCourseId,
+          ...(form.type === "PREREQ" ? { minGrade: form.minGrade } : {}),
+          ...(form.minCreditsEarned !== "" ? { minCreditsEarned: Number(form.minCreditsEarned) } : {}),
+        });
+        saved.push(requiredCourseId);
+      }
+    } catch (error) {
+      // Keep the form open with only what still needs saving, so a retry cannot add anything twice.
+      if (saved.length) { setForm((f) => ({ ...f, selected: f.selected.filter((id) => !saved.includes(id)) })); await refresh(); }
+      throw error;
+    }
+    setAdding(null);
+    setNotice(saved.length === 1 ? "Rule added." : `${saved.length} rules added.`);
+    await refresh();
   });
   const closeRule = () => run(async () => {
     await axios.post(`${API}/api/admin/curriculum-versions/${versionId}/rules/${closing.ruleId}/close`, { reason: closeReason });
@@ -127,48 +161,79 @@ const PrerequisitesPage = () => {
   const versionLabel = (v) => `${v.program?.name || "Program"} · ${v.versionCode} (${v.status})`;
   const programName = version?.program?.name || versions.find((v) => v.id === versionId)?.program?.name;
 
-  const renderForm = (course) => (
-    <div className="pre-form" role="group" aria-label={`New rule for ${course.code}`}>
-      <div className="pre-form-title"><PlusIcon /> New rule for <strong>{course.code}</strong></div>
-      <div className="pre-sentence">
-        <label>
-          <span>Rule</span>
-          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        </label>
-        <label className="pre-grow">
-          <span>Course</span>
-          <select value={form.requiredCourseId} onChange={(e) => setForm({ ...form, requiredCourseId: e.target.value })}>
-            <option value="">Choose a course…</option>
-            {courses.filter((x) => x.id !== course.id).map((x) => <option key={x.id} value={x.id}>{x.code} {x.name}</option>)}
-          </select>
-        </label>
-        {form.type === "PREREQ" && (
-          <label>
-            <span>Minimum grade</span>
-            <select value={form.minGrade} onChange={(e) => setForm({ ...form, minGrade: e.target.value })}>{letters.map((l) => <option key={l} value={l}>{l} or better</option>)}</select>
-          </label>
-        )}
-      </div>
-      <details className="pre-more">
-        <summary>More options: either-or rules and credits</summary>
-        <div className="pre-more-body">
-          <label>
-            <span>Alternatives group</span>
-            <input value={form.groupKey} onChange={(e) => setForm({ ...form, groupKey: e.target.value })} aria-describedby="group-help" />
-          </label>
-          <label>
-            <span>Credits earned <em>(optional)</em></span>
-            <input type="number" min="0" value={form.minCreditsEarned} onChange={(e) => setForm({ ...form, minCreditsEarned: e.target.value })} />
-          </label>
-          <p id="group-help" className="pre-help">Rules with the same group are alternatives: passing either one is enough. Rules in different groups must all be met.</p>
+  const renderForm = (course) => {
+    const needle = form.filter.trim().toLowerCase();
+    const options = courses.filter((x) => x.id !== course.id && (!needle || `${x.code} ${x.name}`.toLowerCase().includes(needle)));
+    const count = form.selected.length;
+    const label = { PREREQ: "must first pass", COREQ: "must be taken together with", ANTIREQ: "cannot be taken with", RECOMMENDED: "is recommended after" }[form.type];
+    const joining = form.joinGroup ? course.rules.filter((r) => r.groupKey === form.joinGroup).map((r) => r.requires.code).join(" or ") : null;
+    return (
+      <div className="pre-form" role="group" aria-label={`New rule for ${course.code}`}>
+        <div className="pre-form-title"><PlusIcon />{joining ? <>Another way to meet <strong>{joining}</strong> for <strong>{course.code}</strong></> : <>New requirement for <strong>{course.code}</strong></>}</div>
+
+        <div className="pre-sentence">
+          {!joining && (
+            <label>
+              <span>Kind of rule</span>
+              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+            </label>
+          )}
+          {form.type === "PREREQ" && (
+            <label>
+              <span>Minimum grade</span>
+              <select value={form.minGrade} onChange={(e) => setForm({ ...form, minGrade: e.target.value })}>{letters.map((l) => <option key={l} value={l}>{l} or better</option>)}</select>
+            </label>
+          )}
         </div>
-      </details>
-      <div className="pre-form-buttons">
-        <button className="pre-btn" onClick={() => setAdding(null)} disabled={busy}>Cancel</button>
-        <button className="pre-btn pre-btn-primary" onClick={saveRule} disabled={busy || !form.requiredCourseId}>Save rule</button>
+
+        <fieldset className="pre-pick-box">
+          <legend>{course.code} {label}: <em>tick one or more courses</em></legend>
+          <input type="search" className="pre-pick-search" value={form.filter} onChange={(e) => setForm({ ...form, filter: e.target.value })} placeholder="Filter the list by code or name" aria-label="Filter courses to choose from" />
+          <ul className="pre-pick">
+            {options.length === 0 && <li className="pre-pick-empty">No course matches.</li>}
+            {options.map((x) => (
+              <li key={x.id}>
+                <label className={`pre-pick-row ${form.selected.includes(x.id) ? "is-on" : ""}`}>
+                  <input type="checkbox" checked={form.selected.includes(x.id)} onChange={() => toggleCourse(x.id)} />
+                  <strong>{x.code}</strong><span>{x.name}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+
+        {count > 1 && form.type === "PREREQ" && !form.joinGroup && (
+          <fieldset className="pre-mode">
+            <legend>You chose {count} courses. How should they combine?</legend>
+            <label className={`pre-mode-opt ${form.mode === "all" ? "is-on" : ""}`}>
+              <input type="radio" name="pre-mode" checked={form.mode === "all"} onChange={() => setForm({ ...form, mode: "all" })} />
+              <span><strong>Needs all of them</strong><small>The student must have passed every one of these.</small></span>
+            </label>
+            <label className={`pre-mode-opt ${form.mode === "any" ? "is-on" : ""}`}>
+              <input type="radio" name="pre-mode" checked={form.mode === "any"} onChange={() => setForm({ ...form, mode: "any" })} />
+              <span><strong>Needs any one of them</strong><small>Passing just one of these is enough.</small></span>
+            </label>
+          </fieldset>
+        )}
+
+        <details className="pre-more">
+          <summary>More options</summary>
+          <div className="pre-more-body">
+            <label>
+              <span>Credits earned <em>(optional)</em></span>
+              <input type="number" min="0" value={form.minCreditsEarned} onChange={(e) => setForm({ ...form, minCreditsEarned: e.target.value })} />
+            </label>
+            <p className="pre-help">Also require the student to have earned at least this many credits in total.</p>
+          </div>
+        </details>
+
+        <div className="pre-form-buttons">
+          <button className="pre-btn" onClick={() => setAdding(null)} disabled={busy}>Cancel</button>
+          <button className="pre-btn pre-btn-primary" onClick={saveRules} disabled={busy || count === 0}>{count > 1 ? `Save ${count} rules` : "Save rule"}</button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="pre-page">
@@ -283,19 +348,30 @@ const PrerequisitesPage = () => {
                               ? <span className="pre-none">No prerequisite. Anyone can take this course.</span>
                               : <span className="pre-todo">Not answered yet. Does this course need another course first?</span>)
                             : (
-                              <ul className="pre-rules">
-                                {course.rules.map((r) => (
-                                  <li key={r.id} className="pre-rule">
-                                    <span className="pre-rule-text">
-                                      {TYPES[r.type]} <strong>{r.requires.code}</strong>
-                                      {r.type === "PREREQ" && r.minGradePoints != null ? ` at grade ${letterFor(r.minGradePoints)} or better` : ""}
-                                      {r.minCreditsEarned ? `, with ${r.minCreditsEarned} credits earned` : ""}
-                                      {r.groupKey !== "default" && <span className="pre-group" title="Alternatives: passing any one course in this group is enough">either-or: {r.groupKey}</span>}
-                                    </span>
-                                    <button className="pre-x" onClick={() => { setAdding(null); setClosing({ ruleId: r.id, label: `${course.code} requires ${r.requires.code}` }); }} aria-label={`Remove rule: ${course.code} requires ${r.requires.code}`} disabled={busy}><XIcon />Remove</button>
-                                  </li>
+                              <div className="pre-rulegroups">
+                                {ruleBlocks(course.rules).map((block, bi) => (
+                                  <React.Fragment key={block.key}>
+                                    {bi > 0 && <span className="pre-and">and</span>}
+                                    <div className={`pre-block-rules ${block.rules.length > 1 ? "is-either" : ""}`}>
+                                      {block.rules.length > 1 && <span className="pre-either">Any one of these</span>}
+                                      <ul className="pre-rules">
+                                        {block.rules.map((r, ri) => (
+                                          <li key={r.id} className="pre-rule">
+                                            <span className="pre-rule-text">
+                                              {ri > 0 && <em className="pre-or">or </em>}
+                                              {TYPES[r.type]} <strong>{r.requires.code}</strong>
+                                              {r.type === "PREREQ" && r.minGradePoints != null ? ` at grade ${letterFor(r.minGradePoints)} or better` : ""}
+                                              {r.minCreditsEarned ? `, with ${r.minCreditsEarned} credits earned` : ""}
+                                            </span>
+                                            <button className="pre-x" onClick={() => { setAdding(null); setClosing({ ruleId: r.id, label: `${course.code} requires ${r.requires.code}` }); }} aria-label={`Remove rule: ${course.code} requires ${r.requires.code}`} disabled={busy}><XIcon />Remove</button>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                      {block.type === "PREREQ" && <button type="button" className="pre-link" onClick={() => openAdd(course, block.key)} disabled={busy}>+ Add another way to meet this</button>}
+                                    </div>
+                                  </React.Fragment>
                                 ))}
-                              </ul>
+                              </div>
                             )}
                           {course.unlocks.length > 0 && (
                             <span className="pre-unlocks"><ArrowIcon /> Leads to {course.unlocks.map((u) => <span key={u.code} className="pre-chip">{u.code}</span>)}</span>
@@ -303,7 +379,7 @@ const PrerequisitesPage = () => {
                         </div>
 
                         <div className="pre-actions">
-                          <button className={`pre-btn ${course.prerequisitesDeclared ? "" : "pre-btn-primary"}`} onClick={() => openAdd(course)} disabled={busy}>{course.rules.length ? "Add another" : "Add prerequisite"}</button>
+                          <button className={`pre-btn ${course.prerequisitesDeclared ? "" : "pre-btn-primary"}`} onClick={() => openAdd(course)} disabled={busy}>{course.rules.length ? "Add another requirement" : "Add prerequisite"}</button>
                           {!course.prerequisitesDeclared && <button className="pre-btn" onClick={() => declareNone(course)} disabled={busy}>No prerequisite</button>}
                         </div>
                       </div>

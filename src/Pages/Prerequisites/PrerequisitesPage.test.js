@@ -77,39 +77,106 @@ test("once every course is answered the version can be published", async () => {
   expect(axios.post.mock.calls[0][0]).toContain("/curriculum-versions/v1/publish");
 });
 
+const pick = async (code) => { const row = [...container.querySelectorAll(".pre-pick-row")].find((r) => r.textContent.startsWith(code)); await click(row.querySelector("input")); };
+const posts = () => axios.post.mock.calls.map(([url, body]) => ({ url, body }));
+
 test("adding a prerequisite sends the minimum as a LETTER for the server to turn into points, and needs a course chosen", async () => {
   await setup();
   await click(button("Add prerequisite", card("CS301")));
   expect(button("Save rule").disabled).toBe(true);
-  const selects = container.querySelectorAll(".pre-form select");
-  await type(selects[1], "id-CS201");
-  await type(selects[2], "C");
+  await type(container.querySelectorAll(".pre-form select")[1], "C");
+  await pick("CS201");
   expect(button("Save rule").disabled).toBe(false);
   await click(button("Save rule"));
-  const [url, body] = axios.post.mock.calls[0];
-  expect(url).toContain("/curriculum-versions/v1/courses/id-CS301/rules");
-  expect(body).toEqual({ type: "PREREQ", groupKey: "default", requiredCourseId: "id-CS201", minGrade: "C" });
+  expect(posts()).toHaveLength(1);
+  expect(posts()[0].url).toContain("/curriculum-versions/v1/courses/id-CS301/rules");
+  expect(posts()[0].body).toEqual({ type: "PREREQ", groupKey: "g1", requiredCourseId: "id-CS201", minGrade: "C" });
 });
 
-test("either-or groups and credits are tucked under 'More options', and are sent when used", async () => {
+test("several courses chosen as 'needs all' are saved as separate requirements, each in a group of its own", async () => {
   await setup();
   await click(button("Add prerequisite", card("CS301")));
-  expect(container.querySelector(".pre-more").open).toBe(false);
-  const selects = container.querySelectorAll(".pre-form select");
-  await type(selects[1], "id-CS201");
-  const [group, credits] = container.querySelectorAll(".pre-more input");
-  await type(group, "math");
-  await type(credits, "30");
+  await pick("CS101"); await pick("CS201");
+  expect(container.textContent).toContain("You chose 2 courses. How should they combine?");
+  expect(container.querySelector('input[name="pre-mode"]').checked).toBe(true);           // "needs all" is the default
+  await click(button("Save 2 rules"));
+  expect(posts().map((c) => [c.body.requiredCourseId, c.body.groupKey])).toEqual([["id-CS101", "g1"], ["id-CS201", "g2"]]);
+});
+
+test("several courses chosen as 'needs any one' share one group, so passing either is enough", async () => {
+  await setup();
+  await click(button("Add prerequisite", card("CS301")));
+  await pick("CS101"); await pick("CS201");
+  await click(container.querySelectorAll('input[name="pre-mode"]')[1]);
+  await click(button("Save 2 rules"));
+  const groups = posts().map((c) => c.body.groupKey);
+  expect(groups[0]).toBe(groups[1]);
+});
+
+test("a new requirement never lands in a group that already exists on the course", async () => {
+  await setup(version({ courses: [course("CS101", 1, { prerequisitesDeclared: true }), course("CS201", 2, { prerequisitesDeclared: true }),
+    course("CS301", 3, { prerequisitesDeclared: true, rules: [{ id: "r9", type: "PREREQ", requires: { code: "CS101" }, minGradePoints: 1, minCreditsEarned: null, groupKey: "g1" }] })] }));
+  await click(button("Add another requirement", card("CS301")));
+  await pick("CS201");
   await click(button("Save rule"));
-  expect(axios.post.mock.calls[0][1]).toEqual({ type: "PREREQ", groupKey: "math", requiredCourseId: "id-CS201", minGrade: "D", minCreditsEarned: 30 });
+  expect(posts()[0].body.groupKey).toBe("g2");
+});
+
+test("existing rules read as 'and' between requirements and 'any one of these' for alternatives", async () => {
+  const rule = (id, code, groupKey) => ({ id, type: "PREREQ", requires: { code }, minGradePoints: 1, minCreditsEarned: null, groupKey });
+  await setup(version({ courses: [course("CS101", 1, { prerequisitesDeclared: true }), course("CS102", 1, { prerequisitesDeclared: true }), course("MT101", 1, { prerequisitesDeclared: true }),
+    course("CS301", 3, { prerequisitesDeclared: true, rules: [rule("a", "CS101", "g1"), rule("b", "CS102", "g1"), rule("c", "MT101", "g2")] })] }));
+  const text = card("CS301").textContent;
+  expect(text).toContain("Any one of these");
+  expect(text).toContain("or Must have passed CS102");
+  expect(card("CS301").querySelector(".pre-and").textContent).toBe("and");
+});
+
+test("'Add another way to meet this' adds an alternative to that block, in the same group", async () => {
+  const rule = (id, code, groupKey) => ({ id, type: "PREREQ", requires: { code }, minGradePoints: 1, minCreditsEarned: null, groupKey });
+  await setup(version({ courses: [course("CS101", 1, { prerequisitesDeclared: true }), course("CS102", 1, { prerequisitesDeclared: true }),
+    course("CS301", 3, { prerequisitesDeclared: true, rules: [rule("a", "CS101", "g1")] })] }));
+  await click(button("+ Add another way to meet this", card("CS301")));
+  expect(container.textContent).toContain("Another way to meet CS101");
+  await pick("CS102");
+  await click(button("Save rule"));
+  expect(posts()[0].body.groupKey).toBe("g1");
+});
+
+test("if a save fails part-way, the ones already saved are dropped from the form so a retry cannot add them twice", async () => {
+  axios.post.mockResolvedValueOnce({ data: {} }).mockRejectedValueOnce({ response: { data: { message: "That would make the courses require each other in a loop" } } });
+  await setup();
+  await click(button("Add prerequisite", card("CS301")));
+  await pick("CS101"); await pick("CS201");
+  await click(button("Save 2 rules"));
+  expect(container.querySelector('[role="alert"]').textContent).toContain("in a loop");
+  const still = [...container.querySelectorAll(".pre-pick-row input")].filter((i) => i.checked).map((i) => i.closest("label").textContent);
+  expect(still).toHaveLength(1);
+  expect(still[0]).toContain("CS201");
+});
+
+test("optional credits are sent with the rule when given", async () => {
+  await setup();
+  await click(button("Add prerequisite", card("CS301")));
+  await pick("CS201");
+  await type(container.querySelector(".pre-more input"), "30");
+  await click(button("Save rule"));
+  expect(posts()[0].body).toEqual({ type: "PREREQ", groupKey: "g1", requiredCourseId: "id-CS201", minGrade: "D", minCreditsEarned: 30 });
 });
 
 test("a course cannot be its own prerequisite: it is not offered in the list", async () => {
   await setup();
   await click(button("Add prerequisite", card("CS301")));
-  const options = [...container.querySelectorAll(".pre-form select")[1].options].map((o) => o.textContent);
+  const options = [...container.querySelectorAll(".pre-pick-row")].map((o) => o.textContent);
   expect(options.some((o) => o.startsWith("CS301"))).toBe(false);
   expect(options.some((o) => o.startsWith("CS201"))).toBe(true);
+});
+
+test("the course list can be filtered by code or name", async () => {
+  await setup();
+  await click(button("Add prerequisite", card("CS301")));
+  await type(container.querySelector(".pre-pick-search"), "CS10");
+  expect([...container.querySelectorAll(".pre-pick-row")].map((o) => o.querySelector("strong").textContent)).toEqual(["CS101"]);
 });
 
 test("removing a rule needs a reason and sends it", async () => {
