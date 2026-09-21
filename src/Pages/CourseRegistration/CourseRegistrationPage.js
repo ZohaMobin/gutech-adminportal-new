@@ -5,6 +5,7 @@ import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms
 import "./CourseRegistrationPage.css";
 import NoResultsFound from "../../Components/NoResultsFound";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
+import EligibilityPreview from "./EligibilityPreview";
 
 const CourseRegistrationPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -538,6 +539,17 @@ const CourseRegistrationPage = () => {
                 </table>
               </div>
             </div>
+          )}
+
+          {preview.length > 0 && selectedCourse && activeAcademicTerm?._id && selectedSemester !== "" && (
+            <EligibilityPreview
+              apiUrl={apiUrl}
+              courseId={selectedCourse._id}
+              semester={selectedSemester}
+              academicYear={activeAcademicTerm._id}
+              students={preview}
+              headers={requestHeaders()}
+            />
           )}
 
           <button onClick={handleRegister} disabled={!file || loading || preview.length === 0} className="register-button" type="button">
