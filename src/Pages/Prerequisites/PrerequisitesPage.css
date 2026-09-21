@@ -78,7 +78,6 @@
 .pre-rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .pre-rule { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 12px; background: #f8f9fb; border: 1px solid var(--line); border-radius: 8px; }
 .pre-rule-text { line-height: 1.5; overflow-wrap: anywhere; }
-.pre-group { display: inline-block; margin-left: 8px; padding: 0 8px; border-radius: 999px; background: #e6f1fb; color: #1b5e9b; font-size: 11.5px; font-weight: 600; }
 .pre-x { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 3px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; }
 .pre-x:hover:not(:disabled) { background: #fdeaea; color: #b42318; }
 .pre-unlocks { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--muted); font-size: 12.5px; }
@@ -93,7 +92,6 @@
 .pre-form-title { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
 .pre-sentence { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .pre-sentence label { flex: 0 0 auto; }
-.pre-sentence .pre-grow { flex: 1 1 260px; }
 .pre-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: #374151; }
 .pre-form label em { font-style: normal; color: var(--muted); font-weight: 400; }
 .pre-form :is(select, input) { height: 40px; }
@@ -106,6 +104,39 @@
 
 .pre-skeleton { height: 64px; margin-bottom: 14px; border-radius: 12px; background: linear-gradient(90deg, #eceef2, #f6f7f9, #eceef2); background-size: 200% 100%; animation: pre-shimmer 1.2s infinite; }
 @keyframes pre-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* rules as blocks: separate requirements are joined by "and"; alternatives sit together as "any one of these" */
+.pre-rulegroups { display: grid; gap: 6px; }
+.pre-and { justify-self: start; padding: 0 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.pre-block-rules { display: grid; gap: 6px; }
+.pre-block-rules.is-either { padding: 10px; background: #f3f7fc; border: 1px solid #d9e6f5; border-radius: 10px; }
+.pre-block-rules.is-either .pre-rule { background: #fff; }
+.pre-either { font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #1b5e9b; }
+.pre-or { font-style: normal; font-weight: 700; color: #1b5e9b; }
+.pre-link { justify-self: start; padding: 2px 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.pre-link:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 2px; }
+.pre-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* choosing courses */
+.pre-pick-box, .pre-mode { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; gap: 10px; }
+.pre-pick-box legend, .pre-mode legend { padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #374151; }
+.pre-pick-box legend em { font-style: normal; font-weight: 400; color: var(--muted); }
+.pre-pick-search { max-width: 360px; }
+.pre-pick { list-style: none; margin: 0; padding: 4px; max-height: 232px; overflow-y: auto; background: #fff; border: 1px solid #d5d8de; border-radius: 10px; }
+.pre-pick-empty { padding: 14px; text-align: center; color: var(--muted); font-size: 13.5px; }
+.pre-pick-row { display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; font-weight: 400; }
+.pre-pick-row:hover { background: #f6f7f9; }
+.pre-pick-row.is-on { background: var(--tint); }
+.pre-pick-row strong { flex: none; font-weight: 600; }
+.pre-pick-row span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.pre-form .pre-pick-row input, .pre-form .pre-mode-opt input { flex: none; width: 16px; height: 16px; padding: 0; margin: 0; align-self: center; accent-color: var(--accent); }
+.pre-mode { padding: 12px 14px; background: #fff; border: 1px solid #d5d8de; border-radius: 10px; }
+.pre-mode-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 9px; cursor: pointer; }
+.pre-mode-opt.is-on { border-color: var(--accent); background: var(--tint); }
+.pre-mode-opt input { margin-top: 3px !important; align-self: flex-start !important; }
+.pre-mode-opt strong { display: block; font-weight: 600; }
+.pre-mode-opt small { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; font-weight: 400; }
+.pre-form :is(.pre-pick-search) { height: 38px; }
 
 @media (max-width: 980px) {
   .pre-card-main { grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -124,6 +155,11 @@
   .pre-search { flex-basis: auto; }
   .pre-card-main { padding: 14px; }
   .pre-actions .pre-btn { flex: 1; }
-  .pre-sentence label, .pre-sentence .pre-grow { flex: 1 1 100%; }
+  .pre-sentence label { flex: 1 1 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .pre-skeleton, .pre-bar > div { animation: none; transition: none; } }
+
+/* Rows that hold a checkbox or radio beside text: must beat the general ".pre-form label" grid above. */
+.pre-form label.pre-pick-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink); }
+.pre-form label.pre-mode-opt { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ink); }
+.pre-form label.pre-pick-row strong { flex: none; }
