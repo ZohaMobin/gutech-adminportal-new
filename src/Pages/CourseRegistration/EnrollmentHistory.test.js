@@ -56,3 +56,20 @@ test("says so when nothing has been uploaded, and shows the server's reason when
 test("a running upload shows how far it has got", () => {
   expect(resultText(item({ status: "running", processed: 12, total: 37 }))).toBe("12 of 37 done so far");
 });
+
+test("the totals, the filters and the search narrow the list to what needs looking at", async () => {
+  await mount([item({ jobId: "a", fileName: "ok.xlsx", failed: 0, registered: 10 }), item({ jobId: "b", fileName: "bad.xlsx", failed: 4, registered: 1 }), item({ jobId: "c", fileName: "live.xlsx", status: "running", processed: 5, total: 20, registered: 0, failed: 0 })]);
+  const stat = (label) => [...container.querySelectorAll(".enh-stats > div")].find((d) => d.textContent.startsWith(label)).querySelector("strong").textContent;
+  expect([stat("Recent uploads"), stat("Students enrolled"), stat("Need attention"), stat("Running now")]).toEqual(["3", "11", "1", "1"]);
+  expect(container.querySelector(".enh-bar")).not.toBeNull();                         // the running upload shows how far it has got
+  const names = () => [...container.querySelectorAll(".enh-main small")].map((s) => s.textContent.split(" · ").pop());
+  await click([...container.querySelectorAll(".enh-filters button")].find((b) => b.textContent === "Need attention"));
+  expect(names()).toEqual(["bad.xlsx"]);
+  await click([...container.querySelectorAll(".enh-filters button")].find((b) => b.textContent === "All"));
+  await act(async () => {
+    const input = container.querySelector("#enh-search");
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, "live");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  expect(names()).toEqual(["live.xlsx"]);
+});
