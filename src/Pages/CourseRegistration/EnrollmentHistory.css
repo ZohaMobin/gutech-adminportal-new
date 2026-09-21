@@ -51,3 +51,24 @@
   .enh-chev { grid-column: 2; grid-row: 1; }
   .enh-report { padding: 0 16px 16px; }
 }
+
+/* ---------- second pass: stats, filters, live progress ---------- */
+.enh-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 4px 20px 14px; }
+.enh-stats > div { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fafbfc; }
+.enh-stats span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.enh-stats strong { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.enh-stats .is-warn { background: var(--wait-bg); border-color: #f3d9a4; } .enh-stats .is-warn strong { color: var(--wait); }
+.enh-stats .is-live { background: #eef4ff; border-color: #cfe0ff; } .enh-stats .is-live strong { color: #1d4ed8; }
+.enh-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 0 20px 14px; }
+.enh-filters { display: inline-flex; padding: 3px; border-radius: 10px; background: #eef0f4; gap: 2px; }
+.enh-filters button { border: 0; background: none; padding: 6px 12px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; }
+.enh-filters button.is-on { background: #fff; color: var(--accent); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1); }
+.enh-filters button:focus-visible, .enh #enh-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.enh #enh-search { width: 260px; max-width: 100%; height: 36px; padding: 0 12px; border: 1px solid #d5d8de; border-radius: 8px; font: inherit; font-size: 13.5px; }
+.enh-bar { display: block; width: 100%; max-width: 200px; height: 6px; border-radius: 999px; background: #e5e7ec; overflow: hidden; }
+.enh-bar i { display: block; height: 100%; background: var(--accent); transition: width 0.3s ease; }
+.enh { border-radius: 14px; }
+@media (max-width: 760px) {
+  .enh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px 16px 12px; }
+  .enh-tools { padding: 0 16px 12px; } .enh #enh-search { width: 100%; }
+}

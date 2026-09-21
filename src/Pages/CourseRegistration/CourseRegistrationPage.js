@@ -51,6 +51,7 @@ const CourseRegistrationPage = () => {
   const [addingSection, setAddingSection] = useState(false);
   const [newSection, setNewSection] = useState({ section: "", teacherId: "" });
   const [sheet, setSheet] = useState(null);                   // { fileName, rowsInFile, parsed }
+  const [view, setView] = useState("enroll");                 // "enroll" | "history"
   const [historyKey, setHistoryKey] = useState(0);           // bumped after an upload so the history reloads
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -237,11 +238,17 @@ const CourseRegistrationPage = () => {
       <header className="enr-header">
         <div>
           <h1>Enroll students</h1>
-          <p>Add a class list to a course for the current term: choose the course, check its sections, then upload the list.</p>
+          <p>Add a class list to a course for the current term, and keep track of every upload.</p>
         </div>
-        {termLabel && <span className="enr-term" title="Students are enrolled in the current academic term">Term: <strong>{termLabel}</strong></span>}
+        {termLabel && <span className="enr-term" title="Students are enrolled in the current academic term"><i aria-hidden="true" />Term: <strong>{termLabel}</strong></span>}
       </header>
 
+      <div className="enr-tabs" role="tablist" aria-label="Enroll students">
+        <button type="button" role="tab" id="enr-tab-enroll" aria-selected={view === "enroll"} className={view === "enroll" ? "is-on" : ""} onClick={() => setView("enroll")}>New enrollment</button>
+        <button type="button" role="tab" id="enr-tab-history" aria-selected={view === "history"} className={view === "history" ? "is-on" : ""} onClick={() => setView("history")}>Upload history</button>
+      </div>
+
+      <div className={view === "enroll" ? "" : "enr-hidden"}>
       {term === false && <div className="enr-banner bad" role="alert"><AlertIcon /><p>There is no active academic term, so nobody can be enrolled yet. Set one under <strong>Academic Years</strong> first.</p></div>}
       {error && (
         <div className="enr-banner bad" role="alert">
@@ -253,6 +260,8 @@ const CourseRegistrationPage = () => {
       )}
       {success && <div className="enr-banner ok" role="status"><CheckIcon /><p>{success}</p></div>}
 
+      <div className="enr-layout">
+      <div className="enr-main">
       <Step number={1} title="Choose the course" done={step1Done} hint="Pick the department, program and semester, then the course.">
         <div className="enr-filters">
           <label><span>Department</span>
@@ -412,20 +421,34 @@ const CourseRegistrationPage = () => {
         </Step>
       )}
 
-      {course && sheet?.parsed.usable && (
-        <Step number={4} title="Check and enroll" done={false} hint="Each student is checked against the course's rules before anyone is enrolled.">
-          {term?._id && semester !== "" && dataProblems === 0 && (
-            <EligibilityPreview apiUrl={API} courseId={course._id} semester={semester} academicYear={term._id} students={students} headers={headers()} />
-          )}
-          {busy && <div className="enr-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}><div style={{ width: `${progress}%` }} /><span>{progress}%</span></div>}
-          <div className="enr-enroll">
-            <p>{canEnroll ? `Ready to enroll ${students.length} student${students.length === 1 ? "" : "s"} in ${course.name}.` : dataProblems > 0 ? "Fix or leave out the rows with a problem to continue." : unknownSections.length > 0 ? "Add the missing sections to continue." : "Working…"}</p>
-            <button type="button" className="enr-btn enr-btn-primary enr-btn-lg" onClick={enroll} disabled={!canEnroll}>{busy ? "Enrolling…" : `Enroll ${students.length} student${students.length === 1 ? "" : "s"}`}</button>
-          </div>
+      {course && sheet?.parsed.usable && term?._id && semester !== "" && dataProblems === 0 && (
+        <Step number={4} title="Check eligibility" done={false} hint="Each student is checked against the course's rules before anyone is enrolled.">
+          <EligibilityPreview apiUrl={API} courseId={course._id} semester={semester} academicYear={term._id} students={students} headers={headers()} />
         </Step>
       )}
+      </div>
 
+      <aside className="enr-summary" aria-label="Summary">
+        <h2>Summary</h2>
+        <dl>
+          <div className={course ? "is-set" : ""}><dt>Course</dt><dd>{course ? <><strong>{course.code}</strong> {course.name}</> : "Not chosen yet"}</dd></div>
+          <div className={sections.length ? "is-set" : ""}><dt>Sections</dt><dd>{course ? (sections.length ? sections.map((x) => x.section).join(", ") : "None yet") : "–"}</dd></div>
+          <div className={sheet?.parsed.usable ? "is-set" : ""}><dt>Class list</dt><dd>{sheet ? <>{sheet.fileName}<small>{students.length} student{students.length === 1 ? "" : "s"}{dataProblems > 0 ? ` · ${dataProblems} with a problem` : ""}</small></> : "Not uploaded yet"}</dd></div>
+        </dl>
+        {busy && <div className="enr-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}><div style={{ width: `${progress}%` }} /><span>{progress}%</span></div>}
+        <div className="enr-enroll">
+          {course && sheet?.parsed.usable && <p>{canEnroll ? `Ready to enroll ${students.length} student${students.length === 1 ? "" : "s"} in ${course.name}.` : dataProblems > 0 ? "Fix or leave out the rows with a problem to continue." : unknownSections.length > 0 ? "Add the missing sections to continue." : "Working…"}</p>}
+          {sheet?.parsed.usable
+            ? <button type="button" className="enr-btn enr-btn-primary enr-btn-lg" onClick={enroll} disabled={!canEnroll}>{busy ? "Enrolling…" : `Enroll ${students.length} student${students.length === 1 ? "" : "s"}`}</button>
+            : <p className="enr-hint">{course ? "Upload a class list to continue." : "Choose a course to begin."}</p>}
+        </div>
+      </aside>
+      </div>
+      </div>
+
+      <div className={view === "history" ? "" : "enr-hidden"}>
       <EnrollmentHistory apiUrl={API} headers={headers} refreshKey={historyKey} />
+      </div>
     </div>
   );
 };

@@ -172,6 +172,24 @@ test("enrolling sends only roll numbers and sections, watches the job, and repor
   expect(container.querySelector(".enr-table")).toBeNull();                    // finished: the form resets
 });
 
+test("the page has two tabs and a summary that follows the choices, and the enroll button appears only with a usable list", async () => {
+  await mount();
+  const summary = () => container.querySelector(".enr-summary").textContent;
+  expect(summary()).toContain("Not chosen yet");
+  expect(summary()).toContain("Choose a course to begin.");
+  await chooseCourse();
+  expect(summary()).toContain("CS101");
+  expect(summary()).toContain("Upload a class list to continue.");
+  await upload([{ "Roll Number": "1", Section: "A" }]);
+  expect(summary()).toContain("class-list.xlsx");
+  expect(summary()).toContain("1 student");
+  expect(button("Enroll 1 student", container.querySelector(".enr-summary"))).toBeTruthy();
+  expect(container.querySelector(".enr-hidden .enh")).not.toBeNull();                    // history is on its own tab, out of sight
+  await click(container.querySelectorAll(".enr-tabs button")[1]);
+  expect(container.querySelector(".enr-hidden .enr-summary")).not.toBeNull();
+  expect(container.querySelector("#enr-tab-history").getAttribute("aria-selected")).toBe("true");
+});
+
 test("the upload records its file name and how many rows of the file were left out", async () => {
   await mount();
   await chooseCourse();
