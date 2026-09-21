@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
@@ -9,7 +9,11 @@ export const useDepartmentsAndPrograms = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetched once per mount. (React's development mode runs effects twice; the ref keeps that from doubling the requests.)
+  const started = useRef(false);
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     const fetchData = async () => {
       try {
         setLoading(true);
