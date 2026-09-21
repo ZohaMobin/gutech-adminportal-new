@@ -236,7 +236,9 @@ const CourseRegistrationPage = () => {
     } finally { setBusy(false); setHistoryKey((key) => key + 1); }
   };
 
-  const clearFilters = () => { setDepartment(""); setProgram(""); setSemester(""); setSelectedCourseId(""); };
+  // A message is about the last thing done; once the person moves on to something else, it goes.
+  const clearNotices = () => { setSuccess(""); setError(""); setFailures([]); };
+  const clearFilters = () => { setDepartment(""); setProgram(""); setSemester(""); setSelectedCourseId(""); clearNotices(); };
   const termLabel = term?.displayName || (term?.semesterType ? `${term.semesterType} ${term.year}` : "");
   const step1Done = Boolean(course);
   const step3Done = students.length > 0 && sheet?.parsed.usable;
@@ -273,19 +275,19 @@ const CourseRegistrationPage = () => {
       <Step number={1} title="Choose the course" done={step1Done} hint="Pick the department, program and semester, then the course.">
         <div className="enr-filters">
           <label><span>Department</span>
-            <select value={department} onChange={(e) => { setDepartment(e.target.value); setSelectedCourseId(""); }} disabled={filtersLoading}>
+            <select value={department} onChange={(e) => { setDepartment(e.target.value); setSelectedCourseId(""); clearNotices(); }} disabled={filtersLoading}>
               <option value="">Select department</option>
               {departments.map((d) => <option key={d._id} value={d._id}>{d.name}</option>)}
             </select>
           </label>
           <label><span>Program</span>
-            <select value={program} onChange={(e) => { setProgram(e.target.value); setSemester(""); setSelectedCourseId(""); }} disabled={filtersLoading}>
+            <select value={program} onChange={(e) => { setProgram(e.target.value); setSemester(""); setSelectedCourseId(""); clearNotices(); }} disabled={filtersLoading}>
               <option value="">Select program</option>
               {programs.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
             </select>
           </label>
           <label><span>Semester</span>
-            <select value={semester} onChange={(e) => { setSemester(e.target.value); setSelectedCourseId(""); }} disabled={!program || availableSemesters.length === 0}>
+            <select value={semester} onChange={(e) => { setSemester(e.target.value); setSelectedCourseId(""); clearNotices(); }} disabled={!program || availableSemesters.length === 0}>
               <option value="">{program && availableSemesters.length === 0 ? "No semesters" : "Select semester"}</option>
               {availableSemesters.map((s) => <option key={s} value={s}>Semester {s}</option>)}
             </select>
@@ -359,7 +361,7 @@ const CourseRegistrationPage = () => {
 
           {sheet && (
             <div className="enr-file-chip"><FileIcon /><span>{sheet.fileName}</span>
-              <button type="button" className="enr-link" onClick={() => setSheet(null)} disabled={busy}>Remove</button>
+              <button type="button" className="enr-link" onClick={() => { setSheet(null); clearNotices(); }} disabled={busy}>Remove</button>
             </div>
           )}
 

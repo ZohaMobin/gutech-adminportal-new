@@ -217,6 +217,19 @@ test("uploading students who are all already enrolled says so, instead of claimi
   expect(container.querySelector(".enr-banner.ok")).toBeNull();
 });
 
+test("the result message goes away as soon as another filter is chosen", async () => {
+  await mount();
+  await chooseCourse();
+  await upload([{ "Roll Number": "1", Section: "A" }]);
+  state.job = { status: "done", total: 1, processed: 1, registered: 0, alreadyRegistered: 1, rows: [{ rollNumber: "1", status: "already-registered" }] };
+  axios.post.mockResolvedValueOnce({ data: { jobId: "j1" } });
+  await click(button("Enroll 1 student"));
+  await wait(30);
+  expect(container.querySelector(".enr-banner.info")).not.toBeNull();
+  await type(select("Semester"), "2"); await wait(10);
+  expect(container.querySelector(".enr-banner")).toBeNull();
+});
+
 test("a mix of new and already-enrolled students is reported as both", async () => {
   await mount();
   await chooseCourse();
