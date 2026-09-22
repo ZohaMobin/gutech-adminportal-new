@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { BackIcon, LockIcon, AlertIcon, Svg, fmt, dateTimeText, STATE_LABEL, STATE_TONE, messageOf } from "./shared";
+import Loading from "../../Components/Loading/Loading";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const SPECIAL = { I: "Incomplete", W: "Withdrawn" };
@@ -129,7 +130,7 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
   const nextId = position >= 0 && position < queue.length - 1 ? queue[position + 1] : null;
 
   if (loadError) return <div className="ra-page"><button type="button" className="ra-back" onClick={onBack}><BackIcon /> All approvals</button><div className="ra-error" role="alert">{loadError} <button type="button" className="ra-link" onClick={load}>Try again</button></div></div>;
-  if (!batch) return <div className="ra-page"><div className="ra-skeletons" aria-busy="true"><div className="ra-skel" /><div className="ra-skel" /><div className="ra-skel" /></div></div>;
+  if (!batch) return <div className="ra-page"><Loading variant="page" rows={4} label="Loading the result sheet" /></div>;
 
   const weightsBad = batch.readiness && !batch.readiness.weights.ready;
   const stats = sheet?.stats;
