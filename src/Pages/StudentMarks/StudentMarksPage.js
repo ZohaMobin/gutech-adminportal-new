@@ -312,8 +312,8 @@ const StudentMarksPage = () => {
 
   return (
     <div className="student-marks-container">
-      <div className="page-header">
-        <div className="header-content">
+      <div className="marks-page-header">
+        <div className="marks-header-content">
           <h1>Student Marks</h1>
           <p>Choose an academic term first, then review section-level gradebooks</p>
         </div>
