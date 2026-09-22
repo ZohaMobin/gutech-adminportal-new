@@ -1,13 +1,18 @@
 .student-marks-container {
-  padding: var(--spacing-lg);
-  max-width: 1600px;
-  margin: 0 auto;
+  /* Same page shell as Attendance and Result Approvals: full width, no centered max-width, same top padding. */
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 100%;
   background: var(--light-bg);
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
-.page-header {
+/* Named marks-page-header/-content (not the generic .page-header/.header-content also used by other admin pages'
+   stylesheets) so this page's layout can never be overridden by whichever of those happens to load later in the bundle. */
+.marks-page-header {
   margin-bottom: var(--spacing-lg);
+  padding: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -15,13 +20,13 @@
   flex-wrap: wrap;
 }
 
-.header-content h1 {
+.marks-header-content h1 {
   font-size: 1.8rem;
   color: var(--text-dark);
   margin: 0 0 var(--spacing-xs) 0;
 }
 
-.header-content p {
+.marks-header-content p {
   color: var(--text-color);
   margin: 0;
 }
