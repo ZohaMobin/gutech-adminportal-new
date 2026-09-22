@@ -134,21 +134,48 @@ const TeacherAssignmentPage = () => {
     return () => clearTimeout(timer);
   }, [success]);
 
-  const courses = useMemo(() => (offerings || []).filter((o) => o.courseId?._id).map((o) => ({
-    key: o._id, courseId: o.courseId._id, code: o.courseId.code, name: o.courseId.name,
-    departmentId: idOf(o.department), departmentName: o.department?.name || '', programId: idOf(o.program), programCode: o.program?.code || o.program?.name || '', programName: o.program?.name || '', semester: o.semester,
-  })), [offerings]);
-  const departmentOptions = useMemo(() => [...new Map(courses.filter((c) => c.departmentId).map((c) => [c.departmentId, c.departmentName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [courses]);
-  const programOptions = useMemo(() => [...new Map(courses.filter((c) => !department || c.departmentId === department).filter((c) => c.programId).map((c) => [c.programId, c.programName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [courses, department]);
-  const semesterOptions = useMemo(() => [...new Set(courses.filter((c) => (!department || c.departmentId === department) && (!program || c.programId === program)).map((c) => Number(c.semester)))].sort((a, b) => a - b), [courses, department, program]);
+  // A course offering is one program-and-semester slot a course is taught in; a course with two offerings this
+  // term (e.g. a gen-ed course taken by both Sem 3 and Sem 5) is still ONE course with ONE shared set of
+  // sections - not two courses to assign separately. Group offerings by course before listing them.
+  const courses = useMemo(() => {
+    const byCourse = new Map();
+    for (const o of (offerings || [])) {
+      if (!o.courseId?._id) continue;
+      const courseId = o.courseId._id;
+      const slot = {
+        offeringId: o._id,
+        departmentId: idOf(o.department), departmentName: o.department?.name || '',
+        programId: idOf(o.program), programCode: o.program?.code || o.program?.name || '', programName: o.program?.name || '',
+        semester: o.semester,
+      };
+      if (!byCourse.has(courseId)) byCourse.set(courseId, { key: courseId, courseId, code: o.courseId.code, name: o.courseId.name, slots: [slot] });
+      else byCourse.get(courseId).slots.push(slot);
+    }
+    return [...byCourse.values()];
+  }, [offerings]);
+  const departmentOptions = useMemo(() => [...new Map(courses.flatMap((c) => c.slots).filter((s) => s.departmentId).map((s) => [s.departmentId, s.departmentName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [courses]);
+  const programOptions = useMemo(() => [...new Map(courses.flatMap((c) => c.slots).filter((s) => !department || s.departmentId === department).filter((s) => s.programId).map((s) => [s.programId, s.programName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [courses, department]);
+  const semesterOptions = useMemo(() => [...new Set(courses.flatMap((c) => c.slots).filter((s) => (!department || s.departmentId === department) && (!program || s.programId === program)).map((s) => Number(s.semester)))].sort((a, b) => a - b), [courses, department, program]);
   const needsOf = (course) => overview[course.courseId]?.unassigned || 0;
+  // A course matches a department/program/semester filter if ANY of its slots do - it should not disappear
+  // just because one of its several offerings falls outside the chosen filter.
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return courses.filter((c) => (!department || c.departmentId === department) && (!program || c.programId === program) && (semester === '' || Number(c.semester) === Number(semester))
+    return courses.filter((c) => c.slots.some((s) => (!department || s.departmentId === department) && (!program || s.programId === program) && (semester === '' || Number(s.semester) === Number(semester)))
       && (!onlyNeeds || needsOf(c) > 0 || !overview[c.courseId]) && (!needle || `${c.code} ${c.name}`.toLowerCase().includes(needle)))
       .sort((a, b) => String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courses, department, program, semester, query, onlyNeeds, overview]);
+  // "BSCS · Sem 3, 5" for one program across several semesters; " · " joins entirely different programs.
+  const slotLabel = (slots) => {
+    const byProgram = new Map();
+    for (const s of slots) {
+      const label = s.programCode || s.programName || '';
+      if (!byProgram.has(label)) byProgram.set(label, new Set());
+      if (s.semester !== undefined) byProgram.get(label).add(Number(s.semester));
+    }
+    return [...byProgram.entries()].map(([prog, sems]) => (sems.size ? `${prog} · Sem ${[...sems].sort((a, b) => a - b).join(', ')}` : prog)).join(' · ');
+  };
   const totalNeeds = Object.values(overview).reduce((n, item) => n + item.unassigned, 0);
   const selected = courses.find((c) => c.key === selectedKey) || null;
 
@@ -248,7 +275,7 @@ const TeacherAssignmentPage = () => {
                         <button type="button" className={`ta-course ${selectedKey === course.key ? 'is-on' : ''}`} onClick={() => choose(course)} aria-pressed={selectedKey === course.key}>
                           <span className="ta-course-code">{course.code}</span>
                           <span className="ta-course-name">{course.name}</span>
-                          <span className="ta-course-meta">{course.programCode}{course.semester !== undefined ? ` · Sem ${course.semester}` : ''}</span>
+                          <span className="ta-course-meta">{slotLabel(course.slots)}</span>
                           <span className={`ta-status ${!info ? 'none' : needs ? 'needs' : 'done'}`}>{!info ? 'No sections' : needs ? `${needs} need${needs === 1 ? 's' : ''} a teacher` : `${info.sections} section${info.sections === 1 ? '' : 's'} · assigned`}</span>
                         </button>
                       </li>
@@ -264,7 +291,7 @@ const TeacherAssignmentPage = () => {
           ) : (
             <>
               <div className="ta-detail-head">
-                <div><span className="ta-course-code">{selected.code}</span><h3>{selected.name}</h3><p>{[selected.departmentName, selected.programName, `Semester ${selected.semester}`].filter(Boolean).join(' · ')}</p></div>
+                <div><span className="ta-course-code">{selected.code}</span><h3>{selected.name}</h3><p>{[[...new Set(selected.slots.map((s) => s.departmentName).filter(Boolean))].join(', '), slotLabel(selected.slots)].filter(Boolean).join(' · ')}</p></div>
               </div>
               {loadingSections ? <Loading variant="list" rows={2} label="Loading sections" /> : (
                 <>
