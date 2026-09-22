@@ -9,6 +9,7 @@
   flex-direction: column;
   background-color: var(--light-bg);
   overflow-x: hidden;
+  overflow-x: clip;      /* clips like hidden, but does not become a scroll container, so position: sticky works inside pages */
 }
 
 .main-container {
@@ -26,6 +27,7 @@
   transition: all 0.3s ease;
   background-color: var(--white);
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .content-area.sidebar-open {

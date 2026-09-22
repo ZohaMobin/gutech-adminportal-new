@@ -1,7 +1,7 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Toaster } from "react-hot-toast";
-import LoadingSpinner from "../../Components/LoadingSpinner";
 import FiltersPanel from "./components/FiltersPanel";
 import TimetableGrid from "./components/TimetableGrid";
 import ScheduleModal from "./components/ScheduleModal";
@@ -690,9 +690,7 @@ function ClassSchedule() {
 
         <div className="schedule-content">
           {loading ? (
-            <div className="loading-container">
-              <LoadingSpinner />
-            </div>
+            <Loading variant="table" rows={6} label="Loading the timetable" />
           ) : (
             <TimetableGrid
               filteredSchedules={filteredSchedules}

@@ -1,3 +1,4 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./AcademicYearsPage.css";
@@ -159,14 +160,14 @@ const AcademicYearsPage = () => {
   if (loading) {
     return (
       <div className="academic-years-page">
-        <div className="loading">Loading academic years...</div>
+        <Loading variant="table" rows={5} label="Loading academic years" />
       </div>
     );
   }
 
   return (
     <div className="academic-years-page">
-      <div className="page-header">
+      <div className="ay-page-header">
         <h1>Academic Years</h1>
         <button
           className="btn-primary"

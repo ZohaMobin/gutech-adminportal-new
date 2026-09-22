@@ -25,7 +25,8 @@ const usePendingApprovals = () => {
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, REFRESH_MS);
+    // Only ask while someone is looking: a hidden tab does not need a fresh badge, and it refreshes on focus anyway.
+    const timer = setInterval(() => { if (!document.hidden) refresh(); }, REFRESH_MS);
     window.addEventListener("focus", refresh);
     window.addEventListener(APPROVALS_CHANGED_EVENT, refresh);
     return () => {

@@ -1,8 +1,8 @@
+import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
 import { semesters } from "../../config/academicConfig";
-import { getEstimatedGrade } from "../../utils/gradingScale";
 import { formatSectionOptionLabel } from "../../utils/sectionTeachers";
 import "./StudentMarksPage.css";
 
@@ -55,7 +55,7 @@ const StudentMarksPage = () => {
   const [showHelp, setShowHelp] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const getAuthToken = () => sessionStorage.getItem("adminToken") || sessionStorage.getItem("token");
+  const getAuthToken = () => sessionStorage.getItem("adminToken");
   const selectedAcademicTerm = academicTerms.find((term) => term._id === filters.academicYearId);
 
   const requestHeaders = () => ({
@@ -279,7 +279,8 @@ const StudentMarksPage = () => {
         weightedTotal,
         percentage,
         missingMarks,
-        estimatedGrade: percentage == null ? "N/A" : getEstimatedGrade(percentage),
+        // The letter is worked out by the server, from the one grading scale.
+        estimatedGrade: percentage == null ? "N/A" : student.estimatedGrade || "N/A",
         performanceClass: getPerformanceClass(percentage),
       };
     });
@@ -311,8 +312,8 @@ const StudentMarksPage = () => {
 
   return (
     <div className="student-marks-container">
-      <div className="page-header">
-        <div className="header-content">
+      <div className="marks-page-header">
+        <div className="marks-header-content">
           <h1>Student Marks</h1>
           <p>Choose an academic term first, then review section-level gradebooks</p>
         </div>
@@ -518,10 +519,7 @@ const StudentMarksPage = () => {
 
         <div className="table-container">
           {loading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <p>Loading marks data...</p>
-            </div>
+            <Loading variant="table" rows={8} label="Loading marks" />
           ) : !filtersComplete ? (
             <div className="no-data-container">
               <p>Select all filters to view the section gradebook.</p>
@@ -614,6 +612,9 @@ const StudentMarksPage = () => {
                         <span className="grade-chip">{student.estimatedGrade}</span>
                         {student.percentage != null && (
                           <span className="grade-pct">{student.percentage.toFixed(1)}%</span>
+                        )}
+                        {student.bonusCapped && (
+                          <span className="grade-pct" title="Bonus took this student above 100. Students see 100%.">capped at 100%</span>
                         )}
                       </td>
                     </tr>

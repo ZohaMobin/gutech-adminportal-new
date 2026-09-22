@@ -1,3 +1,25 @@
+/* This page used to borrow Programs' unscoped ".page-header"/".programs-page" classes, so it only looked right by
+   accident (whichever page's CSS happened to load last in the bundle). Its own scoped rules, matching the same look. */
+.aa-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.aa-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.aa-page-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
 .approval-tabs {
   display: flex;
   gap: 4px;

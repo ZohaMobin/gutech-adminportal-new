@@ -1,3 +1,4 @@
+import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -246,12 +247,7 @@ const ImportStudentsPage = () => {
           </button>
         </div>
 
-        {loading && (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Processing file...</p>
-          </div>
-        )}
+        {loading && <Loading variant="table" rows={3} label="Processing the file" />}
 
         {error && (
           <div className="error-message">
@@ -317,8 +313,7 @@ const ImportStudentsPage = () => {
         )}
 
         <button className="upload-button" onClick={handleUpload} disabled={!file || loading}>
-          {loading && <span className="button-spinner"></span>}
-          {loading ? "Importing..." : "Import Students"}
+          <BusyLabel busy={loading} busyText="Importing…" idle="Import Students" />
         </button>
       </div>
     </div>

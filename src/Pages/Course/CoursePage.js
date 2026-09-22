@@ -5,8 +5,10 @@ import { toast } from "react-hot-toast";
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
 import TeacherAssignmentPage from '../TeacherAssignment/TeacherAssignmentPage';
 import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "react-icons/fi";
-import LoadingSpinner from '../../Components/LoadingSpinner';
+import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import NoResultsFound from '../../Components/NoResultsFound';
+
+const COURSES_PER_PAGE = 25;
 
 const CoursePage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -36,9 +38,16 @@ const CoursePage = () => {
   const [activeTab, setActiveTab] = useState('create'); // 'create', 'offerings', 'assignments', 'manage'
   const [groupByOptions, setGroupByOptions] = useState({
     department: true,
-    program: false,
-    semester: false
+    program: true,
+    semester: true
   });
+  // Filters for the offerings list and for the course list: everything is shown until a filter is chosen.
+  const [offeringDepartment, setOfferingDepartment] = useState("");
+  const [offeringProgram, setOfferingProgram] = useState("");
+  const [offeringSemester, setOfferingSemester] = useState("");
+  const [offeringQuery, setOfferingQuery] = useState("");
+  const [courseDepartment, setCourseDepartment] = useState("");
+  const [coursePage, setCoursePage] = useState(0);
   const [showCreateHelp, setShowCreateHelp] = useState(true);
   const [showOfferingsHelp, setShowOfferingsHelp] = useState(true);
   const [showManageHelp, setShowManageHelp] = useState(true);
@@ -92,7 +101,7 @@ const CoursePage = () => {
         filtered = filtered.filter(course => 
           course.code.toLowerCase().includes(term) || 
           course.name.toLowerCase().includes(term) ||
-          course.description.toLowerCase().includes(term)
+          (course.description || '').toLowerCase().includes(term)
         );
       }
       
@@ -106,9 +115,18 @@ const CoursePage = () => {
         );
       }
       
+      // Department comes from where the course is offered ("none" is a course that is not offered anywhere yet).
+      if (courseDepartment) {
+        const offered = (id) => courseOfferings.filter((o) => String(o.courseId?._id ?? o.courseId) === String(id));
+        filtered = filtered.filter((course) => (courseDepartment === 'none'
+          ? offered(course._id).length === 0
+          : offered(course._id).some((o) => String(o.department?._id ?? o.department) === courseDepartment)));
+      }
+
       setFilteredCourses(filtered);
+      setCoursePage(0);
     }
-  }, [searchTerm, filterStatus, courses, activeTab]);
+  }, [searchTerm, filterStatus, courseDepartment, courses, courseOfferings, activeTab]);
 
   const fetchCourses = async () => {
     try {
@@ -369,9 +387,21 @@ const CoursePage = () => {
       })
     : courseOfferings;
 
+  const idOfRef = (value) => String(value?._id ?? value ?? '');
+  const filteredOfferings = visibleCourseOfferings.filter((offering) => {
+    if (offeringDepartment && idOfRef(offering.department) !== offeringDepartment) return false;
+    if (offeringProgram && idOfRef(offering.program) !== offeringProgram) return false;
+    if (offeringSemester !== '' && Number(offering.semester) !== Number(offeringSemester)) return false;
+    const needle = offeringQuery.trim().toLowerCase();
+    return !needle || `${offering.courseId?.code || ''} ${offering.courseId?.name || ''}`.toLowerCase().includes(needle);
+  });
+  const offeringDepartmentOptions = [...new Map(visibleCourseOfferings.filter((o) => o.department?._id).map((o) => [o.department._id, o.department.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const offeringProgramOptions = [...new Map(visibleCourseOfferings.filter((o) => o.program?._id && (!offeringDepartment || idOfRef(o.department) === offeringDepartment)).map((o) => [o.program._id, o.program.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const offeringSemesterOptions = [...new Set(visibleCourseOfferings.map((o) => Number(o.semester)))].sort((a, b) => a - b);
+
   // Group course offerings by selected criteria
   const groupOfferings = () => {
-    const offeringsToGroup = visibleCourseOfferings;
+    const offeringsToGroup = filteredOfferings;
 
     // If no grouping options are selected, return a single group
     if (!Object.values(groupByOptions).some(value => value)) {
@@ -417,9 +447,9 @@ const CoursePage = () => {
   // Render a table for a specific group of offerings
   const renderOfferingsTable = (groupName, offerings) => {
     return (
-      <div className="offerings-group" key={groupName}>
-        <h4 className="group-title">{groupName}</h4>
-        <table>
+      <details className="offerings-group" key={groupName} open={filteredOfferings.length <= 40}>
+        <summary className="group-title"><span>{groupName}</span><span className="group-count">{offerings.length} course{offerings.length === 1 ? '' : 's'}</span></summary>
+        <div className="group-scroll"><table>
           <thead>
             <tr>
               <th>Course</th>
@@ -448,14 +478,16 @@ const CoursePage = () => {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </table></div>
+      </details>
     );
   };
 
   const clearFilters = () => {
     setSearchTerm("");
     setFilterStatus("");
+    setCourseDepartment("");
+    setCoursePage(0);
   };
 
   const handleDeactivateAcademicYearOfferings = async () => {
@@ -612,7 +644,7 @@ const CoursePage = () => {
                   </button>
                 )}
           <button className="submit-btn" type="submit" disabled={loading}>
-                  {loading ? "Saving..." : editingCourse ? "Update Course" : "Create Course"}
+                  <BusyLabel busy={loading} busyText="Saving…" idle={editingCourse ? "Update Course" : "Create Course"} />
           </button>
               </div>
         </form>
@@ -643,6 +675,15 @@ const CoursePage = () => {
               </div>
               
               <div className="filter-container">
+                <label>Department:</label>
+                <select value={courseDepartment} onChange={(e) => setCourseDepartment(e.target.value)} className="filter-select">
+                  <option value="">All departments</option>
+                  {[...new Map(courseOfferings.filter((o) => o.department?._id).map((o) => [o.department._id, o.department.name])).entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                  <option value="none">Not offered yet</option>
+                </select>
+              </div>
+
+              <div className="filter-container">
                 <label>Filter by Status:</label>
                 <select 
                   value={filterStatus} 
@@ -665,7 +706,7 @@ const CoursePage = () => {
             
             <div className="courses-table-container">
               {loading ? (
-                <LoadingSpinner message="Loading courses..." />
+                <Loading variant="table" rows={8} label="Loading courses" />
               ) : filteredCourses.length === 0 ? (
                 <NoResultsFound 
                   title="No Courses Found"
@@ -681,6 +722,7 @@ const CoursePage = () => {
                     <tr>
                       <th>Code</th>
                       <th>Name</th>
+                      <th>Department</th>
                       <th>Description</th>
                       <th>Credit Hours</th>
                       <th>Status</th>
@@ -688,10 +730,11 @@ const CoursePage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCourses.map((course) => (
+                    {filteredCourses.slice(coursePage * COURSES_PER_PAGE, (coursePage + 1) * COURSES_PER_PAGE).map((course) => (
                       <tr key={course._id}>
                         <td>{course.code}</td>
                         <td>{course.name}</td>
+                        <td>{[...new Set(courseOfferings.filter((o) => String(o.courseId?._id ?? o.courseId) === String(course._id) && o.department?.name).map((o) => o.department.name))].join(', ') || <span className="muted-cell">Not offered yet</span>}</td>
                         <td className="description-cell">{course.description}</td>
                         <td>{course.creditHours}</td>
                         <td>
@@ -728,6 +771,15 @@ const CoursePage = () => {
                 </table>
               )}
             </div>
+            {filteredCourses.length > COURSES_PER_PAGE && (
+              <div className="courses-pager" role="navigation" aria-label="Course pages">
+                <span>{coursePage * COURSES_PER_PAGE + 1}–{Math.min(filteredCourses.length, (coursePage + 1) * COURSES_PER_PAGE)} of {filteredCourses.length} courses</span>
+                <div>
+                  <button type="button" onClick={() => setCoursePage((p) => Math.max(0, p - 1))} disabled={coursePage === 0}>Previous</button>
+                  <button type="button" onClick={() => setCoursePage((p) => p + 1)} disabled={(coursePage + 1) * COURSES_PER_PAGE >= filteredCourses.length}>Next</button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -873,6 +925,25 @@ const CoursePage = () => {
               </div>
             </div>
 
+            {visibleCourseOfferings.length > 0 && (
+              <div className="offering-filters" role="group" aria-label="Filter course offerings">
+                <select value={offeringDepartment} onChange={(e) => { setOfferingDepartment(e.target.value); setOfferingProgram(''); }} aria-label="Department">
+                  <option value="">All departments</option>
+                  {offeringDepartmentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                </select>
+                <select value={offeringProgram} onChange={(e) => setOfferingProgram(e.target.value)} aria-label="Program">
+                  <option value="">All programs</option>
+                  {offeringProgramOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                </select>
+                <select value={offeringSemester} onChange={(e) => setOfferingSemester(e.target.value)} aria-label="Semester">
+                  <option value="">All semesters</option>
+                  {offeringSemesterOptions.map((n) => <option key={n} value={n}>Semester {n}</option>)}
+                </select>
+                <input type="search" value={offeringQuery} onChange={(e) => setOfferingQuery(e.target.value)} placeholder="Search course code or name" aria-label="Search course offerings" />
+                <span className="offering-count">{filteredOfferings.length === visibleCourseOfferings.length ? `${visibleCourseOfferings.length} offerings` : `${filteredOfferings.length} of ${visibleCourseOfferings.length} offerings`}</span>
+              </div>
+            )}
+
             {academicYearTabs.length > 0 && (
               <div className="academic-year-tabs">
                 {academicYearTabs.map((tab) => (
@@ -891,11 +962,8 @@ const CoursePage = () => {
             
               <div className="content-section">
                 {loading ? (
-                  <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>Loading course offerings...</p>
-                  </div>
-                ) : visibleCourseOfferings.length === 0 ? (
+                  <Loading variant="table" rows={6} label="Loading course offerings" />
+                ) : visibleCourseOfferings.length === 0 || filteredOfferings.length === 0 ? (
                   <NoResultsFound 
                     title="No Course Offerings Found"
                     message="No course offerings exist for the selected academic year yet."

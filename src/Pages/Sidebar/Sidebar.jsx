@@ -10,6 +10,7 @@ const NAV_SECTIONS = [
     items: [
       { id: 'attendance', label: 'Attendance', icon: '📅' },
       { id: 'marks', label: 'Marks', icon: '📄' },
+      { id: 'result-approvals', label: 'Result Approvals', icon: '✅' },
       { id: 'class-schedule', label: 'Class Schedule', icon: '🗓️' },
     ],
   },
@@ -31,6 +32,7 @@ const NAV_SECTIONS = [
       { id: 'departments', label: 'Departments', icon: '🏛️' },
       { id: 'programs', label: 'Programs', icon: '🎓' },
       { id: 'academic-years', label: 'Academic Years', icon: '📆' },
+      { id: 'prerequisites', label: 'Prerequisites', icon: '🔗' },
     ],
   },
 ];

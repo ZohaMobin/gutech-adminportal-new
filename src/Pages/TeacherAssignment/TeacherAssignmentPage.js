@@ -1,690 +1,298 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
-import { semesters } from '../../config/academicConfig';
-import { FiX, FiCheck, FiPlus, FiEdit2 } from 'react-icons/fi';
+import { FiX, FiCheck, FiPlus, FiEdit2, FiSearch, FiUser } from 'react-icons/fi';
+import Loading, { BusyLabel, Refreshing } from '../../Components/Loading/Loading';
+import { messageOf } from '../../utils/apiMessage';
 import './TeacherAssignmentPage.css';
 
+// Who teaches which section. Everything for the current term is listed by course; choosing a course opens its sections on the
+// right, where teachers are added, removed and saved. Filters start on "all" so nothing is hidden until you narrow it down.
+const idOf = (value) => String(value?._id ?? value ?? '');
+const teacherName = (teacher) => teacher?.userId?.name || teacher?.userId?.email || 'Unknown teacher';
+const initials = (name) => String(name).split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+
 const getAssignedTeacherIds = (section) => {
-  if (Array.isArray(section.teachers) && section.teachers.length > 0) {
-    return section.teachers.map((teacher) => teacher.id);
-  }
-
-  if (section.teacher?.id) {
-    return [section.teacher.id];
-  }
-
+  if (Array.isArray(section.teachers) && section.teachers.length > 0) return section.teachers.map((teacher) => teacher.id);
+  if (section.teacher?.id) return [section.teacher.id];
   return [];
 };
+const arraysEqual = (left = [], right = []) => left.length === right.length && [...left].sort().every((value, index) => value === [...right].sort()[index]);
 
-const TeacherPicker = ({ teachers, selectedTeacherIds, onAddTeacher, onRemoveTeacher, emptyLabel }) => {
-  const [pendingTeacherId, setPendingTeacherId] = useState('');
+const TeacherChip = ({ teacher, onRemove }) => (
+  <span className="ta-chip">
+    <span className="ta-avatar" aria-hidden="true">{initials(teacherName(teacher))}</span>
+    <span className="ta-chip-name">{teacherName(teacher)}<small>{teacher.employeeId || ''}</small></span>
+    {onRemove && <button type="button" className="ta-chip-x" onClick={() => onRemove(teacher._id)} aria-label={`Remove ${teacherName(teacher)}`}><FiX /></button>}
+  </span>
+);
 
-  const availableTeachers = useMemo(
-    () => teachers.filter((teacher) => !selectedTeacherIds.includes(teacher._id)),
-    [teachers, selectedTeacherIds]
-  );
-
-  useEffect(() => {
-    if (availableTeachers.length === 0) {
-      setPendingTeacherId('');
-      return;
-    }
-
-    if (!pendingTeacherId || !availableTeachers.some((teacher) => teacher._id === pendingTeacherId)) {
-      setPendingTeacherId(availableTeachers[0]._id);
-    }
-  }, [availableTeachers, pendingTeacherId]);
-
-  const selectedTeachers = teachers.filter((teacher) => selectedTeacherIds.includes(teacher._id));
-
+// Chosen teachers as chips, and one dropdown to add another.
+const TeacherPicker = ({ teachers, selectedTeacherIds, onAddTeacher, onRemoveTeacher }) => {
+  const available = useMemo(() => teachers.filter((teacher) => !selectedTeacherIds.includes(teacher._id)), [teachers, selectedTeacherIds]);
+  const selected = teachers.filter((teacher) => selectedTeacherIds.includes(teacher._id));
   return (
-    <div className="teacher-picker">
-      <div className="teacher-chip-list">
-        {selectedTeachers.length > 0 ? (
-          selectedTeachers.map((teacher) => {
-            const teacherName = teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher';
-
-            return (
-              <div key={teacher._id} className="teacher-chip">
-                <div className="teacher-chip-copy">
-                  <span className="teacher-chip-name">{teacherName}</span>
-                  <span className="teacher-chip-meta">{teacher.employeeId || 'N/A'}</span>
-                </div>
-                <button
-                  type="button"
-                  className="teacher-chip-remove"
-                  onClick={() => onRemoveTeacher(teacher._id)}
-                  aria-label={`Remove ${teacherName}`}
-                >
-                  <FiX />
-                </button>
-              </div>
-            );
-          })
-        ) : (
-          <div className="teacher-picker-empty">{emptyLabel}</div>
-        )}
+    <div className="ta-picker">
+      <div className="ta-chips">
+        {selected.length ? selected.map((teacher) => <TeacherChip key={teacher._id} teacher={teacher} onRemove={onRemoveTeacher} />) : <span className="ta-none">No teacher yet</span>}
       </div>
-
-      <div className="teacher-picker-actions">
-        <select
-          value={pendingTeacherId}
-          onChange={(e) => setPendingTeacherId(e.target.value)}
-          className="teacher-select"
-          disabled={availableTeachers.length === 0}
-        >
-          {availableTeachers.length > 0 ? (
-            availableTeachers.map((teacher) => (
-              <option key={teacher._id} value={teacher._id}>
-                {(teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher')} ({teacher.employeeId || 'N/A'})
-              </option>
-            ))
-          ) : (
-            <option value="">No more teachers available</option>
-          )}
-        </select>
-        <button
-          type="button"
-          className="add-teacher-btn"
-          onClick={() => pendingTeacherId && onAddTeacher(pendingTeacherId)}
-          disabled={!pendingTeacherId || availableTeachers.length === 0}
-        >
-          <FiPlus />
-          Add Teacher
-        </button>
-      </div>
+      <select className="ta-add-select" value="" onChange={(e) => { if (e.target.value) onAddTeacher(e.target.value); }} disabled={available.length === 0} aria-label="Add a teacher">
+        <option value="">{available.length ? '+ Add a teacher' : 'No more teachers to add'}</option>
+        {available.map((teacher) => <option key={teacher._id} value={teacher._id}>{teacherName(teacher)} ({teacher.employeeId || 'N/A'})</option>)}
+      </select>
     </div>
   );
 };
 
-const arraysEqual = (left = [], right = []) => {
-  if (left.length !== right.length) return false;
-
-  const normalizedLeft = [...left].sort();
-  const normalizedRight = [...right].sort();
-
-  return normalizedLeft.every((value, index) => value === normalizedRight[index]);
-};
-
-// Create a separate component for each section to ensure isolation
-const SectionItem = ({ section, teachers, onAssign, loading }) => {
-  const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
-  
-  // Initialize with current teachers if available
-  useEffect(() => {
-    setSelectedTeacherIds(getAssignedTeacherIds(section));
-    setIsEditing(false);
-  }, [section]);
-
-  const initialTeacherIds = getAssignedTeacherIds(section);
-  const hasChanges = !arraysEqual(selectedTeacherIds, initialTeacherIds);
-  const assignedTeachers = teachers.filter((teacher) => selectedTeacherIds.includes(teacher._id));
-  
-  const handleAddTeacher = (teacherId) => {
-    setSelectedTeacherIds((prev) => (prev.includes(teacherId) ? prev : [...prev, teacherId]));
-  };
-
-  const handleRemoveTeacher = (teacherId) => {
-    setSelectedTeacherIds((prev) => prev.filter((id) => id !== teacherId));
-  };
-
-  const handleAssign = () => {
-    onAssign(section, selectedTeacherIds);
-  };
-
-  const handleCancel = () => {
-    setSelectedTeacherIds(initialTeacherIds);
-    setIsEditing(false);
-  };
-  
+const SectionCard = ({ section, teachers, onAssign, saving }) => {
+  const initial = useMemo(() => getAssignedTeacherIds(section), [section]);
+  const [ids, setIds] = useState(initial);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => { setIds(initial); setEditing(false); }, [initial]);
+  const assigned = teachers.filter((teacher) => ids.includes(teacher._id));
+  const changed = !arraysEqual(ids, initial);
   return (
-    <div className={`section-item ${isEditing ? 'editing' : ''}`}>
-      <div className="section-details">
-        <span className="assignment-section-name">{section.section}</span>
-        <span className="assignment-teacher-label">{selectedTeacherIds.length} assigned</span>
+    <div className={`ta-section ${initial.length === 0 ? 'needs' : ''} ${editing ? 'editing' : ''}`}>
+      <div className="ta-section-head">
+        <strong>Section {section.section}</strong>
+        {initial.length === 0 && <span className="ta-flag">Needs a teacher</span>}
+        {!editing && <button type="button" className="ta-link" onClick={() => setEditing(true)}><FiEdit2 /> {initial.length ? 'Change' : 'Assign'}</button>}
       </div>
-      <div className="section-actions">
-        {!isEditing ? (
-          <>
-            <div className="section-summary">
-              {assignedTeachers.length > 0 ? (
-                assignedTeachers.map((teacher) => {
-                  const teacherName = teacher.userId?.name || teacher.userId?.email || 'Unknown Teacher';
-                  return (
-                    <div key={teacher._id} className="teacher-chip compact">
-                      <div className="teacher-chip-copy">
-                        <span className="teacher-chip-name">{teacherName}</span>
-                        <span className="teacher-chip-meta">{teacher.employeeId || 'N/A'}</span>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="teacher-picker-empty">No teachers assigned yet</div>
-              )}
-            </div>
-            <div className="section-action-row">
-              <button type="button" className="edit-assignees-btn" onClick={() => setIsEditing(true)}>
-                <FiEdit2 />
-                Edit
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <TeacherPicker
-              teachers={teachers}
-              selectedTeacherIds={selectedTeacherIds}
-              onAddTeacher={handleAddTeacher}
-              onRemoveTeacher={handleRemoveTeacher}
-              emptyLabel="No teachers assigned yet"
-            />
-            <div className="section-action-row">
-              <button type="button" className="secondary-action-btn" onClick={handleCancel}>
-                Cancel
-              </button>
-              {hasChanges && (
-                <button
-                  className="assign-btn"
-                  onClick={handleAssign}
-                  disabled={selectedTeacherIds.length === 0 || loading}
-                >
-                  {loading ? 'Saving...' : 'Save Assignees'}
-                </button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+      {!editing ? (
+        <div className="ta-chips">{assigned.length ? assigned.map((teacher) => <TeacherChip key={teacher._id} teacher={teacher} />) : <span className="ta-none">No teacher assigned yet</span>}</div>
+      ) : (
+        <>
+          <TeacherPicker teachers={teachers} selectedTeacherIds={ids} onAddTeacher={(id) => setIds((prev) => (prev.includes(id) ? prev : [...prev, id]))} onRemoveTeacher={(id) => setIds((prev) => prev.filter((x) => x !== id))} />
+          <div className="ta-actions">
+            <button type="button" className="ta-btn" onClick={() => { setIds(initial); setEditing(false); }} disabled={saving}>Cancel</button>
+            <button type="button" className="ta-btn ta-primary" onClick={() => onAssign(section, ids)} disabled={!changed || ids.length === 0 || saving}><BusyLabel busy={saving} busyText="Saving…" idle="Save" /></button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 const TeacherAssignmentPage = () => {
-  const { departments, programs, loading: deptProgLoading } = useDepartmentsAndPrograms();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [courses, setCourses] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [sections, setSections] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedSection] = useState(null);
-  const [showHelp, setShowHelp] = useState(true);
-  const [newSection, setNewSection] = useState({ section: '', teacherIds: [] });
-  const [activeAcademicTerm, setActiveAcademicTerm] = useState(null);
-
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
-  const getAuthToken = () => sessionStorage.getItem('adminToken') || sessionStorage.getItem('token');
-  const requestHeaders = () => ({ 'x-auth-token': getAuthToken(), Authorization: `Bearer ${getAuthToken()}` });
-
-  useEffect(() => {
-    const fetchActiveAcademicTerm = async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/api/academic-years/current`, {
-          headers: requestHeaders(),
-        });
-        setActiveAcademicTerm(response.data);
-      } catch (err) {
-        setActiveAcademicTerm(null);
-        setError(err.response?.data?.message || 'No active academic term is configured');
-      }
-    };
-
-    fetchActiveAcademicTerm();
-  }, [apiUrl]);
-
-  // Add axios interceptor for handling connection errors
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      response => response,
-      error => {
-        if (error.code === 'ECONNRESET' || error.code === 'ECONNABORTED') {
-          setError('Connection to server was lost. Please try again.');
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      axios.interceptors.response.eject(interceptor);
-    };
+  const headers = useCallback(() => {
+    const token = sessionStorage.getItem('adminToken');
+    return { 'x-auth-token': token, Authorization: `Bearer ${token}` };
   }, []);
 
-  // Clear success message when filters change
-  useEffect(() => {
-    setSuccess(null);
-  }, [selectedDepartment, selectedProgram, selectedSemester, selectedCourse]);
+  const [term, setTerm] = useState(undefined);              // undefined: loading, null: none
+  const [offerings, setOfferings] = useState(null);
+  const [teachers, setTeachers] = useState([]);
+  const [overview, setOverview] = useState({});              // courseId -> { sections, unassigned }
+  const [sections, setSections] = useState([]);
+  const [loadingSections, setLoadingSections] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [department, setDepartment] = useState('');
+  const [program, setProgram] = useState('');
+  const [semester, setSemester] = useState('');
+  const [query, setQuery] = useState('');
+  const [onlyNeeds, setOnlyNeeds] = useState(false);
+  const [selectedKey, setSelectedKey] = useState('');
+  const [newSection, setNewSection] = useState({ section: '', teacherIds: [] });
+  const started = useRef(false);
+  const sectionRequest = useRef(0);
 
-  // Auto-clear success message after 5 seconds
+  const loadOverview = useCallback(async (termId) => {
+    try {
+      const { data } = await axios.get(`${apiUrl}/api/sections/assignment-overview`, { params: { academicYearId: termId }, headers: headers() });
+      setOverview(Object.fromEntries((data.items || []).map((item) => [item.courseId, item])));
+    } catch { setOverview({}); }
+  }, [apiUrl, headers]);
+
+  // Once: the term, its offerings, the teachers, and how far assignment has got.
   useEffect(() => {
-    let timer;
-    if (success) {
-      timer = setTimeout(() => {
-        setSuccess(null);
-      }, 5000);
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
+    if (started.current) return;
+    started.current = true;
+    (async () => {
+      try {
+        const { data: current } = await axios.get(`${apiUrl}/api/academic-years/current`, { headers: headers() });
+        setTerm(current);
+        const [offeringsResponse, teachersResponse] = await Promise.all([
+          axios.get(`${apiUrl}/api/course-offerings`, { params: { academicYearId: current._id, isActive: true }, headers: headers() }),
+          axios.get(`${apiUrl}/api/teachers`, { headers: headers() }),
+        ]);
+        setOfferings(Array.isArray(offeringsResponse.data) ? offeringsResponse.data : []);
+        setTeachers(Array.isArray(teachersResponse.data) ? teachersResponse.data : []);
+        loadOverview(current._id);
+      } catch (err) {
+        setTerm((known) => (known === undefined ? null : known));
+        setOfferings((known) => known || []);
+        setError(messageOf(err, 'No active academic term is configured.'));
+      }
+    })();
+  }, [apiUrl, headers, loadOverview]);
+
+  useEffect(() => {
+    if (!success) return undefined;
+    const timer = setTimeout(() => setSuccess(''), 5000);
+    return () => clearTimeout(timer);
   }, [success]);
 
-  useEffect(() => {
-    if (selectedDepartment && selectedProgram && selectedSemester) {
-      fetchCourses();
-      fetchTeachers();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDepartment, selectedProgram, selectedSemester, activeAcademicTerm]);
+  const courses = useMemo(() => (offerings || []).filter((o) => o.courseId?._id).map((o) => ({
+    key: o._id, courseId: o.courseId._id, code: o.courseId.code, name: o.courseId.name,
+    departmentId: idOf(o.department), departmentName: o.department?.name || '', programId: idOf(o.program), programCode: o.program?.code || o.program?.name || '', programName: o.program?.name || '', semester: o.semester,
+  })), [offerings]);
+  const departmentOptions = useMemo(() => [...new Map(courses.filter((c) => c.departmentId).map((c) => [c.departmentId, c.departmentName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [courses]);
+  const programOptions = useMemo(() => [...new Map(courses.filter((c) => !department || c.departmentId === department).filter((c) => c.programId).map((c) => [c.programId, c.programName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [courses, department]);
+  const semesterOptions = useMemo(() => [...new Set(courses.filter((c) => (!department || c.departmentId === department) && (!program || c.programId === program)).map((c) => Number(c.semester)))].sort((a, b) => a - b), [courses, department, program]);
+  const needsOf = (course) => overview[course.courseId]?.unassigned || 0;
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return courses.filter((c) => (!department || c.departmentId === department) && (!program || c.programId === program) && (semester === '' || Number(c.semester) === Number(semester))
+      && (!onlyNeeds || needsOf(c) > 0 || !overview[c.courseId]) && (!needle || `${c.code} ${c.name}`.toLowerCase().includes(needle)))
+      .sort((a, b) => String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courses, department, program, semester, query, onlyNeeds, overview]);
+  const totalNeeds = Object.values(overview).reduce((n, item) => n + item.unassigned, 0);
+  const selected = courses.find((c) => c.key === selectedKey) || null;
 
-  useEffect(() => {
-    if (selectedCourse) {
-      fetchSections();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCourse, activeAcademicTerm]);
-
-  useEffect(() => {
-    if (selectedSection) {
-      setError(null);
-      fetchStudents();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSection]);
-
-  const fetchCourses = async () => {
+  const loadSections = useCallback(async (courseId) => {
+    const token = ++sectionRequest.current;
+    setLoadingSections(true);
     try {
-      setLoading(true);
-      if (!activeAcademicTerm?._id) {
-        setCourses([]);
-        setError('No active academic term is configured');
-        return;
-      }
-
-      const response = await axios.get(`${apiUrl}/api/course-offerings`, {
-        params: {
-          academicYearId: activeAcademicTerm._id,
-          isActive: true,
-        },
-        headers: requestHeaders(),
-      });
-      const offerings = Array.isArray(response.data) ? response.data : [];
-      const scopedCourses = offerings
-        .filter((offering) => {
-          const departmentId = offering.department?._id || offering.department;
-          const programId = offering.program?._id || offering.program;
-          return (
-            String(departmentId) === String(selectedDepartment) &&
-            String(programId) === String(selectedProgram) &&
-            Number(offering.semester) === Number(selectedSemester)
-          );
-        })
-        .map((offering) => ({
-          ...(offering.courseId || {}),
-          offeringId: offering._id,
-        }))
-        .filter((course) => course._id);
-
-      setCourses(scopedCourses);
+      const { data } = await axios.get(`${apiUrl}/api/sections/course/${courseId}`, { params: { academicYearId: term?._id }, headers: headers() });
+      if (token === sectionRequest.current) setSections(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch courses. Please try again.');
+      if (token === sectionRequest.current) { setSections([]); setError(messageOf(err, 'The sections could not be loaded.')); }
     } finally {
-      setLoading(false);
+      if (token === sectionRequest.current) setLoadingSections(false);
     }
+  }, [apiUrl, headers, term?._id]);
+
+  const choose = (course) => {
+    setSelectedKey(course.key); setSuccess(''); setError(''); setNewSection({ section: '', teacherIds: [] });
+    loadSections(course.courseId);
   };
 
-  const fetchTeachers = async () => {
+  const save = async (request, done) => {
+    setSaving(true); setError(''); setSuccess('');
     try {
-      const response = await axios.get(`${apiUrl}/api/teachers`, {
-        headers: requestHeaders()
-      });
-      
-      // Show all teachers regardless of department
-      setTeachers(response.data || []);
+      await request();
+      setSuccess(done);
+      await Promise.all([loadSections(selected.courseId), loadOverview(term?._id)]);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch teachers. Please try again.');
-    }
+      setError(messageOf(err, 'That could not be saved. Please try again.'));
+    } finally { setSaving(false); }
   };
-
-  const fetchSections = async () => {
-    if (!selectedCourse) return;
-    
-    try {
-      setLoading(true);
-      const response = await axios.get(`${apiUrl}/api/sections/course/${selectedCourse}`, {
-        params: { academicYearId: activeAcademicTerm?._id },
-        headers: requestHeaders()
-      });
-      
-      setSections(response.data);
-      
-    } catch (err) {
-      console.error('Error fetching sections:', err);
-      setError(err.response?.data?.message || 'Failed to fetch sections. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchStudents = async () => {
-    if (!selectedSection) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      await axios.get(`${apiUrl}/api/course-registrations/getStudents/${selectedSection}`, {
-        params: { academicYearId: activeAcademicTerm?._id },
-        headers: requestHeaders()
-      });
-    } catch (error) {
-      if (error.response?.status === 404) {
-        setError('No students are currently enrolled in this section');
-      } else {
-        setError(error.response?.data?.message || 'Failed to fetch students');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addNewSectionTeacher = (teacherId) => {
-    setNewSection((prev) => ({
-      ...prev,
-      teacherIds: prev.teacherIds.includes(teacherId) ? prev.teacherIds : [...prev.teacherIds, teacherId],
-    }));
-  };
-
-  const removeNewSectionTeacher = (teacherId) => {
-    setNewSection((prev) => ({
-      ...prev,
-      teacherIds: prev.teacherIds.filter((id) => id !== teacherId),
-    }));
-  };
-
-  const handleAssign = async (section, teacherIds) => {
-    if (!teacherIds || teacherIds.length === 0) {
-      setError('Please select at least one teacher');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const token = sessionStorage.getItem('adminToken');
-      
-      // If section is provided, update existing section
-      if (section) {
-        const sectionId = section._id || section.id;
-        
-        if (!sectionId) {
-          console.error('No section ID found in section:', section);
-          throw new Error('Invalid section ID');
-        }
-        
-        // Update existing section
-        await axios.put(`${apiUrl}/api/sections/${sectionId}`, {
-          teacherId: teacherIds[0],
-          teacherIds,
-          section: section.section
-        }, {
-          headers: { 'x-auth-token': token }
-        });
-        setSuccess('Teacher assigned successfully');
-      } else {
-        // Add new section
-        if (!selectedCourse) {
-          setError('Please select a course');
-          return;
-        }
-        
-        // Make section name mandatory for new sections
-        if (!newSection.section || newSection.section.trim() === '') {
-          setError('Please enter a section name');
-          return;
-        }
-        
-        await axios.post(`${apiUrl}/api/sections/addSection`, {
-          courseId: selectedCourse,
-          teacherId: teacherIds[0],
-          teacherIds,
-          section: newSection.section
-        }, {
-          headers: { 'x-auth-token': token }
-        });
-        setSuccess('Section added successfully');
-        setNewSection({ section: '', teacherIds: [] });
-      }
-      
-      fetchSections();
-    } catch (err) {
-      console.error('Error in handleAssign:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to assign teacher. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddSection = async () => {
-    if (!selectedCourse) {
-      setError('Please select a course');
-      return;
-    }
-    
-    if (!newSection.teacherIds || newSection.teacherIds.length === 0) {
-      setError('Please select at least one teacher');
-      return;
-    }
-    
-    // Make section name mandatory for new sections
-    if (!newSection.section || newSection.section.trim() === '') {
-      setError('Please enter a section name');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      const token = sessionStorage.getItem('adminToken');
-      
-      await axios.post(`${apiUrl}/api/sections/addSection`, {
-        courseId: selectedCourse,
-        teacherId: newSection.teacherIds[0],
-        teacherIds: newSection.teacherIds,
-        section: newSection.section
-      }, {
-        headers: { 'x-auth-token': token }
-      });
-      setSuccess('Section added successfully');
+  const assign = (section, teacherIds) => save(() => axios.put(`${apiUrl}/api/sections/${section._id || section.id}`, { teacherId: teacherIds[0], teacherIds, section: section.section }, { headers: headers() }), `Section ${section.section} saved.`);
+  const addSection = () => {
+    const name = newSection.section.trim();
+    if (!name || newSection.teacherIds.length === 0) return;
+    save(async () => {
+      await axios.post(`${apiUrl}/api/sections/addSection`, { courseId: selected.courseId, teacherId: newSection.teacherIds[0], teacherIds: newSection.teacherIds, section: name }, { headers: headers() });
       setNewSection({ section: '', teacherIds: [] });
-      fetchSections();
-    } catch (err) {
-      console.error('Error adding section:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to add section. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    }, `Section ${name} added.`);
   };
 
-  const clearFilters = () => {
-    setSelectedDepartment('');
-    setSelectedProgram('');
-    setSelectedSemester('');
-    setSelectedCourse('');
-    setCourses([]);
-    setTeachers([]);
-    setSections([]);
-    setSuccess(null);
-  };
+  const clearFilters = () => { setDepartment(''); setProgram(''); setSemester(''); setQuery(''); setOnlyNeeds(false); };
+
+  if (term === undefined || offerings === null) return <div className="ta"><Loading variant="page" rows={4} label="Loading courses" /></div>;
+  if (term === null) return <div className="ta"><div className="ta-banner bad" role="alert">{error || 'There is no active academic term, so there is nothing to assign yet. Set one under Academic Years first.'}</div></div>;
 
   return (
-    <div className="teacher-assignment-container">
-      {showHelp && (
-        <div className="course-important-note">
-          <p>Assign one or more teachers to each section. Use Add Teacher when a course should appear for multiple teachers.</p>
-          <button className="course-close-note-btn" onClick={() => setShowHelp(false)}>×</button>
+    <div className="ta">
+      <header className="ta-head">
+        <div>
+          <h2>Teacher assignments</h2>
+          <p>Choose a course, then decide who teaches each of its sections. Term: <strong>{term.displayName || `${term.semesterType} ${term.year}`}</strong></p>
         </div>
-      )}
+        <span className={`ta-summary ${totalNeeds ? 'warn' : 'ok'}`}>{totalNeeds ? `${totalNeeds} section${totalNeeds === 1 ? '' : 's'} still need a teacher` : 'Every section has a teacher'}</span>
+      </header>
 
-      {error && (
-        <div className="error-message">
-          {error}
-          <button className="dismiss-btn" onClick={() => setError(null)}>
-            <FiX />
-          </button>
-        </div>
-      )}
+      {error && <div className="ta-banner bad" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Dismiss"><FiX /></button></div>}
+      {success && <div className="ta-banner ok" role="status"><FiCheck />{success}</div>}
 
-      {success && (
-        <div className="success-message">
-          <FiCheck className="success-icon" />
-          {success}
-          <button className="dismiss-btn" onClick={() => setSuccess(null)}>
-            <FiX />
-          </button>
-        </div>
-      )}
+      <section className="ta-filters" aria-label="Find a course">
+        <label><span>Department</span>
+          <select value={department} onChange={(e) => { setDepartment(e.target.value); setProgram(''); setSemester(''); }}>
+            <option value="">All departments</option>
+            {departmentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select>
+        </label>
+        <label><span>Program</span>
+          <select value={program} onChange={(e) => { setProgram(e.target.value); setSemester(''); }}>
+            <option value="">All programs</option>
+            {programOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select>
+        </label>
+        <label><span>Semester</span>
+          <select value={semester} onChange={(e) => setSemester(e.target.value)}>
+            <option value="">All semesters</option>
+            {semesterOptions.map((s) => <option key={s} value={s}>Semester {s}</option>)}
+          </select>
+        </label>
+        <label className="ta-search"><span>Search</span>
+          <span className="ta-input"><FiSearch aria-hidden="true" /><input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Course code or name" /></span>
+        </label>
+        <button type="button" className={`ta-toggle ${onlyNeeds ? 'on' : ''}`} aria-pressed={onlyNeeds} onClick={() => setOnlyNeeds((v) => !v)}>Needs a teacher{totalNeeds ? <b>{totalNeeds}</b> : null}</button>
+      </section>
 
-      <div className="filters-section">
-        <div className="filters-header">
-          <h3>Filter Courses</h3>
-          <button className="clear-filters-btn" onClick={clearFilters}>
-            Clear Filters
-          </button>
-        </div>
-        <div className="filters-grid">
-          <div className="filter-group">
-            <label>Department</label>
-            <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className={selectedDepartment ? 'selected' : ''}
-              disabled={deptProgLoading}
-            >
-              <option value="">Select Department</option>
-              {departments.map((dept) => (
-                <option key={dept._id} value={dept._id}>{dept.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Program</label>
-            <select
-              value={selectedProgram}
-              onChange={(e) => setSelectedProgram(e.target.value)}
-              disabled={!selectedDepartment || deptProgLoading}
-              className={selectedProgram ? 'selected' : ''}
-            >
-              <option value="">Select Program</option>
-              {programs.map((prog) => (
-                <option key={prog._id} value={prog._id}>{prog.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Semester</label>
-            <select
-              value={selectedSemester}
-              onChange={(e) => setSelectedSemester(e.target.value)}
-              disabled={!selectedProgram}
-              className={selectedSemester ? 'selected' : ''}
-            >
-              <option value="">Select Semester</option>
-              {semesters.map((sem) => (
-                <option key={sem} value={sem}>Semester {sem}</option>
-              ))}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Course</label>
-            <select
-              value={selectedCourse}
-              onChange={(e) => setSelectedCourse(e.target.value)}
-              disabled={!selectedSemester}
-              className={selectedCourse ? 'selected' : ''}
-            >
-              <option value="">Select Course</option>
-              {courses.map((course) => (
-                <option key={course._id} value={course._id}>
-                  {course.code} - {course.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+      <div className="ta-layout">
+        <aside className="ta-courses" aria-label="Courses">
+          <h3>Courses <span className="ta-count">{visible.length === courses.length ? courses.length : `${visible.length} of ${courses.length}`}</span></h3>
+          {courses.length === 0 ? <p className="ta-empty">No courses are offered in this term yet. Create course offerings first.</p>
+            : visible.length === 0 ? <p className="ta-empty">No course matches. <button type="button" className="ta-link" onClick={clearFilters}>Clear filters</button></p>
+              : (
+                <ul>
+                  {visible.map((course) => {
+                    const info = overview[course.courseId];
+                    const needs = info?.unassigned || 0;
+                    return (
+                      <li key={course.key}>
+                        <button type="button" className={`ta-course ${selectedKey === course.key ? 'is-on' : ''}`} onClick={() => choose(course)} aria-pressed={selectedKey === course.key}>
+                          <span className="ta-course-code">{course.code}</span>
+                          <span className="ta-course-name">{course.name}</span>
+                          <span className="ta-course-meta">{course.programCode}{course.semester !== undefined ? ` · Sem ${course.semester}` : ''}</span>
+                          <span className={`ta-status ${!info ? 'none' : needs ? 'needs' : 'done'}`}>{!info ? 'No sections' : needs ? `${needs} need${needs === 1 ? 's' : ''} a teacher` : `${info.sections} section${info.sections === 1 ? '' : 's'} · assigned`}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+        </aside>
+
+        <main className="ta-detail">
+          {!selected ? (
+            <div className="ta-placeholder"><FiUser size={30} /><p>Choose a course on the left to see its sections and assign teachers.</p></div>
+          ) : (
+            <>
+              <div className="ta-detail-head">
+                <div><span className="ta-course-code">{selected.code}</span><h3>{selected.name}</h3><p>{[selected.departmentName, selected.programName, `Semester ${selected.semester}`].filter(Boolean).join(' · ')}</p></div>
+              </div>
+              {loadingSections ? <Loading variant="list" rows={2} label="Loading sections" /> : (
+                <>
+                  <Refreshing active={saving}>
+                  <div className="ta-sections">
+                    {sections.length ? sections.map((section) => <SectionCard key={section._id || section.id} section={section} teachers={teachers} onAssign={assign} saving={saving} />) : <p className="ta-empty">This course has no sections in this term yet. Add the first one below.</p>}
+                  </div>
+                  </Refreshing>
+                  <section className="ta-add" aria-label="Add a section">
+                    <h4><FiPlus /> Add a section</h4>
+                    <div className="ta-add-row">
+                      <label><span>Section name</span><input type="text" value={newSection.section} maxLength={20} onChange={(e) => setNewSection({ ...newSection, section: e.target.value })} placeholder="For example: A" /></label>
+                      <div className="ta-add-teachers"><span>Teachers</span>
+                        <TeacherPicker teachers={teachers} selectedTeacherIds={newSection.teacherIds}
+                          onAddTeacher={(id) => setNewSection((prev) => ({ ...prev, teacherIds: prev.teacherIds.includes(id) ? prev.teacherIds : [...prev.teacherIds, id] }))}
+                          onRemoveTeacher={(id) => setNewSection((prev) => ({ ...prev, teacherIds: prev.teacherIds.filter((x) => x !== id) }))} />
+                      </div>
+                      <button type="button" className="ta-btn ta-primary" onClick={addSection} disabled={saving || !newSection.section.trim() || newSection.teacherIds.length === 0}><BusyLabel busy={saving} busyText="Adding…" idle="Add section" /></button>
+                    </div>
+                  </section>
+                </>
+              )}
+            </>
+          )}
+        </main>
       </div>
-
-      {selectedCourse && (
-        <div className="assignment-section">
-          <div className="course-info">
-            <h4>Selected Course</h4>
-            <p>{courses.find(c => c._id === selectedCourse)?.code} - {courses.find(c => c._id === selectedCourse)?.name}</p>
-          </div>
-
-          <div className="section-info">
-            <h4>Current Sections</h4>
-            {loading ? (
-              <div className="loading-spinner">Loading sections...</div>
-            ) : (
-              <>
-                <div className="sections-list">
-                  {sections.length > 0 ? (
-                    sections.map((section) => (
-                      <SectionItem 
-                        key={section._id || section.id}
-                        section={section}
-                        teachers={teachers}
-                        onAssign={handleAssign}
-                        loading={loading}
-                      />
-                    ))
-                  ) : (
-                    <p className="no-sections">No sections available for this course. Create a section to proceed.</p>
-                  )}
-                </div>
-
-                <div className="add-section-form">
-                  <h4>Add New Section</h4>
-                  <div className="form-group">
-                    <input
-                      type="text"
-                      placeholder="Section Name (required)"
-                      value={newSection.section}
-                      onChange={(e) => setNewSection({ ...newSection, section: e.target.value })}
-                      className="section-input"
-                      required
-                    />
-                  </div>
-                  <div className="new-section-teachers">
-                    <label className="new-section-label">Assigned teachers</label>
-                    <TeacherPicker
-                      teachers={teachers}
-                      selectedTeacherIds={newSection.teacherIds}
-                      onAddTeacher={addNewSectionTeacher}
-                      onRemoveTeacher={removeNewSectionTeacher}
-                      emptyLabel="No teachers selected yet"
-                    />
-                  </div>
-                  <div className="new-section-actions">
-                    <button
-                      className="assign-btn"
-                      onClick={handleAddSection}
-                      disabled={!newSection.teacherIds.length || !newSection.section || loading}
-                    >
-                      {loading ? 'Adding...' : 'Add Section'}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default TeacherAssignmentPage; 
+export default TeacherAssignmentPage;
