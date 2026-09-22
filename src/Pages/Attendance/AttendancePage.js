@@ -601,7 +601,7 @@ const AttendancePage = () => {
   return (
     <div className="attendance-page">
       <div className="attendance-header">
-        <div className="header-content">
+        <div className="att-header-content">
           <h1>Attendance Management</h1>
           <p>Choose an academic term first, then inspect attendance course-wise</p>
         </div>

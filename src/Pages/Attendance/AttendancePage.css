@@ -21,14 +21,14 @@
   gap: 1rem;
 }
 
-.header-content h1 {
+.att-header-content h1 {
   font-size: 1.875rem;
   font-weight: 600;
   color: #991d20;
   margin: 0 0 0.25rem 0;
 }
 
-.header-content p {
+.att-header-content p {
   color: #64748b;
   font-size: 0.875rem;
   margin: 0;

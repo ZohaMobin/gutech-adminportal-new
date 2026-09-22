@@ -111,7 +111,7 @@ const DepartmentsPage = () => {
 
   return (
     <div className="departments-page">
-      <div className="page-header">
+      <div className="dept-page-header">
         <h1>Departments Management</h1>
         <button className="btn-primary" onClick={() => setShowModal(true)}>
           + Add Department
