@@ -4,7 +4,7 @@
 .ra-page {
   --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: #8b1538; --accent-hover: #741230; --tint: #fbf1f4;
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4; --info: #1b5e9b; --info-bg: #eaf3fb;
-  padding: 1.25rem; max-width: 1180px; margin: 0 auto; color: var(--ink); display: flex; flex-direction: column; gap: 1.25rem;
+  padding: 1.25rem; width: 100%; max-width: 100%; color: var(--ink); display: flex; flex-direction: column; gap: 1.25rem;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 .ra-page *, .ra-page *::before, .ra-page *::after { box-sizing: border-box; }
