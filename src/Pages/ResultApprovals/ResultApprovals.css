@@ -1,17 +1,18 @@
-/* Result approvals: review submitted results, approve them into the record, publish to students. */
+/* Result approvals: review submitted results, approve them into the record, publish to students.
+   Same shell as the rest of the admin portal (Attendance, Marks): light background, Inter, a plain
+   maroon-on-white title with no icon badge, and filters in their own bordered card. */
 .ra-page {
   --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: #8b1538; --accent-hover: #741230; --tint: #fbf1f4;
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4; --info: #1b5e9b; --info-bg: #eaf3fb;
-  padding: 24px; max-width: 1180px; margin: 0 auto; color: var(--ink); display: flex; flex-direction: column; gap: 16px;
+  padding: 2rem; max-width: 1180px; margin: 0 auto; color: var(--ink); display: flex; flex-direction: column; gap: 1.25rem;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 .ra-page *, .ra-page *::before, .ra-page *::after { box-sizing: border-box; }
 .ra-page h1, .ra-page h2, .ra-page h3, .ra-page p { margin: 0; }
 
-.ra-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
-.ra-title { display: flex; align-items: flex-start; gap: 14px; }
-.ra-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: var(--tint); color: var(--accent); flex: none; }
-.ra-title h1 { font-size: 28px; font-weight: 600; color: #333; margin-bottom: 4px; }
-.ra-title p { color: #666; font-size: 14.5px; max-width: 620px; line-height: 1.5; }
+.ra-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.ra-header h1 { font-size: 1.875rem; font-weight: 600; color: var(--accent); margin: 0 0 0.25rem; }
+.ra-header p { color: var(--muted); font-size: 0.875rem; max-width: 620px; line-height: 1.5; }
 
 .ra-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 8px; border: 1px solid #d5d8de; background: #fff; color: var(--ink); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
 .ra-btn:hover:not(:disabled) { background: #f6f7f9; }
@@ -24,7 +25,7 @@
 .ra-muted { color: var(--muted); font-style: normal; font-size: 14px; }
 
 /* list */
-.ra-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ra-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 0.85rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 0.85rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
 .ra-tabs { display: inline-flex; gap: 4px; padding: 4px; background: #eceef2; border-radius: 10px; flex-wrap: wrap; }
 .ra-tab { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; }
 .ra-tab span { padding: 1px 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.06); font-size: 12px; }
@@ -58,9 +59,6 @@
 
 .ra-empty { display: grid; gap: 10px; justify-items: center; padding: 48px 16px; text-align: center; background: #fff; border: 1px dashed #d5d8de; border-radius: 12px; color: var(--muted); }
 .ra-empty-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--ok-bg); color: var(--ok); }
-.ra-skeletons { display: grid; gap: 12px; }
-.ra-skel { height: 76px; border-radius: 12px; background: linear-gradient(90deg, #eceef2, #f6f7f9, #eceef2); background-size: 200% 100%; animation: ra-shimmer 1.2s infinite; }
-@keyframes ra-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
 /* detail */
 .ra-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 6px; border: 0; border-radius: 8px; background: none; color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
@@ -134,7 +132,7 @@
 }
 @media (max-width: 760px) {
   .ra-page { padding: 16px; }
-  .ra-title h1 { font-size: 24px; }
+  .ra-header h1 { font-size: 24px; }
   .ra-toolbar { flex-direction: column; align-items: stretch; }
   .ra-tabs { display: grid; grid-template-columns: 1fr 1fr; }
   .ra-tab { justify-content: center; }

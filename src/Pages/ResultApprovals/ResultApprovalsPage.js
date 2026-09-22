@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import ApprovalDetail from "./ApprovalDetail";
 import { Svg, CheckIcon, fmt, dateText, STATE_LABEL, STATE_TONE } from "./shared";
+import Loading from "../../Components/Loading/Loading";
 import "./ResultApprovals.css";
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -81,12 +82,9 @@ const ResultApprovalsPage = () => {
   return (
     <div className="ra-page">
       <header className="ra-header">
-        <div className="ra-title">
-          <span className="ra-icon"><CheckIcon size={20} /></span>
-          <div>
-            <h1>Result approvals</h1>
-            <p>Review the results teachers submit, approve them into the record, then publish them to students.</p>
-          </div>
+        <div>
+          <h1>Result approvals</h1>
+          <p>Review the results teachers submit, approve them into the record, then publish them to students.</p>
         </div>
       </header>
 
@@ -118,7 +116,7 @@ const ResultApprovalsPage = () => {
       </div>
 
       {loading ? (
-        <div className="ra-skeletons" aria-busy="true"><div className="ra-skel" /><div className="ra-skel" /><div className="ra-skel" /></div>
+        <Loading variant="list" rows={4} label="Loading submitted results" />
       ) : shown.length === 0 ? (
         <Empty>{query ? "No submitted section matches that search." : current.empty}</Empty>
       ) : (
