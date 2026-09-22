@@ -117,7 +117,7 @@ const ProgramsPage = () => {
 
   return (
     <div className="programs-page">
-      <div className="page-header">
+      <div className="prog-page-header">
         <h1>Programs Management</h1>
         <button className="btn-primary" onClick={() => setShowModal(true)}>
           + Add Program

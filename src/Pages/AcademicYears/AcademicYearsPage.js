@@ -167,7 +167,7 @@ const AcademicYearsPage = () => {
 
   return (
     <div className="academic-years-page">
-      <div className="page-header">
+      <div className="ay-page-header">
         <h1>Academic Years</h1>
         <button
           className="btn-primary"

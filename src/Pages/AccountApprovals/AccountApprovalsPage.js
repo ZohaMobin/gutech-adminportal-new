@@ -66,8 +66,8 @@ const AccountApprovalsPage = () => {
   const isRejectedTab = tab === "rejected";
 
   return (
-    <div className="programs-page">
-      <div className="page-header">
+    <div className="aa-page">
+      <div className="aa-page-header">
         <h1>Account Approvals</h1>
       </div>
 

@@ -7,7 +7,7 @@
 }
 
 /* Header Styles */
-.page-header {
+.sd-page-header {
   margin-bottom: var(--spacing-lg);
   display: flex;
   justify-content: space-between;
@@ -21,12 +21,12 @@
   border-bottom: 3px solid var(--primary-color);
 }
 
-.header-content {
+.sd-header-content {
   flex: 1;
   min-width: 300px;
 }
 
-.header-content h1 {
+.sd-header-content h1 {
   font-size: 2rem;
   color: var(--text-dark);
   margin: 0 0 var(--spacing-xs) 0;
@@ -34,7 +34,7 @@
   letter-spacing: -0.5px;
 }
 
-.header-content p {
+.sd-header-content p {
   color: var(--text-color);
   margin: 0;
   font-size: 1rem;
@@ -379,7 +379,7 @@
     padding: var(--spacing-md);
   }
 
-  .page-header {
+  .sd-page-header {
     flex-direction: column;
     gap: var(--spacing-md);
   }

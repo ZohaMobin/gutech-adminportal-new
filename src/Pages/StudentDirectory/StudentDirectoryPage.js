@@ -140,8 +140,8 @@ const StudentDirectoryPage = () => {
 
   return (
     <div className="student-directory-container">
-      <div className="page-header">
-        <div className="header-content">
+      <div className="sd-page-header">
+        <div className="sd-header-content">
           <h1>Student Directory</h1>
           <p>Manage and view student information across all departments</p>
         </div>

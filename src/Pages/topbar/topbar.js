@@ -41,7 +41,7 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
 
   return (
     <header className="header">
-      <div className="header-content">
+      <div className="topbar-header-content">
         {/* Mobile hamburger menu */}
         <div className="header-mobile-toggle">
           <button className="hamburger-button" onClick={toggleSidebar}>
