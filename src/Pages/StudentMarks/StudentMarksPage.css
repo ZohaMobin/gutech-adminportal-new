@@ -12,18 +12,20 @@
   align-items: center;
   font-size: 0.9rem;
 }
-.error-message p { margin: 0; flex-grow: 1; }
+.error-message p { margin: 0; flex-grow: 1; text-align: left; }
 .dismiss-error-btn { background: none; border: none; color: inherit; cursor: pointer; font-size: 0.85rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 0.4rem; }
 .dismiss-error-btn:hover { background: rgba(180, 35, 24, 0.1); }
 
 /* One slim filter row, the same look as the Teacher Assignments and Attendance filters. */
 .marks-filters {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 0.7rem 0.9rem;
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; gap: 0.7rem 0.9rem;
   padding: 0.85rem 1rem; margin-bottom: 1rem;
   background: #fff; border: 1px solid #e6e8ec; border-radius: 0.85rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 .marks-filters label { display: grid; gap: 0.25rem; min-width: 0; margin: 0; }
-.marks-filters label:nth-of-type(5) { grid-column: span 2; }   /* Course names are the longest */
+.marks-filters label { grid-column: span 3; }
+.marks-filters label:nth-of-type(n+5) { grid-column: span 5; }   /* Course and section names (with the teacher) are the longest */
+.clear-filters-btn { grid-column: span 2; }
 .marks-filters label > span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
 .marks-filters select {
   width: 100%; height: 2.3rem; margin: 0; padding: 0 0.7rem;
@@ -421,21 +423,11 @@
 .no-data-container { padding: 2.5rem 1rem; text-align: center; color: #6b7280; font-size: 0.9rem; }
 .no-data-container p { margin: 0; }
 .no-data-container .marks-empty-title { margin-bottom: 0.25rem; font-size: 1rem; font-weight: 600; color: #1f2937; }
-@media (max-width: 1100px) { .marks-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .marks-filters label:nth-of-type(5) { grid-column: auto; } }
+@media (max-width: 1100px) { .marks-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .marks-filters label, .marks-filters label:nth-of-type(n+5), .clear-filters-btn { grid-column: auto; } }
 .legend-note { margin-left: auto; align-self: center; font-size: 0.75rem; color: #6b7280; }
-
-.error-container {
-  padding: var(--spacing-xl);
-  text-align: center;
-  color: #dc3545;
-  background: #f8d7da;
-  border-radius: var(--border-radius-md);
-  margin: var(--spacing-lg);
-}
 
 @media (max-width: 768px) {
   .marks-filters { grid-template-columns: 1fr; }
-  .marks-filters label:nth-of-type(5) { grid-column: auto; }
   .clear-filters-btn { justify-self: stretch; }
   .legend-note { margin-left: 0; flex-basis: 100%; }
 
