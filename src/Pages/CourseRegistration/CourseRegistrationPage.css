@@ -2,14 +2,12 @@
 .enr-page {
   --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-dark); --tint: var(--primary-tint);
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4; --bad: #b42318; --bad-bg: #fef2f2;
-  padding: 24px; max-width: 1080px; margin: 0 auto; color: var(--ink); display: flex; flex-direction: column; gap: 18px;
+  color: var(--ink); display: flex; flex-direction: column; gap: 18px;
 }
 .enr-page *, .enr-page *::before, .enr-page *::after { box-sizing: border-box; }
 .enr-page h1, .enr-page h2, .enr-page h3, .enr-page p { margin: 0; }
 
-.enr-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
-.enr-header h1 { font-size: 28px; font-weight: 600; color: #333; margin-bottom: 4px; }
-.enr-header p { color: #666; font-size: 14.5px; line-height: 1.5; max-width: 640px; }
+.enr-page > .page-head { margin-bottom: 0; }
 .enr-term { padding: 6px 14px; border-radius: 999px; background: var(--tint); color: var(--accent); font-size: 13px; white-space: nowrap; }
 
 .enr-banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; border: 1px solid; }
@@ -97,8 +95,6 @@
 .enr-enroll p { color: var(--muted); font-size: 14px; }
 
 @media (max-width: 760px) {
-  .enr-page { padding: 16px; }
-  .enr-header h1 { font-size: 24px; }
   .enr-step-head { padding: 16px 16px 4px; }
   .enr-step-body { padding: 12px 16px 16px; }
   .enr-filters { grid-template-columns: 1fr; }
@@ -111,9 +107,8 @@
 .enr-step-body > .enr-btn { justify-self: start; }
 
 /* ---------- layout, tabs and summary (second pass) ---------- */
-.enr-page { max-width: 1240px; gap: 20px; }
+.enr-page { gap: 20px; }
 .enr-hidden { display: none; }
-.enr-header h1 { font-size: 30px; letter-spacing: -0.01em; }
 .enr-term { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid var(--primary-tint-line); }
 .enr-term i { width: 8px; height: 8px; border-radius: 50%; background: #1f9d55; box-shadow: 0 0 0 3px rgba(31, 157, 85, 0.18); }
 

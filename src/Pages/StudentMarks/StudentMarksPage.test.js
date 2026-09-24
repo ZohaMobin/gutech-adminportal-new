@@ -27,13 +27,13 @@ afterEach(() => { act(() => root.unmount()); container.remove(); jest.clearAllMo
 test("uses the shared header and page shell, with no hero card", async () => {
   await mount();
   expect(container.firstElementChild.classList.contains("page-shell")).toBe(true);
-  expect(container.querySelector(".page-head-title").textContent).toBe("Student Marks");
+  expect(container.querySelector(".page-head-title").textContent).toBe("Marks");
   expect(container.querySelector(".term-selector-card")).toBeNull();
 });
 
 test("keeps its title on screen while the terms load", async () => {
   await mount({ pending: true });
-  expect(container.querySelector(".page-head-title").textContent).toBe("Student Marks");
+  expect(container.querySelector(".page-head-title").textContent).toBe("Marks");
 });
 
 test("term and the five section filters share one filter row, with the current term chosen", async () => {
