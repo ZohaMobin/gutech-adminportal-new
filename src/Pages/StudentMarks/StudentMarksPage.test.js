@@ -21,6 +21,7 @@ const mount = async ({ pending = false } = {}) => {
   await act(async () => { root.render(<StudentMarksPage />); });
   await wait(20);
 };
+beforeEach(() => { window.localStorage.clear(); window.history.replaceState(null, "", "/"); });
 afterEach(() => { act(() => root.unmount()); container.remove(); jest.clearAllMocks(); });
 
 test("uses the shared header and page shell, with no hero card", async () => {
@@ -56,7 +57,7 @@ const setSelect = (id, value) => act(async () => {
   Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(el, value);
   el.dispatchEvent(new Event("change", { bubbles: true }));
 });
-const openSection = async (marksResponse) => {
+const openSection = async (marksResponse, { choose = true } = {}) => {
   axios.get.mockImplementation((url) => {
     if (url.includes("academic-years")) return Promise.resolve({ data: [term] });
     if (url.endsWith("/api/departments")) return Promise.resolve({ data: [dept] });
@@ -71,6 +72,7 @@ const openSection = async (marksResponse) => {
   root = createRoot(container);
   await act(async () => { root.render(<StudentMarksPage />); });
   await wait(20);
+  if (!choose) { await wait(40); return; }
   await setSelect("department", "d1"); await wait(5);
   await setSelect("program", "p1"); await wait(5);
   await setSelect("semester", "0"); await wait(20);
@@ -100,4 +102,26 @@ test("a real failure shows its reason once, in the banner, with a neutral note i
   expect(banners[0].textContent).toMatch(/Database unavailable/);
   expect(container.querySelector(".no-data-container").textContent).toMatch(/could not be loaded/);
   expect(container.querySelectorAll(".error-container").length).toBe(0);
+});
+
+test("the chosen section is kept in the address, and opening that address again restores it", async () => {
+  await openSection(() => Promise.reject({ response: { status: 404, data: { error: "NO_STUDENTS_IN_SECTION" } } }));
+  expect(window.location.search).toBe("?term=t1&department=d1&program=p1&semester=0&course=c1&section=69df1c993e8bd527470f4f14");
+  act(() => root.unmount()); container.remove();
+
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+  await act(async () => { root.render(<StudentMarksPage />); });
+  await wait(40);
+  expect(container.querySelector("#section").value).toBe("69df1c993e8bd527470f4f14");
+  expect(container.querySelector("#semester").value).toBe("0");
+  expect(container.querySelector(".no-data-container").textContent).toMatch(/No students are enrolled/);
+});
+
+test("a remembered section that no longer exists in the course is dropped quietly", async () => {
+  window.history.replaceState(null, "", "/marks?term=t1&department=d1&program=p1&semester=0&course=c1&section=gone");
+  await openSection(() => Promise.reject({ response: { status: 404, data: { error: "SECTION_NOT_FOUND", message: "Section with ID gone not found" } } }), { choose: false });
+  expect(container.querySelector("#section").value).toBe("");
+  expect(container.querySelector(".error-message")).toBeNull();
 });
