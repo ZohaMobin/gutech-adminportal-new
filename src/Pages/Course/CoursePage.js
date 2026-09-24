@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./CoursePage.css";
-import { toast } from "react-hot-toast";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
 import TeacherAssignmentPage from '../TeacherAssignment/TeacherAssignmentPage';
 import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "react-icons/fi";
-import Loading, { BusyLabel } from '../../Components/Loading/Loading';
+import Loading, { BusyLabel, Refreshing, Spinner } from '../../Components/Loading/Loading';
 import NoResultsFound from '../../Components/NoResultsFound';
 import OfferingEditModal from './OfferingEditModal';
 
@@ -35,7 +35,13 @@ const CoursePage = () => {
   const [courseOfferings, setCourseOfferings] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [message, setMessage] = useState({ text: "", type: "" });
-  const [loading, setLoading] = useState(false);
+  // What is happening, kept apart so an action never blanks the screen: the first load shows placeholders, a refresh
+  // dims what is already there, and a button or a row shows its own busy state.
+  const [firstLoad, setFirstLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);               // the create / update course form
+  const [busyCourseId, setBusyCourseId] = useState(null);    // the course whose status is being changed or that is being deleted
+  const [deactivating, setDeactivating] = useState(false);   // "Deactivate Year Offerings"
   const [activeTab, setActiveTab] = useState('create'); // 'create', 'offerings', 'assignments', 'manage'
   const [groupByOptions, setGroupByOptions] = useState({
     department: true,
@@ -64,9 +70,8 @@ const CoursePage = () => {
   const [filteredCourses, setFilteredCourses] = useState([]);
 
   useEffect(() => {
-    fetchCourses();
-    fetchCourseOfferings();
-    fetchAcademicYears();
+    // Each fetch reports its own failure, so this always settles.
+    Promise.all([fetchCourses(), fetchCourseOfferings(), fetchAcademicYears()]).finally(() => setFirstLoad(false));
   }, []);
 
   const fetchAcademicYears = async () => {
@@ -90,7 +95,7 @@ const CoursePage = () => {
       setAcademicYears(activeYears);
     } catch (error) {
       console.error('Error fetching academic years:', error);
-      toast.error('Failed to fetch academic years');
+      showToast('Failed to fetch academic years', TOAST_TYPES.ERROR);
     }
   };
 
@@ -184,21 +189,24 @@ const CoursePage = () => {
   const handleDeleteCourse = async (courseId) => {
     if (window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
       try {
-        setLoading(true);
+        setBusyCourseId(courseId);
         await axios.delete(`${apiUrl}/api/courses/${courseId}`);
-        setMessage({ text: "Course deleted successfully!", type: "success" });
-        fetchCourses();
+        // The server has soft-deleted it: drop the row here rather than reloading the table. Its offerings were switched
+        // off, so refresh those quietly.
+        setCourses((prev) => prev.filter((c) => c._id !== courseId));
+        showToast("Course deleted", TOAST_TYPES.SUCCESS);
+        fetchCourseOfferings();
       } catch (error) {
-        setMessage({ text: error.response?.data?.message || "Failed to delete course.", type: "error" });
+        showToast(error.response?.data?.message || "Failed to delete course.", TOAST_TYPES.ERROR);
       } finally {
-        setLoading(false);
+        setBusyCourseId(null);
       }
     }
   };
 
   const handleToggleStatus = async (courseId, currentStatus) => {
     try {
-      setLoading(true);
+      setBusyCourseId(courseId);
       await axios.patch(`${apiUrl}/api/courses/${courseId}/toggle-status`, {
         isActive: !currentStatus
       });
@@ -212,11 +220,11 @@ const CoursePage = () => {
         )
       );
       
-      toast.success(`Course ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
+      showToast(`Course ${!currentStatus ? 'activated' : 'deactivated'}`, TOAST_TYPES.SUCCESS);
     } catch (error) {
-      toast.error("Failed to update course status");
+      showToast(error.response?.data?.message || "Failed to update course status", TOAST_TYPES.ERROR);
     } finally {
-      setLoading(false);
+      setBusyCourseId(null);
     }
   };
 
@@ -228,7 +236,7 @@ const CoursePage = () => {
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     setMessage({ text: "", type: "" });
 
     try {
@@ -283,7 +291,7 @@ const CoursePage = () => {
         setMessage({ text: data?.message || fallback, type: "error" });
       }
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -306,11 +314,11 @@ const CoursePage = () => {
         semester: "0",
         academicYearId: ""
       });
-      toast.success('Course offering created successfully');
+      showToast('Course offering created', TOAST_TYPES.SUCCESS);
       fetchCourseOfferings(); // Refresh to get populated data
     } catch (error) {
       console.error('Error creating course offering:', error);
-      toast.error(error.response?.data?.message || 'Error creating course offering');
+      showToast(error.response?.data?.message || 'Error creating course offering', TOAST_TYPES.ERROR);
     }
   };
 
@@ -463,7 +471,7 @@ const CoursePage = () => {
       // The server answers with the updated, populated offering: swap it in rather than reloading the whole list.
       setCourseOfferings((prev) => prev.map((o) => (o._id === data._id ? data : o)));
       closeOfferingEditor();
-      toast.success('Course offering updated');
+      showToast('Course offering updated', TOAST_TYPES.SUCCESS);
     } catch (error) {
       setOfferingEditError(error.response?.data?.message || 'The offering could not be saved. Please try again.');
     } finally {
@@ -526,7 +534,7 @@ const CoursePage = () => {
     const activeOfferingsInYear = visibleCourseOfferings.filter((offering) => offering.isActive);
 
     if (activeOfferingsInYear.length === 0) {
-      toast.error("No active course offerings found in the selected academic year");
+      showToast("No active course offerings found in the selected academic year", TOAST_TYPES.ERROR);
       return;
     }
 
@@ -538,7 +546,7 @@ const CoursePage = () => {
     }
 
     try {
-      setLoading(true);
+      setDeactivating(true);
       const token = sessionStorage.getItem('adminToken');
 
       await Promise.all(
@@ -553,13 +561,15 @@ const CoursePage = () => {
         )
       );
 
-      toast.success(`Deactivated ${activeOfferingsInYear.length} course offering(s) in ${selectedYearLabel}`);
-      fetchCourseOfferings();
+      showToast(`Deactivated ${activeOfferingsInYear.length} course offering(s) in ${selectedYearLabel}`, TOAST_TYPES.SUCCESS);
+      setRefreshing(true);
+      await fetchCourseOfferings();
     } catch (error) {
       console.error('Error deactivating course offerings:', error);
-      toast.error(error.response?.data?.message || 'Failed to deactivate course offerings');
+      showToast(error.response?.data?.message || 'Failed to deactivate course offerings', TOAST_TYPES.ERROR);
     } finally {
-      setLoading(false);
+      setDeactivating(false);
+      setRefreshing(false);
     }
   };
 
@@ -675,8 +685,8 @@ const CoursePage = () => {
                     Cancel
                   </button>
                 )}
-          <button className="submit-btn" type="submit" disabled={loading}>
-                  <BusyLabel busy={loading} busyText="Saving…" idle={editingCourse ? "Update Course" : "Create Course"} />
+          <button className="submit-btn" type="submit" disabled={saving}>
+                  <BusyLabel busy={saving} busyText="Saving…" idle={editingCourse ? "Update Course" : "Create Course"} />
           </button>
               </div>
         </form>
@@ -737,7 +747,7 @@ const CoursePage = () => {
             </div>
             
             <div className="courses-table-container">
-              {loading ? (
+              {firstLoad ? (
                 <Loading variant="table" rows={8} label="Loading courses" />
               ) : filteredCourses.length === 0 ? (
                 <NoResultsFound 
@@ -763,7 +773,7 @@ const CoursePage = () => {
                   </thead>
                   <tbody>
                     {filteredCourses.slice(coursePage * COURSES_PER_PAGE, (coursePage + 1) * COURSES_PER_PAGE).map((course) => (
-                      <tr key={course._id}>
+                      <tr key={course._id} className={busyCourseId === course._id ? 'is-busy' : undefined} aria-busy={busyCourseId === course._id ? 'true' : undefined}>
                         <td>{course.code}</td>
                         <td>{course.name}</td>
                         <td>{[...new Set(courseOfferings.filter((o) => String(o.courseId?._id ?? o.courseId) === String(course._id) && o.department?.name).map((o) => o.department.name))].join(', ') || <span className="muted-cell">Not offered yet</span>}</td>
@@ -779,13 +789,15 @@ const CoursePage = () => {
                             className="toggle-btn"
                             onClick={() => handleToggleStatus(course._id, course.isActive)}
                             title={course.isActive ? "Deactivate Course" : "Activate Course"}
+                            disabled={busyCourseId === course._id}
                           >
-                            {course.isActive ? <FiToggleRight /> : <FiToggleLeft />}
+                            {busyCourseId === course._id ? <Spinner /> : course.isActive ? <FiToggleRight /> : <FiToggleLeft />}
                           </button>
                           <button 
                             className="edit-btn"
                             onClick={() => handleEditCourse(course)}
                             title="Edit Course"
+                            disabled={busyCourseId === course._id}
                           >
                             <FiEdit2 />
                           </button>
@@ -793,6 +805,7 @@ const CoursePage = () => {
                             className="delete-btn"
                             onClick={() => handleDeleteCourse(course._id)}
                             title="Delete Course"
+                            disabled={busyCourseId === course._id}
                           >
                             <FiTrash2 />
                           </button>
@@ -932,9 +945,9 @@ const CoursePage = () => {
                   type="button"
                   className="deactivate-offerings-btn"
                   onClick={handleDeactivateAcademicYearOfferings}
-                  disabled={loading || visibleCourseOfferings.filter((offering) => offering.isActive).length === 0}
+                  disabled={deactivating || visibleCourseOfferings.filter((offering) => offering.isActive).length === 0}
                 >
-                  Deactivate Year Offerings
+                  <BusyLabel busy={deactivating} busyText="Deactivating…" idle="Deactivate Year Offerings" />
                 </button>
                 <div className="group-by-controls">
                   <label>Group by:</label>
@@ -1004,7 +1017,7 @@ const CoursePage = () => {
             )}
             
               <div className="content-section">
-                {loading ? (
+                {firstLoad ? (
                   <Loading variant="table" rows={6} label="Loading course offerings" />
                 ) : visibleCourseOfferings.length === 0 || filteredOfferings.length === 0 ? (
                   <NoResultsFound 
@@ -1013,11 +1026,13 @@ const CoursePage = () => {
                     icon="filter"
                   />
                 ) : (
-                  <div className="offerings-container">
-                    {Object.entries(groupOfferings()).map(([groupName, offerings]) => 
-                renderOfferingsTable(groupName, offerings)
-                    )}
-                  </div>
+                  <Refreshing active={refreshing}>
+                    <div className="offerings-container">
+                      {Object.entries(groupOfferings()).map(([groupName, offerings]) =>
+                        renderOfferingsTable(groupName, offerings)
+                      )}
+                    </div>
+                  </Refreshing>
             )}
           </div>
         </div>
