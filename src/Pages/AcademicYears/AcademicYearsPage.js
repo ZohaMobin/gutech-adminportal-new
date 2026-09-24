@@ -1,4 +1,5 @@
 import Loading from "../../Components/Loading/Loading";
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./AcademicYearsPage.css";
@@ -159,26 +160,29 @@ const AcademicYearsPage = () => {
 
   if (loading) {
     return (
-      <div className="academic-years-page">
+      <div className="academic-years-page page-shell">
+        <PageHeader title="Academic Years" />
         <Loading variant="table" rows={5} label="Loading academic years" />
       </div>
     );
   }
 
   return (
-    <div className="academic-years-page">
-      <div className="ay-page-header">
-        <h1>Academic Years</h1>
-        <button
-          className="btn-primary"
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-        >
-          + Add Academic Year
-        </button>
-      </div>
+    <div className="academic-years-page page-shell">
+      <PageHeader
+        title="Academic Years"
+        actions={
+          <button
+            className="btn-primary"
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+          >
+            + Add Academic Year
+          </button>
+        }
+      />
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}

@@ -1,4 +1,5 @@
 import Loading from "../../Components/Loading/Loading";
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "../Programs/ProgramsPage.css";
@@ -66,10 +67,8 @@ const AccountApprovalsPage = () => {
   const isRejectedTab = tab === "rejected";
 
   return (
-    <div className="aa-page">
-      <div className="aa-page-header">
-        <h1>Account Approvals</h1>
-      </div>
+    <div className="aa-page page-shell">
+      <PageHeader title="Account Approvals" />
 
       <div className="approval-tabs" role="tablist">
         {TABS.map((t) => (
