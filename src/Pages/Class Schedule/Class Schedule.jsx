@@ -1,7 +1,6 @@
 import Loading from "../../Components/Loading/Loading";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Toaster } from "react-hot-toast";
 import FiltersPanel from "./components/FiltersPanel";
 import TimetableGrid from "./components/TimetableGrid";
 import ScheduleModal from "./components/ScheduleModal";
@@ -634,39 +633,6 @@ function ClassSchedule() {
 
   return (
     <div className="schedule-container">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 5000,
-          style: {
-            background: "#ffffff",
-            color: "#333333",
-            padding: "16px",
-            borderRadius: "8px",
-            maxWidth: "500px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            border: "1px solid #e0e0e0",
-            fontSize: "14px",
-            fontWeight: "500",
-          },
-          success: {
-            style: {
-              background: "#f0fdf4",
-              color: "#166534",
-              border: "1px solid #86efac",
-            },
-            icon: "✅",
-          },
-          error: {
-            style: {
-              background: "#fef2f2",
-              color: "#991b1b",
-              border: "1px solid #fecaca",
-            },
-            icon: "❌",
-          },
-        }}
-      />
 
       <h1 className="heading">Class Schedule Management</h1>
 

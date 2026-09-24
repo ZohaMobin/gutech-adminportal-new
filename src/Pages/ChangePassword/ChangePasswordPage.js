@@ -1,7 +1,6 @@
 import { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useState } from "react";
 import axios from "axios";
-import { Toaster } from "react-hot-toast";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import PasswordInput from "../../Components/PasswordInput";
 import "../Administrators/AdministratorsPage.css"; // shared .am-* form and button styles
@@ -51,7 +50,6 @@ const ChangePasswordPage = () => {
 
   return (
     <div className="am-page" style={{ maxWidth: 560 }}>
-      <Toaster position="top-right" />
       <header className="am-header">
         <div>
           <h1>Change password</h1>

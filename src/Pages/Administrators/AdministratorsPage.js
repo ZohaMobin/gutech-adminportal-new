@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
-import { Toaster } from "react-hot-toast";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { AdminFormModal, ConfirmModal, CredentialModal } from "./AdminModals";
 import { initialsOf, countByStatus, visibleAdmins, formatDate } from "./adminListUtils";
@@ -145,7 +144,6 @@ const AdministratorsPage = () => {
 
   return (
     <div className="am-page">
-      <Toaster position="top-right" />
 
       <header className="am-header">
         <div>
