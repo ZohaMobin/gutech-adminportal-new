@@ -2,14 +2,9 @@
 .pre-page {
   --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-dark); --tint: var(--primary-tint);
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4;
-  padding: 24px; max-width: 1180px; margin: 0 auto; color: var(--ink);
+  color: var(--ink);
 }
 .pre-page *, .pre-page *::before, .pre-page *::after { box-sizing: border-box; }
-.pre-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
-.pre-title { display: flex; align-items: flex-start; gap: 14px; }
-.pre-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: var(--tint); color: var(--accent); flex: none; }
-.pre-header h1 { margin: 0 0 4px; font-size: 28px; font-weight: 600; color: #333; }
-.pre-header p { margin: 0; color: #666; font-size: 14.5px; max-width: 600px; line-height: 1.5; }
 .pre-picker { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .pre-picker select { min-width: 300px; width: auto; padding: 9px 12px; border: 1px solid #d5d8de; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; font-weight: 500; text-transform: none; letter-spacing: 0; }
 
@@ -143,8 +138,6 @@
   .pre-actions { justify-content: flex-start; }
 }
 @media (max-width: 760px) {
-  .pre-page { padding: 16px; }
-  .pre-header h1 { font-size: 24px; }
   .pre-picker, .pre-picker select { width: 100%; min-width: 0; }
   .pre-steps { grid-template-columns: 1fr; gap: 12px; }
   .pre-progress { padding: 16px; }

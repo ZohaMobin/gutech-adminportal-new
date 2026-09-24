@@ -1,3 +1,4 @@
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
@@ -110,7 +111,7 @@ const AdministratorsPage = () => {
   // ---------- states ----------
   if (loading && !me) {
     return (
-      <div className="am-page">
+      <div className="am-page page-shell">
         <div className="am-skeleton" />
         <div className="am-skeleton" />
         <div className="am-skeleton" />
@@ -120,7 +121,7 @@ const AdministratorsPage = () => {
 
   if (loadError) {
     return (
-      <div className="am-page">
+      <div className="am-page page-shell">
         <div className="am-empty">
           <h2>Could not load administrators</h2>
           <p>{loadError}</p>
@@ -132,7 +133,8 @@ const AdministratorsPage = () => {
 
   if (!me?.isSuperAdmin) {
     return (
-      <div className="am-page">
+      <div className="am-page page-shell">
+        <PageHeader title="Administrators" />
         <div className="am-empty">
           <div className="am-empty-icon" aria-hidden="true">🔒</div>
           <h2>Only the super admin can manage administrators</h2>
@@ -143,17 +145,13 @@ const AdministratorsPage = () => {
   }
 
   return (
-    <div className="am-page">
+    <div className="am-page page-shell">
 
-      <header className="am-header">
-        <div>
-          <h1>Administrators</h1>
-          <p>People who can manage everything in this portal. Only you, as super admin, can add or change them.</p>
-        </div>
-        <button className="am-btn am-btn-primary" onClick={() => setModal({ type: "add" })}>
-          + Add administrator
-        </button>
-      </header>
+      <PageHeader
+        title="Administrators"
+        subtitle="People who can manage everything in this portal. Only you, as super admin, can add or change them."
+        actions={<button className="am-btn am-btn-primary" onClick={() => setModal({ type: "add" })}>+ Add administrator</button>}
+      />
 
       <div className="am-toolbar">
         <input

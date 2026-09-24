@@ -1,38 +1,6 @@
 /* Attendance Page Styles */
-.attendance-page {
-  padding: 2rem;
-  font-family: inherit;
-  background-color: #f8fafc;
-  min-height: 100vh;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-
-.attendance-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.att-header-content h1 {
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: #991d20;
-  margin: 0 0 0.25rem 0;
-}
-
-.att-header-content p {
-  color: #64748b;
-  font-size: 0.875rem;
-  margin: 0;
-}
+/* Page width, padding and the title come from .page-shell and <PageHeader>. */
+.attendance-page { font-family: inherit; min-width: 0; }
 
 .export-btn {
   display: inline-flex;
@@ -754,15 +722,6 @@
 }
 
 @media (max-width: 768px) {
-  .attendance-page {
-    padding: 1rem;
-  }
-
-  .attendance-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .term-selector-card {
     align-items: flex-start;
     flex-direction: column;

@@ -402,7 +402,7 @@ const StudentMarksPage = () => {
   return (
     <div className="student-marks-container page-shell">
       <PageHeader
-        title="Student Marks"
+        title="Marks"
         subtitle="Review a section's gradebook. Marks are read-only here; teachers enter them."
       />
 

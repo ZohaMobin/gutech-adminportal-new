@@ -1,3 +1,4 @@
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useState } from "react";
 import axios from "axios";
@@ -49,15 +50,10 @@ const ChangePasswordPage = () => {
   };
 
   return (
-    <div className="am-page" style={{ maxWidth: 560 }}>
-      <header className="am-header">
-        <div>
-          <h1>Change password</h1>
-          <p>Choose a password only you know. You stay signed in on this device.</p>
-        </div>
-      </header>
+    <div className="am-page page-shell">
+      <PageHeader title="Change Password" subtitle="Choose a password only you know. You stay signed in on this device." />
 
-      <form className="am-credential-card" onSubmit={submit} style={{ background: "#fff", border: "1px solid #e6e6e6", borderRadius: 12, padding: 22 }}>
+      <form className="am-credential-card" onSubmit={submit} style={{ background: "#fff", border: "1px solid #e6e6e6", borderRadius: 12, padding: 22, maxWidth: 560 }}>
         <label className="am-field">
           <span>Current password</span>
           <PasswordInput name="currentPassword" autoComplete="current-password" value={form.currentPassword} onChange={change} disabled={saving} />
