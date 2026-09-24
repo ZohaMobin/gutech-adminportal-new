@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { FiX, FiCheck, FiPlus, FiEdit2, FiSearch, FiUser, FiTrash2 } from 'react-icons/fi';
+import { FiX, FiPlus, FiEdit2, FiSearch, FiUser, FiTrash2 } from 'react-icons/fi';
 import Loading, { BusyLabel, Refreshing } from '../../Components/Loading/Loading';
 import { messageOf } from '../../utils/apiMessage';
+import { showToast, TOAST_TYPES } from '../../Components/Toast/Toast';
 import './TeacherAssignmentPage.css';
 
 // Who teaches which section. Everything for the current term is listed by course; choosing a course opens its sections on the
@@ -107,7 +108,6 @@ const TeacherAssignmentPage = () => {
   const [loadingSections, setLoadingSections] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [department, setDepartment] = useState('');
   const [program, setProgram] = useState('');
   const [semester, setSemester] = useState('');
@@ -148,11 +148,6 @@ const TeacherAssignmentPage = () => {
     })();
   }, [apiUrl, headers, loadOverview]);
 
-  useEffect(() => {
-    if (!success) return undefined;
-    const timer = setTimeout(() => setSuccess(''), 5000);
-    return () => clearTimeout(timer);
-  }, [success]);
 
   // A course offering is one program-and-semester slot a course is taught in; a course with two offerings this
   // term (e.g. a gen-ed course taken by both Sem 3 and Sem 5) is still ONE course with ONE shared set of
@@ -213,15 +208,15 @@ const TeacherAssignmentPage = () => {
   }, [apiUrl, headers, term?._id]);
 
   const choose = (course) => {
-    setSelectedKey(course.key); setSuccess(''); setError(''); setNewSection({ section: '', teacherIds: [] });
+    setSelectedKey(course.key); setError(''); setNewSection({ section: '', teacherIds: [] });
     loadSections(course.courseId);
   };
 
   const save = async (request, done) => {
-    setSaving(true); setError(''); setSuccess('');
+    setSaving(true); setError('');
     try {
       await request();
-      setSuccess(done);
+      showToast(done, TOAST_TYPES.SUCCESS);
       await Promise.all([loadSections(selected.courseId), loadOverview(term?._id)]);
     } catch (err) {
       setError(messageOf(err, 'That could not be saved. Please try again.'));
@@ -257,7 +252,6 @@ const TeacherAssignmentPage = () => {
       </header>
 
       {error && <div className="ta-banner bad" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Dismiss"><FiX /></button></div>}
-      {success && <div className="ta-banner ok" role="status"><FiCheck />{success}</div>}
 
       <section className="ta-filters" aria-label="Find a course">
         <label><span>Department</span>
