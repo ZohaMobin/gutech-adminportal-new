@@ -61,14 +61,43 @@ test("switching a course on or off keeps the table on screen; only that row show
   expect(row("CS101").textContent).toContain("Inactive");
 });
 
+const dialog = () => document.querySelector('[role="dialog"]');
+const dialogButton = (text) => [...dialog().querySelectorAll("button")].find((b) => b.textContent.trim() === text);
+
+test("the page starts with the shared header", () => {
+  expect(container.firstElementChild.classList.contains("page-shell")).toBe(true);
+  expect(container.querySelector(".page-head-title").textContent).toBe("Courses");
+});
+
+test("deleting asks in a dialog first, and cancelling deletes nothing", async () => {
+  await clickEl(row("CS102").querySelector(".delete-btn"));
+  expect(dialog().textContent).toMatch(/Delete CS102 CS102 name\?/);
+  expect(axios.delete).not.toHaveBeenCalled();
+  await clickEl(dialogButton("Cancel"));
+  expect(dialog()).toBeNull();
+  expect(axios.delete).not.toHaveBeenCalled();
+  expect(window.confirm).not.toHaveBeenCalled();
+});
+
 test("deleting a course leaves the rest in place and removes just that row when it is done", async () => {
   await clickEl(row("CS102").querySelector(".delete-btn"));
+  await clickEl(dialogButton("Delete course"));
+  expect(dialog().textContent).toMatch(/Deleting…/);   // the dialog stays, busy, until the server answers
   expect(container.querySelector(".ld-table")).toBeNull();
   expect(row("CS102").classList.contains("is-busy")).toBe(true);
   expect(row("CS101")).toBeTruthy();
 
   await act(async () => { finish(); });
   await wait();
+  expect(dialog()).toBeNull();
   expect(row("CS102")).toBeUndefined();
   expect(row("CS101")).toBeTruthy();
+});
+
+test("a refused delete shows the reason inside the dialog and keeps the course", async () => {
+  axios.delete.mockImplementation(() => Promise.reject({ response: { data: { message: "This course has enrolled students" } } }));
+  await clickEl(row("CS102").querySelector(".delete-btn"));
+  await clickEl(dialogButton("Delete course"));
+  expect(dialog().querySelector(".am-error").textContent).toBe("This course has enrolled students");
+  expect(row("CS102")).toBeTruthy();
 });

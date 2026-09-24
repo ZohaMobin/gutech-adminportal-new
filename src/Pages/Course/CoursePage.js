@@ -8,6 +8,8 @@ import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "r
 import Loading, { BusyLabel, Refreshing, Spinner } from '../../Components/Loading/Loading';
 import NoResultsFound from '../../Components/NoResultsFound';
 import OfferingEditModal from './OfferingEditModal';
+import PageHeader from '../../Components/PageHeader/PageHeader';
+import { ConfirmModal } from '../Administrators/AdminModals';
 
 const COURSES_PER_PAGE = 25;
 
@@ -61,6 +63,10 @@ const CoursePage = () => {
   const [savingOffering, setSavingOffering] = useState(false);
   const [offeringEditError, setOfferingEditError] = useState('');
   const [showManageHelp, setShowManageHelp] = useState(true);
+  // One confirmation at a time: { kind: "delete" | "restore" | "deactivate-offerings", ... } (never window.confirm).
+  const [confirm, setConfirm] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState("");
   const [selectedOfferingAcademicYear, setSelectedOfferingAcademicYear] = useState("");
   
   // New state for manage courses tab
@@ -186,21 +192,26 @@ const CoursePage = () => {
     setActiveTab('create');
   };
 
-  const handleDeleteCourse = async (courseId) => {
-    if (window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-      try {
-        setBusyCourseId(courseId);
-        await axios.delete(`${apiUrl}/api/courses/${courseId}`);
-        // The server has soft-deleted it: drop the row here rather than reloading the table. Its offerings were switched
-        // off, so refresh those quietly.
-        setCourses((prev) => prev.filter((c) => c._id !== courseId));
-        showToast("Course deleted", TOAST_TYPES.SUCCESS);
-        fetchCourseOfferings();
-      } catch (error) {
-        showToast(error.response?.data?.message || "Failed to delete course.", TOAST_TYPES.ERROR);
-      } finally {
-        setBusyCourseId(null);
-      }
+  const handleDeleteCourse = (courseToDelete) => {
+    setConfirmError("");
+    setConfirm({ kind: "delete", course: courseToDelete });
+  };
+
+  const runDeleteCourse = async (courseId) => {
+    try {
+      setBusyCourseId(courseId);
+      await axios.delete(`${apiUrl}/api/courses/${courseId}`);
+      // The server has soft-deleted it: drop the row here rather than reloading the table. Its offerings were switched
+      // off, so refresh those quietly.
+      setCourses((prev) => prev.filter((c) => c._id !== courseId));
+      showToast("Course deleted", TOAST_TYPES.SUCCESS);
+      fetchCourseOfferings();
+      return true;
+    } catch (error) {
+      setConfirmError(error.response?.data?.message || "Failed to delete course.");
+      return false;
+    } finally {
+      setBusyCourseId(null);
     }
   };
 
@@ -275,18 +286,10 @@ const CoursePage = () => {
 
       // The code belongs to a deleted course: offer to bring that course back instead.
       if (data?.reason === "DELETED_DUPLICATE" && data.deletedCourseId) {
-        if (window.confirm(`${data.message}\n\nRestore the deleted course now?`)) {
-          try {
-            await axios.patch(`${apiUrl}/api/courses/${data.deletedCourseId}/restore`);
-            setMessage({ text: "Course restored. It is available again in the courses list.", type: "success" });
-            setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
-            fetchCourses();
-          } catch (restoreError) {
-            setMessage({ text: restoreError.response?.data?.message || "Failed to restore the course.", type: "error" });
-          }
-        } else {
-          setMessage({ text: data.message, type: "error" });
-        }
+        // Ask in a dialog; declining leaves the duplicate-code message on the form.
+        setMessage({ text: data.message, type: "error" });
+        setConfirmError("");
+        setConfirm({ kind: "restore", data });
       } else {
         setMessage({ text: data?.message || fallback, type: "error" });
       }
@@ -539,12 +542,11 @@ const CoursePage = () => {
     }
 
     const selectedYearLabel = academicYearTabs.find((tab) => tab.key === selectedOfferingAcademicYear)?.label || "this academic year";
-    const shouldContinue = window.confirm(`Deactivate ${activeOfferingsInYear.length} active course offering(s) in ${selectedYearLabel}?`);
+    setConfirmError("");
+    setConfirm({ kind: "deactivate-offerings", count: activeOfferingsInYear.length, label: selectedYearLabel, offerings: activeOfferingsInYear });
+  };
 
-    if (!shouldContinue) {
-      return;
-    }
-
+  const runDeactivateOfferings = async ({ offerings: activeOfferingsInYear, label: selectedYearLabel }) => {
     try {
       setDeactivating(true);
       const token = sessionStorage.getItem('adminToken');
@@ -564,17 +566,63 @@ const CoursePage = () => {
       showToast(`Deactivated ${activeOfferingsInYear.length} course offering(s) in ${selectedYearLabel}`, TOAST_TYPES.SUCCESS);
       setRefreshing(true);
       await fetchCourseOfferings();
+      return true;
     } catch (error) {
       console.error('Error deactivating course offerings:', error);
-      showToast(error.response?.data?.message || 'Failed to deactivate course offerings', TOAST_TYPES.ERROR);
+      setConfirmError(error.response?.data?.message || 'Failed to deactivate course offerings');
+      return false;
     } finally {
       setDeactivating(false);
       setRefreshing(false);
     }
   };
 
+  const runRestoreCourse = async ({ data }) => {
+    try {
+      await axios.patch(`${apiUrl}/api/courses/${data.deletedCourseId}/restore`);
+      setMessage({ text: "Course restored. It is available again in the courses list.", type: "success" });
+      setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
+      fetchCourses();
+      return true;
+    } catch (restoreError) {
+      setConfirmError(restoreError.response?.data?.message || "Failed to restore the course.");
+      return false;
+    }
+  };
+
+  const runConfirm = async () => {
+    setConfirming(true);
+    setConfirmError("");
+    const done = confirm.kind === "delete" ? await runDeleteCourse(confirm.course._id)
+      : confirm.kind === "restore" ? await runRestoreCourse(confirm)
+      : await runDeactivateOfferings(confirm);
+    setConfirming(false);
+    if (done) setConfirm(null);
+  };
+
+  const confirmDialog = confirm && (
+    <ConfirmModal
+      title={confirm.kind === "delete" ? "Delete course" : confirm.kind === "restore" ? "Restore deleted course" : "Deactivate offerings"}
+      body={
+        confirm.kind === "delete"
+          ? `Delete ${confirm.course.code} ${confirm.course.name}? It leaves the course list and its offerings are switched off. Adding a course with the same code later offers to bring it back.`
+          : confirm.kind === "restore"
+            ? `${confirm.data.message} Restore the deleted course now?`
+            : `Deactivate ${confirm.count} active course offering${confirm.count === 1 ? "" : "s"} in ${confirm.label}?`
+      }
+      confirmLabel={confirm.kind === "delete" ? "Delete course" : confirm.kind === "restore" ? "Restore course" : "Deactivate"}
+      busyText={confirm.kind === "delete" ? "Deleting…" : confirm.kind === "restore" ? "Restoring…" : "Deactivating…"}
+      danger={confirm.kind !== "restore"}
+      busy={confirming}
+      error={confirmError}
+      onConfirm={runConfirm}
+      onClose={() => setConfirm(null)}
+    />
+  );
+
   return (
-    <div className="course-container">
+    <div className="course-container page-shell">
+      <PageHeader title="Courses" subtitle="Create courses, offer them to programs and semesters, and assign teachers." />
       <div className="tabs">
         <button 
           className={`tab ${activeTab === 'create' ? 'active' : ''}`}
@@ -803,7 +851,7 @@ const CoursePage = () => {
                           </button>
                           <button 
                             className="delete-btn"
-                            onClick={() => handleDeleteCourse(course._id)}
+                            onClick={() => handleDeleteCourse(course)}
                             title="Delete Course"
                             disabled={busyCourseId === course._id}
                           >
@@ -1043,6 +1091,7 @@ const CoursePage = () => {
       {activeTab === 'assignments' && (
           <TeacherAssignmentPage />
       )}
+      {confirmDialog}
     </div>
   );
 };

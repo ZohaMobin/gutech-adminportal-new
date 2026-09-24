@@ -1,8 +1,5 @@
-.course-container {
-  padding: var(--spacing-lg);
-  max-width: 1200px;
-  margin: 0 auto;
-}
+/* Page width and padding come from .page-shell (Components/PageHeader). */
+.course-container { min-width: 0; }
 
 /* Important note - Standalone style */
 .course-important-note {
