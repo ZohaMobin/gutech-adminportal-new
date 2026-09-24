@@ -1,4 +1,5 @@
 import Loading from "../../Components/Loading/Loading";
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./DepartmentsPage.css";
@@ -106,17 +107,15 @@ const DepartmentsPage = () => {
   };
 
   if (loading) {
-    return <div className="departments-page"><Loading variant="table" rows={6} label="Loading departments" /></div>;
+    return <div className="departments-page page-shell"><PageHeader title="Departments" /><Loading variant="table" rows={6} label="Loading departments" /></div>;
   }
 
   return (
-    <div className="departments-page">
-      <div className="dept-page-header">
-        <h1>Departments Management</h1>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>
-          + Add Department
-        </button>
-      </div>
+    <div className="departments-page page-shell">
+      <PageHeader
+        title="Departments"
+        actions={<button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Department</button>}
+      />
 
       {error && <div className="error-message">{error}</div>}
 
