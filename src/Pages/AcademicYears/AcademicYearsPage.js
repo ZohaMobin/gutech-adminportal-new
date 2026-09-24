@@ -161,7 +161,7 @@ const AcademicYearsPage = () => {
       <PageHeader
         title="Academic Years"
         actions={
-          <button className="btn-primary" onClick={() => { setFormData(EMPTY_FORM()); setShowModal(true); }}>
+          <button className="pk-btn pk-btn-primary" onClick={() => { setFormData(EMPTY_FORM()); setShowModal(true); }}>
             + Add Academic Year
           </button>
         }
@@ -170,8 +170,8 @@ const AcademicYearsPage = () => {
       {error && <div className="error-message" role="alert">{error}</div>}
 
       <Refreshing active={refreshing}>
-      <div className="academic-years-table-container">
-        <table className="academic-years-table">
+      <div className="pk-table-wrap">
+        <table className="pk-table">
           <thead>
             <tr>
               <th>Semester Type</th>
@@ -186,7 +186,7 @@ const AcademicYearsPage = () => {
           <tbody>
             {academicYears.length === 0 ? (
               <tr>
-                <td colSpan="7" className="no-data">
+                <td colSpan="7" className="pk-empty-cell">
                   No academic years found
                 </td>
               </tr>

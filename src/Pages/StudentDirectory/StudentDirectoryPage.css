@@ -220,31 +220,6 @@
   overflow-x: auto;
 }
 
-.students-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.students-table th {
-  background: var(--light-bg);
-  padding: var(--spacing-md);
-  text-align: left;
-  color: var(--text-dark);
-  font-weight: 500;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.students-table td {
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-dark);
-}
-
-.students-table tr:hover {
-  background: var(--primary-light);
-}
-
 /* CGPA Badge */
 .cgpa-cell {
   text-align: center;

@@ -15,7 +15,7 @@ let finish;   // resolves the in-flight PATCH / DELETE
 
 const wait = (ms = 0) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
 const clickEl = async (el) => { await act(async () => { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); await wait(); };
-const tab = (text) => [...container.querySelectorAll("button.tab")].find((b) => b.textContent.trim() === text);
+const tab = (text) => [...container.querySelectorAll("button.pk-tab")].find((b) => b.textContent.trim() === text);
 const row = (code) => [...container.querySelectorAll(".courses-table tbody tr")].find((r) => r.textContent.includes(code));
 
 beforeEach(async () => {

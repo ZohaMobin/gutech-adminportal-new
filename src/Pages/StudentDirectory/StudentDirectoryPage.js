@@ -270,7 +270,7 @@ const StudentDirectoryPage = () => {
         ) : (
           <div className="students-table-container">
             {students.length > 0 ? (
-              <table className="students-table">
+              <table className="pk-table">
                 <thead>
                   <tr>
                     <th>Roll Number</th>
