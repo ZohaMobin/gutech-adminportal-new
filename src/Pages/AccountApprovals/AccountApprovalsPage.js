@@ -1,5 +1,7 @@
 import Loading from "../../Components/Loading/Loading";
 import PageHeader from "../../Components/PageHeader/PageHeader";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
+import { ConfirmModal } from "../Administrators/AdminModals";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "../Programs/ProgramsPage.css";
@@ -16,7 +18,11 @@ const AccountApprovalsPage = () => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [busyId, setBusyId] = useState(null);
+  // The account being approved or rejected, and which of the two: { account, decision }
+  const [pending, setPending] = useState(null);
+  const [reason, setReason] = useState("");
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   const adminToken = sessionStorage.getItem("adminToken");
   const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
@@ -40,27 +46,28 @@ const AccountApprovalsPage = () => {
     fetchAccounts();
   }, [fetchAccounts]);
 
-  const review = async (account, decision) => {
-    let body = {};
-    if (decision === "reject") {
-      // Cancel aborts; an empty reason is allowed.
-      const reason = window.prompt(`Reject ${account.name}? Optionally give a reason (shown to the applicant):`, "");
-      if (reason === null) return;
-      body = { reason };
-    } else if (!window.confirm(`Approve ${account.name} as ${account.role}?`)) {
-      return;
-    }
+  const startReview = (account, decision) => {
+    setReason("");
+    setReviewError("");
+    setPending({ account, decision });
+  };
+
+  const review = async () => {
+    const { account, decision } = pending;
     try {
-      setBusyId(account._id);
-      await axios.post(`${API_BASE_URL}/api/account-approvals/${account._id}/${decision}`, body, { headers });
+      setReviewing(true);
+      setReviewError("");
+      // An empty reason is allowed when rejecting.
+      await axios.post(`${API_BASE_URL}/api/account-approvals/${account._id}/${decision}`, decision === "reject" ? { reason } : {}, { headers });
       setAccounts((prev) => prev.filter((a) => a._id !== account._id));
       window.dispatchEvent(new Event(APPROVALS_CHANGED_EVENT));
-      setError("");
+      showToast(decision === "approve" ? `${account.name} approved` : `${account.name} rejected`, TOAST_TYPES.SUCCESS);
+      setPending(null);
     } catch (err) {
-      setError(err.response?.data?.message || `Failed to ${decision} account`);
+      setReviewError(err.response?.data?.message || `Failed to ${decision} account`);
       fetchAccounts();
     } finally {
-      setBusyId(null);
+      setReviewing(false);
     }
   };
 
@@ -85,12 +92,12 @@ const AccountApprovalsPage = () => {
         ))}
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-message" role="alert">{error}</div>}
 
       {loading ? (
         <Loading variant="list" rows={3} label="Loading accounts" />
       ) : accounts.length === 0 ? (
-        <p>{isRejectedTab ? "No rejected accounts." : "No accounts are waiting for approval."}</p>
+        <p className="aa-empty">{isRejectedTab ? "No rejected accounts." : "No accounts are waiting for approval."}</p>
       ) : (
         <div className="programs-table-container">
           <table className="programs-table">
@@ -122,20 +129,47 @@ const AccountApprovalsPage = () => {
                       : new Date(account.createdAt).toLocaleDateString()}
                   </td>
                   <td>
-                    <button className="btn-primary" disabled={busyId === account._id} onClick={() => review(account, "approve")}>
-                      {isRejectedTab ? "Approve anyway" : "Approve"}
-                    </button>{" "}
-                    {!isRejectedTab && (
-                      <button className="btn-secondary" disabled={busyId === account._id} onClick={() => review(account, "reject")}>
-                        Reject
+                    <div className="row-actions">
+                      <button className="row-btn row-btn--primary" onClick={() => startReview(account, "approve")} aria-label={`${isRejectedTab ? "Approve anyway" : "Approve"} ${account.name}`}>
+                        {isRejectedTab ? "Approve anyway" : "Approve"}
                       </button>
-                    )}
+                      {!isRejectedTab && (
+                        <button className="row-btn row-btn--danger" onClick={() => startReview(account, "reject")} aria-label={`Reject ${account.name}`}>
+                          Reject
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {pending && (
+        <ConfirmModal
+          title={pending.decision === "approve" ? "Approve account" : "Reject account"}
+          body={
+            pending.decision === "approve"
+              ? `Approve ${pending.account.name} as ${pending.account.role}? They will be able to sign in.`
+              : `Reject ${pending.account.name}? They will not be able to sign in.`
+          }
+          confirmLabel={pending.decision === "approve" ? "Approve" : "Reject"}
+          busyText={pending.decision === "approve" ? "Approving…" : "Rejecting…"}
+          danger={pending.decision === "reject"}
+          busy={reviewing}
+          error={reviewError}
+          onConfirm={review}
+          onClose={() => setPending(null)}
+        >
+          {pending.decision === "reject" && (
+            <label className="am-field">
+              <span>Reason <em>(optional, shown to the applicant)</em></span>
+              <textarea rows="3" value={reason} onChange={(e) => setReason(e.target.value)} disabled={reviewing} autoFocus />
+            </label>
+          )}
+        </ConfirmModal>
       )}
     </div>
   );

@@ -1,32 +1,39 @@
-import Loading from "../../Components/Loading/Loading";
+import Loading, { BusyLabel, Refreshing } from "../../Components/Loading/Loading";
 import PageHeader from "../../Components/PageHeader/PageHeader";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
+import { ConfirmModal, Modal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./DepartmentsPage.css";
 
+const EMPTY_FORM = { code: "", name: "", description: "", isActive: true };
+
 const DepartmentsPage = () => {
   const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [firstLoad, setFirstLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    description: "",
-    isActive: true,
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [toDeactivate, setToDeactivate] = useState(null);
+  const [deactivating, setDeactivating] = useState(false);
+  const [deactivateError, setDeactivateError] = useState("");
 
   const adminToken = sessionStorage.getItem("adminToken");
   const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     fetchDepartments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The first load shows placeholders; later reloads (after a save) only dim the table, so the page never blanks.
   const fetchDepartments = async () => {
     try {
-      setLoading(true);
+      setRefreshing(true);
       const response = await axios.get(`${API_BASE_URL}/api/departments?includeInactive=true`, {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
@@ -35,7 +42,8 @@ const DepartmentsPage = () => {
     } catch (err) {
       setError(err.response?.data?.error || "Failed to fetch departments");
     } finally {
-      setLoading(false);
+      setRefreshing(false);
+      setFirstLoad(false);
     }
   };
 
@@ -50,7 +58,8 @@ const DepartmentsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setError("");
+      setSaving(true);
+      setFormError("");
       if (editingDepartment) {
         await axios.put(`${API_BASE_URL}/api/departments/${editingDepartment._id}`, formData, { headers: { Authorization: `Bearer ${adminToken}` } });
       } else {
@@ -58,11 +67,13 @@ const DepartmentsPage = () => {
           headers: { Authorization: `Bearer ${adminToken}` },
         });
       }
-      setShowModal(false);
-      resetForm();
+      showToast(editingDepartment ? "Department updated" : "Department created", TOAST_TYPES.SUCCESS);
+      handleCloseModal();
       fetchDepartments();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to save department");
+      setFormError(err.response?.data?.error || "Failed to save department");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -74,39 +85,35 @@ const DepartmentsPage = () => {
       description: department.description || "",
       isActive: department.isActive,
     });
+    setFormError("");
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to deactivate this department?")) {
-      return;
-    }
+  const confirmDeactivate = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/departments/${id}`, {
+      setDeactivating(true);
+      setDeactivateError("");
+      await axios.delete(`${API_BASE_URL}/api/departments/${toDeactivate._id}`, {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
+      showToast(`${toDeactivate.name} deactivated`, TOAST_TYPES.SUCCESS);
+      setToDeactivate(null);
       fetchDepartments();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to delete department");
+      setDeactivateError(err.response?.data?.error || "Failed to deactivate department");
+    } finally {
+      setDeactivating(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      code: "",
-      name: "",
-      description: "",
-      isActive: true,
-    });
-    setEditingDepartment(null);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    resetForm();
+    setFormData(EMPTY_FORM);
+    setEditingDepartment(null);
+    setFormError("");
   };
 
-  if (loading) {
+  if (firstLoad) {
     return <div className="departments-page page-shell"><PageHeader title="Departments" /><Loading variant="table" rows={6} label="Loading departments" /></div>;
   }
 
@@ -117,8 +124,9 @@ const DepartmentsPage = () => {
         actions={<button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Department</button>}
       />
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-message" role="alert">{error}</div>}
 
+      <Refreshing active={refreshing}>
       <div className="departments-table-container">
         <table className="departments-table">
           <thead>
@@ -147,13 +155,15 @@ const DepartmentsPage = () => {
                     <span className={`status-badge ${dept.isActive ? "active" : "inactive"}`}>{dept.isActive ? "Active" : "Inactive"}</span>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button className="btn-edit" onClick={() => handleEdit(dept)}>
+                    <div className="row-actions">
+                      <button className="row-btn" onClick={() => handleEdit(dept)} aria-label={`Edit ${dept.name}`}>
                         Edit
                       </button>
-                      <button className="btn-delete" onClick={() => handleDelete(dept._id)}>
-                        Deactivate
-                      </button>
+                      {dept.isActive && (
+                        <button className="row-btn row-btn--danger" onClick={() => { setDeactivateError(""); setToDeactivate(dept); }} aria-label={`Deactivate ${dept.name}`}>
+                          Deactivate
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -162,50 +172,56 @@ const DepartmentsPage = () => {
           </tbody>
         </table>
       </div>
+      </Refreshing>
 
       {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingDepartment ? "Edit Department" : "Add Department"}</h2>
-              <button className="modal-close" onClick={handleCloseModal}>
-                ×
+        <Modal
+          title={editingDepartment ? "Edit department" : "Add department"}
+          onClose={handleCloseModal}
+          busy={saving}
+          footer={
+            <>
+              <button type="button" className="am-btn" onClick={handleCloseModal} disabled={saving}>Cancel</button>
+              <button type="submit" form="department-form" className="am-btn am-btn-primary" disabled={saving}>
+                <BusyLabel busy={saving} busyText="Saving…" idle={editingDepartment ? "Save changes" : "Create department"} />
               </button>
-            </div>
-            <form onSubmit={handleSubmit} className="department-form">
-              <div className="form-group">
-                <label>
-                  Code <span className="required">*</span>
-                </label>
-                <input type="text" name="code" value={formData.code} onChange={handleInputChange} required placeholder="e.g., CS" disabled={!!editingDepartment} />
-              </div>
-              <div className="form-group">
-                <label>
-                  Name <span className="required">*</span>
-                </label>
-                <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="e.g., Computer Science" />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" placeholder="Optional description" />
-              </div>
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleInputChange} />
-                  Active
-                </label>
-              </div>
-              <div className="form-actions">
-                <button type="button" className="btn-secondary" onClick={handleCloseModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary">
-                  {editingDepartment ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <form id="department-form" onSubmit={handleSubmit}>
+            <label className="am-field">
+              <span>Code</span>
+              <input type="text" name="code" value={formData.code} onChange={handleInputChange} required placeholder="e.g., CS" disabled={!!editingDepartment || saving} />
+            </label>
+            <label className="am-field">
+              <span>Name</span>
+              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="e.g., Computer Science" disabled={saving} />
+            </label>
+            <label className="am-field">
+              <span>Description <em>(optional)</em></span>
+              <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" disabled={saving} />
+            </label>
+            <label className="am-check">
+              <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleInputChange} disabled={saving} />
+              Active
+            </label>
+            {formError && <div className="am-error" role="alert">{formError}</div>}
+          </form>
+        </Modal>
+      )}
+
+      {toDeactivate && (
+        <ConfirmModal
+          title="Deactivate department"
+          body={`Deactivate ${toDeactivate.name} (${toDeactivate.code})? It stays in the records but is marked inactive. You can turn it back on by editing it.`}
+          confirmLabel="Deactivate"
+          busyText="Deactivating…"
+          danger
+          busy={deactivating}
+          error={deactivateError}
+          onConfirm={confirmDeactivate}
+          onClose={() => setToDeactivate(null)}
+        />
       )}
     </div>
   );

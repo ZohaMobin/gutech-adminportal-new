@@ -1,0 +1,17 @@
+/* Buttons that sit in a table row (Edit, Deactivate, Approve...). Outlined so a row of them stays quiet; red only for the
+   destructive one. One definition for every admin table, instead of each page carrying its own colours. */
+.row-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.row-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  height: 2rem; padding: 0 0.85rem; margin: 0;
+  border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff;
+  font: inherit; font-size: 0.82rem; font-weight: 600; line-height: 1; color: #374151; white-space: nowrap; cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.row-btn:hover:not(:disabled) { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }
+.row-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.row-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.row-btn--danger { color: #b42318; border-color: #f0c4c0; }
+.row-btn--danger:hover:not(:disabled) { color: #b42318; border-color: #b42318; background: #fef2f2; }
+.row-btn--primary { color: #fff; background: var(--primary-color); border-color: var(--primary-color); }
+.row-btn--primary:hover:not(:disabled) { color: #fff; background: var(--primary-dark); border-color: var(--primary-dark); }

@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/global.css"; // Single global CSS file
+import "./styles/rowActions.css"; // Outlined buttons for table rows
 import Signup from "./Pages/LoginSignUp/Signup";
 import ForgotPassword from "./Pages/ForgotPassword/ForgotPassword";
 import MainLayout from "./Pages/MainLayout/MainLayout";
