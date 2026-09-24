@@ -38,3 +38,14 @@
   color: var(--primary-color);
   font-size: 12px;
 }
+
+.aa-empty {
+  margin: 0;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+  background: #fff;
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: var(--shadow-sm);
+}

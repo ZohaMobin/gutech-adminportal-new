@@ -1,34 +1,39 @@
-import Loading from "../../Components/Loading/Loading";
+import Loading, { BusyLabel, Refreshing } from "../../Components/Loading/Loading";
 import PageHeader from "../../Components/PageHeader/PageHeader";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
+import { ConfirmModal, Modal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./ProgramsPage.css";
 
+const EMPTY_FORM = { code: "", name: "", level: "undergraduate", typicalDuration: 8, description: "", isActive: true };
+
 const ProgramsPage = () => {
   const [programs, setPrograms] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [firstLoad, setFirstLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingProgram, setEditingProgram] = useState(null);
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    level: "undergraduate",
-    typicalDuration: 8,
-    description: "",
-    isActive: true,
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [toDeactivate, setToDeactivate] = useState(null);
+  const [deactivating, setDeactivating] = useState(false);
+  const [deactivateError, setDeactivateError] = useState("");
 
   const adminToken = sessionStorage.getItem("adminToken");
   const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     fetchPrograms();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The first load shows placeholders; later reloads (after a save) only dim the table, so the page never blanks.
   const fetchPrograms = async () => {
     try {
-      setLoading(true);
+      setRefreshing(true);
       const response = await axios.get(`${API_BASE_URL}/api/programs?includeInactive=true`, {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
@@ -37,7 +42,8 @@ const ProgramsPage = () => {
     } catch (err) {
       setError(err.response?.data?.error || "Failed to fetch programs");
     } finally {
-      setLoading(false);
+      setRefreshing(false);
+      setFirstLoad(false);
     }
   };
 
@@ -52,7 +58,8 @@ const ProgramsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setError("");
+      setSaving(true);
+      setFormError("");
       if (editingProgram) {
         await axios.put(`${API_BASE_URL}/api/programs/${editingProgram._id}`, formData, { headers: { Authorization: `Bearer ${adminToken}` } });
       } else {
@@ -60,11 +67,13 @@ const ProgramsPage = () => {
           headers: { Authorization: `Bearer ${adminToken}` },
         });
       }
-      setShowModal(false);
-      resetForm();
+      showToast(editingProgram ? "Program updated" : "Program created", TOAST_TYPES.SUCCESS);
+      handleCloseModal();
       fetchPrograms();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to save program");
+      setFormError(err.response?.data?.error || "Failed to save program");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -78,41 +87,35 @@ const ProgramsPage = () => {
       description: program.description || "",
       isActive: program.isActive,
     });
+    setFormError("");
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to deactivate this program?")) {
-      return;
-    }
+  const confirmDeactivate = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/programs/${id}`, {
+      setDeactivating(true);
+      setDeactivateError("");
+      await axios.delete(`${API_BASE_URL}/api/programs/${toDeactivate._id}`, {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
+      showToast(`${toDeactivate.name} deactivated`, TOAST_TYPES.SUCCESS);
+      setToDeactivate(null);
       fetchPrograms();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to delete program");
+      setDeactivateError(err.response?.data?.error || "Failed to deactivate program");
+    } finally {
+      setDeactivating(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      code: "",
-      name: "",
-      level: "undergraduate",
-      typicalDuration: 8,
-      description: "",
-      isActive: true,
-    });
-    setEditingProgram(null);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    resetForm();
+    setFormData(EMPTY_FORM);
+    setEditingProgram(null);
+    setFormError("");
   };
 
-  if (loading) {
+  if (firstLoad) {
     return <div className="programs-page page-shell"><PageHeader title="Programs" /><Loading variant="table" rows={6} label="Loading programs" /></div>;
   }
 
@@ -123,8 +126,9 @@ const ProgramsPage = () => {
         actions={<button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Program</button>}
       />
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-message" role="alert">{error}</div>}
 
+      <Refreshing active={refreshing}>
       <div className="programs-table-container">
         <table className="programs-table">
           <thead>
@@ -159,13 +163,15 @@ const ProgramsPage = () => {
                     <span className={`status-badge ${program.isActive ? "active" : "inactive"}`}>{program.isActive ? "Active" : "Inactive"}</span>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button className="btn-edit" onClick={() => handleEdit(program)}>
+                    <div className="row-actions">
+                      <button className="row-btn" onClick={() => handleEdit(program)} aria-label={`Edit ${program.name}`}>
                         Edit
                       </button>
-                      <button className="btn-delete" onClick={() => handleDelete(program._id)}>
-                        Deactivate
-                      </button>
+                      {program.isActive && (
+                        <button className="row-btn row-btn--danger" onClick={() => { setDeactivateError(""); setToDeactivate(program); }} aria-label={`Deactivate ${program.name}`}>
+                          Deactivate
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -174,66 +180,68 @@ const ProgramsPage = () => {
           </tbody>
         </table>
       </div>
+      </Refreshing>
 
       {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingProgram ? "Edit Program" : "Add Program"}</h2>
-              <button className="modal-close" onClick={handleCloseModal}>
-                ×
+        <Modal
+          title={editingProgram ? "Edit program" : "Add program"}
+          onClose={handleCloseModal}
+          busy={saving}
+          footer={
+            <>
+              <button type="button" className="am-btn" onClick={handleCloseModal} disabled={saving}>Cancel</button>
+              <button type="submit" form="program-form" className="am-btn am-btn-primary" disabled={saving}>
+                <BusyLabel busy={saving} busyText="Saving…" idle={editingProgram ? "Save changes" : "Create program"} />
               </button>
-            </div>
-            <form onSubmit={handleSubmit} className="program-form">
-              <div className="form-group">
-                <label>
-                  Code <span className="required">*</span>
-                </label>
-                <input type="text" name="code" value={formData.code} onChange={handleInputChange} required placeholder="e.g., BSC" disabled={!!editingProgram} />
-              </div>
-              <div className="form-group">
-                <label>
-                  Name <span className="required">*</span>
-                </label>
-                <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="e.g., Bachelor of Science" />
-              </div>
-              <div className="form-group">
-                <label>
-                  Level <span className="required">*</span>
-                </label>
-                <select name="level" value={formData.level} onChange={handleInputChange} required>
-                  <option value="undergraduate">Undergraduate</option>
-                  <option value="graduate">Graduate</option>
-                  <option value="doctoral">Doctoral</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>
-                  Typical Duration (Semesters) <span className="required">*</span>
-                </label>
-                <input type="number" name="typicalDuration" value={formData.typicalDuration} onChange={handleInputChange} required min="1" max="20" placeholder="e.g., 8" />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" placeholder="Optional description" />
-              </div>
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleInputChange} />
-                  Active
-                </label>
-              </div>
-              <div className="form-actions">
-                <button type="button" className="btn-secondary" onClick={handleCloseModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary">
-                  {editingProgram ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <form id="program-form" onSubmit={handleSubmit}>
+            <label className="am-field">
+              <span>Code</span>
+              <input type="text" name="code" value={formData.code} onChange={handleInputChange} required placeholder="e.g., BSCS" disabled={!!editingProgram || saving} />
+            </label>
+            <label className="am-field">
+              <span>Name</span>
+              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="e.g., Bachelor of Science in Computer Science" disabled={saving} />
+            </label>
+            <label className="am-field">
+              <span>Level</span>
+              <select name="level" value={formData.level} onChange={handleInputChange} required disabled={saving}>
+                <option value="undergraduate">Undergraduate</option>
+                <option value="graduate">Graduate</option>
+                <option value="doctoral">Doctoral</option>
+              </select>
+            </label>
+            <label className="am-field">
+              <span>Typical duration (semesters)</span>
+              <input type="number" name="typicalDuration" value={formData.typicalDuration} onChange={handleInputChange} required min="1" max="20" placeholder="e.g., 8" disabled={saving} />
+            </label>
+            <label className="am-field">
+              <span>Description <em>(optional)</em></span>
+              <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" disabled={saving} />
+            </label>
+            <label className="am-check">
+              <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleInputChange} disabled={saving} />
+              Active
+            </label>
+            {formError && <div className="am-error" role="alert">{formError}</div>}
+          </form>
+        </Modal>
+      )}
+
+      {toDeactivate && (
+        <ConfirmModal
+          title="Deactivate program"
+          body={`Deactivate ${toDeactivate.name} (${toDeactivate.code})? It stays in the records but is marked inactive. You can turn it back on by editing it.`}
+          confirmLabel="Deactivate"
+          busyText="Deactivating…"
+          danger
+          busy={deactivating}
+          error={deactivateError}
+          onConfirm={confirmDeactivate}
+          onClose={() => setToDeactivate(null)}
+        />
       )}
     </div>
   );

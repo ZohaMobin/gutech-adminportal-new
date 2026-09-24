@@ -1,34 +1,41 @@
-import Loading from "../../Components/Loading/Loading";
+import Loading, { BusyLabel, Refreshing } from "../../Components/Loading/Loading";
 import PageHeader from "../../Components/PageHeader/PageHeader";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
+import { ConfirmModal, Modal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./AcademicYearsPage.css";
 
+const EMPTY_FORM = () => ({ semesterType: "Fall", year: new Date().getFullYear(), startDate: "", endDate: "", isCurrent: false });
+const yearName = (ay) => `${ay.semesterType} ${ay.year}`;
+
 const AcademicYearsPage = () => {
   const [academicYears, setAcademicYears] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [firstLoad, setFirstLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingAcademicYear, setEditingAcademicYear] = useState(null);
-  const [formData, setFormData] = useState({
-    semesterType: "Fall",
-    year: new Date().getFullYear(),
-    startDate: "",
-    endDate: "",
-    isCurrent: false,
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM());
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  // One confirmation at a time: { kind: "current" | "deactivate", year }
+  const [confirm, setConfirm] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState("");
 
   const adminToken = sessionStorage.getItem("adminToken");
   const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     fetchAcademicYears();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The first load shows placeholders; later reloads (after a save) only dim the table, so the page never blanks.
   const fetchAcademicYears = async () => {
     try {
-      setLoading(true);
+      setRefreshing(true);
       const response = await axios.get(`${API_BASE_URL}/api/academic-years`, {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
@@ -37,7 +44,8 @@ const AcademicYearsPage = () => {
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch academic years");
     } finally {
-      setLoading(false);
+      setRefreshing(false);
+      setFirstLoad(false);
     }
   };
 
@@ -51,37 +59,27 @@ const AcademicYearsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
+    if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+      setFormError("End date must be after start date");
+      return;
+    }
     try {
-      setError("");
-      setSuccess("");
-
-      // Validate dates
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(formData.endDate);
-
-      if (endDate <= startDate) {
-        setError("End date must be after start date");
-        return;
-      }
-
+      setSaving(true);
       if (editingAcademicYear) {
         await axios.put(`${API_BASE_URL}/api/academic-years/${editingAcademicYear._id}`, formData, { headers: { Authorization: `Bearer ${adminToken}` } });
-        setSuccess("Academic year updated successfully");
       } else {
         await axios.post(`${API_BASE_URL}/api/academic-years`, formData, {
           headers: { Authorization: `Bearer ${adminToken}` },
         });
-        setSuccess("Academic year created successfully");
       }
-
-      setShowModal(false);
-      resetForm();
+      showToast(editingAcademicYear ? "Academic year updated" : "Academic year created", TOAST_TYPES.SUCCESS);
+      handleCloseModal();
       fetchAcademicYears();
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to save academic year");
+      setFormError(err.response?.data?.message || "Failed to save academic year");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -94,50 +92,41 @@ const AcademicYearsPage = () => {
       endDate: academicYear.endDate ? new Date(academicYear.endDate).toISOString().split("T")[0] : "",
       isCurrent: academicYear.isCurrent || false,
     });
+    setFormError("");
     setShowModal(true);
   };
 
-  const handleSetCurrent = async (id) => {
-    if (!window.confirm("Set this as the current academic year? This will unmark any other current academic year.")) {
-      return;
-    }
+  const openConfirm = (kind, year) => {
+    setConfirmError("");
+    setConfirm({ kind, year });
+  };
+
+  const runConfirm = async () => {
+    const { kind, year } = confirm;
     try {
-      setError("");
-      await axios.put(`${API_BASE_URL}/api/academic-years/${id}/set-current`, {}, { headers: { Authorization: `Bearer ${adminToken}` } });
-      setSuccess("Current academic year updated successfully");
+      setConfirming(true);
+      setConfirmError("");
+      if (kind === "current") {
+        await axios.put(`${API_BASE_URL}/api/academic-years/${year._id}/set-current`, {}, { headers: { Authorization: `Bearer ${adminToken}` } });
+        showToast(`${yearName(year)} is now the current academic year`, TOAST_TYPES.SUCCESS);
+      } else {
+        await axios.delete(`${API_BASE_URL}/api/academic-years/${year._id}`, { headers: { Authorization: `Bearer ${adminToken}` } });
+        showToast(`${yearName(year)} deactivated`, TOAST_TYPES.SUCCESS);
+      }
+      setConfirm(null);
       fetchAcademicYears();
-      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to set current academic year");
+      setConfirmError(err.response?.data?.message || (kind === "current" ? "Failed to set current academic year" : "Failed to deactivate academic year"));
+    } finally {
+      setConfirming(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to deactivate this academic year?")) {
-      return;
-    }
-    try {
-      setError("");
-      await axios.delete(`${API_BASE_URL}/api/academic-years/${id}`, {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      setSuccess("Academic year deactivated successfully");
-      fetchAcademicYears();
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete academic year");
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      semesterType: "Fall",
-      year: new Date().getFullYear(),
-      startDate: "",
-      endDate: "",
-      isCurrent: false,
-    });
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFormData(EMPTY_FORM());
     setEditingAcademicYear(null);
+    setFormError("");
   };
 
   const getStatusBadge = (status) => {
@@ -158,7 +147,7 @@ const AcademicYearsPage = () => {
     return <span className={`status-badge ${statusColors[status] || ""}`}>{statusLabels[status] || status}</span>;
   };
 
-  if (loading) {
+  if (firstLoad) {
     return (
       <div className="academic-years-page page-shell">
         <PageHeader title="Academic Years" />
@@ -172,21 +161,15 @@ const AcademicYearsPage = () => {
       <PageHeader
         title="Academic Years"
         actions={
-          <button
-            className="btn-primary"
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
-          >
+          <button className="btn-primary" onClick={() => { setFormData(EMPTY_FORM()); setShowModal(true); }}>
             + Add Academic Year
           </button>
         }
       />
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
+      {error && <div className="error-message" role="alert">{error}</div>}
 
+      <Refreshing active={refreshing}>
       <div className="academic-years-table-container">
         <table className="academic-years-table">
           <thead>
@@ -219,18 +202,18 @@ const AcademicYearsPage = () => {
                     {ay.isCurrent ? (
                       <span className="current-badge">Current</span>
                     ) : (
-                      <button className="btn-set-current" onClick={() => handleSetCurrent(ay._id)}>
-                        Set Current
+                      <button className="row-btn" onClick={() => openConfirm("current", ay)} aria-label={`Make ${yearName(ay)} the current academic year`}>
+                        Set current
                       </button>
                     )}
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button className="btn-edit" onClick={() => handleEdit(ay)}>
+                    <div className="row-actions">
+                      <button className="row-btn" onClick={() => handleEdit(ay)} aria-label={`Edit ${yearName(ay)}`}>
                         Edit
                       </button>
                       {ay.isActive && (
-                        <button className="btn-delete" onClick={() => handleDelete(ay._id)}>
+                        <button className="row-btn row-btn--danger" onClick={() => openConfirm("deactivate", ay)} aria-label={`Deactivate ${yearName(ay)}`}>
                           Deactivate
                         </button>
                       )}
@@ -242,78 +225,68 @@ const AcademicYearsPage = () => {
           </tbody>
         </table>
       </div>
+      </Refreshing>
 
       {showModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => {
-            setShowModal(false);
-            resetForm();
-          }}
-        >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingAcademicYear ? "Edit Academic Year" : "Add Academic Year"}</h2>
-              <button
-                className="modal-close"
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-              >
-                ×
+        <Modal
+          title={editingAcademicYear ? "Edit academic year" : "Add academic year"}
+          onClose={handleCloseModal}
+          busy={saving}
+          footer={
+            <>
+              <button type="button" className="am-btn" onClick={handleCloseModal} disabled={saving}>Cancel</button>
+              <button type="submit" form="academic-year-form" className="am-btn am-btn-primary" disabled={saving}>
+                <BusyLabel busy={saving} busyText="Saving…" idle={editingAcademicYear ? "Save changes" : "Create academic year"} />
               </button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="semesterType">Semester Type *</label>
-                <select id="semesterType" name="semesterType" value={formData.semesterType} onChange={handleInputChange} required>
-                  <option value="Fall">Fall</option>
-                  <option value="Spring">Spring</option>
-                  <option value="Summer">Summer</option>
-                </select>
-              </div>
+            </>
+          }
+        >
+          <form id="academic-year-form" onSubmit={handleSubmit}>
+            <label className="am-field">
+              <span>Semester type</span>
+              <select name="semesterType" value={formData.semesterType} onChange={handleInputChange} required disabled={saving}>
+                <option value="Fall">Fall</option>
+                <option value="Spring">Spring</option>
+                <option value="Summer">Summer</option>
+              </select>
+            </label>
+            <label className="am-field">
+              <span>Year</span>
+              <input type="number" name="year" value={formData.year} onChange={handleInputChange} min="2000" max="2100" required disabled={saving} />
+            </label>
+            <label className="am-field">
+              <span>Start date</span>
+              <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} required disabled={saving} />
+            </label>
+            <label className="am-field">
+              <span>End date</span>
+              <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} required disabled={saving} />
+            </label>
+            <label className="am-check">
+              <input type="checkbox" name="isCurrent" checked={formData.isCurrent} onChange={handleInputChange} disabled={saving} />
+              Set as the current academic year
+            </label>
+            {formError && <div className="am-error" role="alert">{formError}</div>}
+          </form>
+        </Modal>
+      )}
 
-              <div className="form-group">
-                <label htmlFor="year">Year *</label>
-                <input type="number" id="year" name="year" value={formData.year} onChange={handleInputChange} min="2000" max="2100" required />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="startDate">Start Date *</label>
-                <input type="date" id="startDate" name="startDate" value={formData.startDate} onChange={handleInputChange} required />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="endDate">End Date *</label>
-                <input type="date" id="endDate" name="endDate" value={formData.endDate} onChange={handleInputChange} required />
-              </div>
-
-              <div className="form-group checkbox-group">
-                <label>
-                  <input type="checkbox" name="isCurrent" checked={formData.isCurrent} onChange={handleInputChange} />
-                  Set as Current Academic Year
-                </label>
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn-cancel"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-submit">
-                  {editingAcademicYear ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {confirm && (
+        <ConfirmModal
+          title={confirm.kind === "current" ? "Set current academic year" : "Deactivate academic year"}
+          body={
+            confirm.kind === "current"
+              ? `Make ${yearName(confirm.year)} the current academic year? Whichever year is current now will stop being current.`
+              : `Deactivate ${yearName(confirm.year)}? It stays in the records but is marked inactive.`
+          }
+          confirmLabel={confirm.kind === "current" ? "Set as current" : "Deactivate"}
+          busyText={confirm.kind === "current" ? "Updating…" : "Deactivating…"}
+          danger={confirm.kind === "deactivate"}
+          busy={confirming}
+          error={confirmError}
+          onConfirm={runConfirm}
+          onClose={() => setConfirm(null)}
+        />
       )}
     </div>
   );
