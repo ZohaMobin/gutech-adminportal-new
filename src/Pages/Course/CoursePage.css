@@ -600,7 +600,7 @@ tr:hover {
 details.offerings-group { margin-bottom: 0.6rem; border: 1px solid #e6e8ec; border-radius: 0.75rem; background: #fff; overflow: hidden; }
 details.offerings-group > summary.group-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.65rem 0.9rem; cursor: pointer; list-style: none; font-size: 0.95rem; font-weight: 600; background: #f8f9fb; margin: 0; }
 details.offerings-group > summary.group-title::-webkit-details-marker { display: none; }
-details.offerings-group > summary.group-title::before { content: "▸"; color: #8b1538; margin-right: 0.5rem; transition: transform 0.15s; }
+details.offerings-group > summary.group-title::before { content: "▸"; color: var(--primary-color); margin-right: 0.5rem; transition: transform 0.15s; }
 details.offerings-group[open] > summary.group-title::before { transform: rotate(90deg); }
 details.offerings-group > summary .group-count { margin-left: auto; font-size: 0.78rem; font-weight: 600; color: #6b7280; }
 .group-scroll { overflow-x: auto; }

@@ -1,6 +1,6 @@
 /* Eligibility check panel: sits under the uploaded list on the Enroll Students page. */
 .elig-panel {
-  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: #8b1538; --accent-hover: #741230; --tint: #fbf1f4;
+  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-dark); --tint: var(--primary-tint);
   margin: 24px 0; padding: 20px 22px; background: #fff; border: 1px solid var(--line); border-radius: 12px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); color: var(--ink);
 }

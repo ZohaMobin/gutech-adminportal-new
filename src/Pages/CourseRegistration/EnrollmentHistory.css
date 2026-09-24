@@ -1,5 +1,5 @@
 /* Enrollment history: recent uploads, each opening its full report. Shares the Enroll page's colours. */
-.enh { --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: #8b1538; --ok: #17693a; --ok-bg: #e7f6ec; --bad: #b42318; --bad-bg: #fef2f2; --wait: #9a5b06; --wait-bg: #fff7e6;
+.enh { --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --ok: #17693a; --ok-bg: #e7f6ec; --bad: #b42318; --bad-bg: #fef2f2; --wait: #9a5b06; --wait-bg: #fff7e6;
   background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); color: var(--ink); overflow: hidden; }
 .enh *, .enh *::before, .enh *::after { box-sizing: border-box; }
 .enh h2, .enh p { margin: 0; }

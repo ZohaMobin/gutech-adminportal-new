@@ -38,13 +38,13 @@
 }
 
 .approval-tab:hover {
-  color: #8b1538;
+  color: var(--primary-color);
 }
 
 .approval-tab.active {
-  color: #8b1538;
+  color: var(--primary-color);
   font-weight: 600;
-  border-bottom-color: #8b1538;
+  border-bottom-color: var(--primary-color);
 }
 
 .attempt-badge {
@@ -52,6 +52,6 @@
   padding: 2px 8px;
   border-radius: 10px;
   background: #fdecea;
-  color: #8b1538;
+  color: var(--primary-color);
   font-size: 12px;
 }

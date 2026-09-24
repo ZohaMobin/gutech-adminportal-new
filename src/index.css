@@ -1,7 +1,7 @@
 
 body {
   margin: 0;
-font-family: sans-serif !important;
+font-family: var(--font-body) !important;
 font-weight: 500;
 font-style: normal;
  overflow-x: hidden !important;

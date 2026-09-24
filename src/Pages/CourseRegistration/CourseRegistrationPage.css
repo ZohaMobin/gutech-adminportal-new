@@ -1,6 +1,6 @@
 /* Enroll students: four steps, each one visible only once the one before it is done. */
 .enr-page {
-  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: #8b1538; --accent-hover: #741230; --tint: #fbf1f4;
+  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-dark); --tint: var(--primary-tint);
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4; --bad: #b42318; --bad-bg: #fef2f2;
   padding: 24px; max-width: 1080px; margin: 0 auto; color: var(--ink); display: flex; flex-direction: column; gap: 18px;
 }
@@ -47,7 +47,7 @@
 .enr-courses { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
 .enr-course { display: grid; gap: 2px; text-align: left; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; font: inherit; color: var(--ink); cursor: pointer; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
 .enr-course:hover { border-color: #d0b4bd; }
-.enr-course.is-on { border-color: var(--accent); background: var(--tint); box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.08); }
+.enr-course.is-on { border-color: var(--accent); background: var(--tint); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.08); }
 .enr-course strong { font-size: 15px; }
 .enr-course span { font-size: 14px; }
 .enr-course small { margin-top: 4px; color: var(--muted); font-size: 12.5px; }
@@ -91,7 +91,7 @@
 .enr-issue { display: block; color: var(--bad); font-size: 12.5px; font-weight: 600; }
 
 .enr-progress { position: relative; height: 22px; border-radius: 999px; background: #eceef2; overflow: hidden; }
-.enr-progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), #b5294f); transition: width 0.3s ease; }
+.enr-progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--primary-bright)); transition: width 0.3s ease; }
 .enr-progress span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; mix-blend-mode: difference; }
 .enr-enroll { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 4px; }
 .enr-enroll p { color: var(--muted); font-size: 14px; }
@@ -114,7 +114,7 @@
 .enr-page { max-width: 1240px; gap: 20px; }
 .enr-hidden { display: none; }
 .enr-header h1 { font-size: 30px; letter-spacing: -0.01em; }
-.enr-term { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid #ecd3db; }
+.enr-term { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid var(--primary-tint-line); }
 .enr-term i { width: 8px; height: 8px; border-radius: 50%; background: #1f9d55; box-shadow: 0 0 0 3px rgba(31, 157, 85, 0.18); }
 
 .enr-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: -4px; }
