@@ -5,6 +5,7 @@ import axios from "axios";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
 import { semesters } from "../../config/academicConfig";
 import { formatSectionOptionLabel } from "../../utils/sectionTeachers";
+import { downloadCsv } from "../../utils/csv";
 import { readSelection, saveSelection } from "./savedSelection";
 import "./StudentMarksPage.css";
 
@@ -21,6 +22,38 @@ const getPerformanceClass = (percentage) => {
 const EMPTY_SECTION = {
   NO_STUDENTS_IN_SECTION: { title: "No students are enrolled in this section yet", hint: "Marks will appear here once students are registered in it." },
   NO_ASSESSMENTS_IN_SECTION: { title: "No assessments have been published for this section", hint: "The teacher's assessments show up here once they are published." },
+};
+
+// Sorting the gradebook: click a heading to sort by it, again to reverse, a third time to go back to the server's order.
+// A student with no mark for the column always sorts last, in either direction.
+const sortValue = (row, key) => {
+  if (key === "roll") return row.rollNumber || "";
+  if (key === "name") return row.name || "";
+  if (key === "total") return row.weightedTotal;
+  const cell = row.cells.find((c) => `a:${c.assessmentId}` === key);
+  return cell && cell.hasMark ? Number(cell.obtainedMarks) : null;
+};
+const compareRows = (a, b, { key, dir }) => {
+  const x = sortValue(a, key); const y = sortValue(b, key);
+  if (x === null && y === null) return 0;
+  if (x === null) return 1;
+  if (y === null) return -1;
+  const result = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: "base" });
+  return dir === "desc" ? -result : result;
+};
+const nextSort = (current, key) => {
+  if (current.key !== key) return { key, dir: "asc" };
+  if (current.dir === "asc") return { key, dir: "desc" };
+  return { key: null, dir: "asc" };
+};
+const SortButton = ({ label, sortKey, sort, onSort }) => {
+  const active = sort.key === sortKey;
+  return (
+    <button type="button" className={`sort-btn${active ? " is-active" : ""}`} onClick={() => onSort(sortKey)} aria-label={`Sort by ${label}`}>
+      {label}
+      <span className="sort-arrow" aria-hidden="true">{active ? (sort.dir === "asc" ? "▲" : "▼") : "↕"}</span>
+    </button>
+  );
 };
 
 const getTermDisplayName = (term) => {
@@ -56,6 +89,8 @@ const StudentMarksPage = () => {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [emptyReason, setEmptyReason] = useState(null);
+  const [rowFilter, setRowFilter] = useState("all"); // all | failing | missing
+  const [sort, setSort] = useState({ key: null, dir: "asc" });
 
   const getAuthToken = () => sessionStorage.getItem("adminToken");
 
@@ -215,6 +250,13 @@ const StudentMarksPage = () => {
     saveSelection(filters, { history: window.history, location: window.location, storage: window.localStorage });
   }, [filters]);
 
+  // A different section starts with everyone showing and the server's order.
+  useEffect(() => {
+    setRowFilter("all");
+    setSort({ key: null, dir: "asc" });
+    setSearchQuery("");
+  }, [filters.section]);
+
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
       ...prev,
@@ -285,8 +327,9 @@ const StudentMarksPage = () => {
       const percentage =
         student.percentage ??
         (courseWeightage > 0 ? Math.min(100, (weightedTotal / courseWeightage) * 100) : null);
-      const missingMarks =
-        student.missingMarks ?? cells.filter((cell) => !cell.hasMark).length;
+      // A bonus assessment nobody has to sit is not a missing mark.
+      const bonusIds = new Set(assessments.filter((a) => a.isBonus).map((a) => String(a.id)));
+      const missingMarks = cells.filter((cell) => !cell.hasMark && !bonusIds.has(String(cell.assessmentId))).length;
 
       return {
         ...student,
@@ -318,6 +361,32 @@ const StudentMarksPage = () => {
       failingCount,
     };
   }, [gradebookRows]);
+
+  const displayedRows = useMemo(() => {
+    let rows = gradebookRows;
+    if (rowFilter === "failing") rows = rows.filter((row) => row.estimatedGrade === "F");
+    if (rowFilter === "missing") rows = rows.filter((row) => row.missingMarks > 0);
+    if (sort.key) rows = [...rows].sort((a, b) => compareRows(a, b, sort));
+    return rows;
+  }, [gradebookRows, rowFilter, sort]);
+
+  const toggleFilter = (name) => setRowFilter((current) => (current === name ? "all" : name));
+  const onSort = (key) => setSort((current) => nextSort(current, key));
+
+  const exportGradebook = () => {
+    const head = [
+      "Roll No", "Student Name",
+      ...assessments.flatMap((a) => [`${a.title}${a.isBonus ? " (bonus)" : ""} marks (/${a.maxMarks})`, `${a.title} weighted (/${a.weightage})`]),
+      `Total (/${courseWeightage || 0})`, "Percentage", "Estimated Grade",
+    ];
+    const lines = displayedRows.map((row) => [
+      row.rollNumber || "", row.name || "",
+      ...row.cells.flatMap((cell) => [cell.hasMark ? Number(cell.obtainedMarks) : "", cell.weightedScore == null ? "" : Number(cell.weightedScore.toFixed(2))]),
+      Number(row.weightedTotal.toFixed(2)), row.percentage == null ? "" : Number(row.percentage.toFixed(1)), row.estimatedGrade,
+    ]);
+    const name = [selectedCourse?.code || "marks", selectedSection ? `section-${selectedSection.section}` : ""].filter(Boolean).join("-");
+    downloadCsv(`${name}.csv`.replace(/[^\w.-]+/g, "_"), [head, ...lines]);
+  };
 
   const selectedCourse = availableFilters.courses.find((c) => c._id === filters.course);
   const selectedSection = availableFilters.sections.find((s) => s.id === filters.section);
@@ -464,24 +533,29 @@ const StudentMarksPage = () => {
                 {selectedSection ? ` — Section ${selectedSection.section}` : ""}
               </h2>
             </div>
-            {availableFilters.sections.length > 1 && sectionIndex >= 0 && (
-              <div className="section-stepper" role="group" aria-label="Move between this course's sections">
-                <button type="button" className="stepper-btn" onClick={() => stepSection(-1)} disabled={sectionIndex === 0 || loading} aria-label="Previous section">‹</button>
-                <span>Section {sectionIndex + 1} of {availableFilters.sections.length}</span>
-                <button type="button" className="stepper-btn" onClick={() => stepSection(1)} disabled={sectionIndex === availableFilters.sections.length - 1 || loading} aria-label="Next section">›</button>
+            <div className="workspace-tools">
+              {availableFilters.sections.length > 1 && sectionIndex >= 0 && (
+                <div className="section-stepper" role="group" aria-label="Move between this course's sections">
+                  <button type="button" className="stepper-btn" onClick={() => stepSection(-1)} disabled={sectionIndex === 0 || loading} aria-label="Previous section">‹</button>
+                  <span>Section {sectionIndex + 1} of {availableFilters.sections.length}</span>
+                  <button type="button" className="stepper-btn" onClick={() => stepSection(1)} disabled={sectionIndex === availableFilters.sections.length - 1 || loading} aria-label="Next section">›</button>
+                </div>
+              )}
+              {!emptyReason && !error && gradebookRows.length > 0 && (
+                <button type="button" className="export-csv-btn" onClick={exportGradebook}>Export CSV</button>
+              )}
+              {!emptyReason && !error && (
+              <div className="workspace-search">
+                <input
+                  type="text"
+                  placeholder="Search name or roll no."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
               </div>
-            )}
-            {!emptyReason && !error && (
-            <div className="workspace-search">
-              <input
-                type="text"
-                placeholder="Search by name or roll number..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
+              )}
             </div>
-            )}
           </div>
         )}
 
@@ -497,22 +571,31 @@ const StudentMarksPage = () => {
                 {courseWeightage} / 100
               </strong>
             </div>
-            <div className="workspace-summary-card">
+            <button type="button" className={`workspace-summary-card is-action${rowFilter === "failing" ? " is-on" : ""}`} aria-pressed={rowFilter === "failing"} onClick={() => toggleFilter("failing")} title="Show only students with F">
               <span>Students with F</span>
               <strong className={summary.failingCount ? "summary-warning" : ""}>
                 {summary.failingCount}
               </strong>
-            </div>
-            <div className="workspace-summary-card">
+            </button>
+            <button type="button" className={`workspace-summary-card is-action${rowFilter === "all" ? "" : " is-dim"}`} onClick={() => setRowFilter("all")} title="Show everyone">
               <span>Students</span>
               <strong>{summary.studentCount}</strong>
-            </div>
-            <div className="workspace-summary-card">
+            </button>
+            <button type="button" className={`workspace-summary-card is-action${rowFilter === "missing" ? " is-on" : ""}`} aria-pressed={rowFilter === "missing"} onClick={() => toggleFilter("missing")} title="Show only students with a missing mark">
               <span>Missing Marks</span>
               <strong className={summary.missingMarks ? "summary-warning" : ""}>
                 {summary.missingMarks}
               </strong>
-            </div>
+            </button>
+          </div>
+        )}
+
+        {filtersComplete && !loading && !error && gradebookRows.length > 0 && (rowFilter !== "all" || searchQuery.trim()) && (
+          <div className="filter-note" role="status">
+            Showing {displayedRows.length} of {marksData.length} students
+            {rowFilter === "failing" ? " with F" : rowFilter === "missing" ? " with a missing mark" : ""}
+            {searchQuery.trim() ? ` matching “${searchQuery.trim()}”` : ""}
+            <button type="button" onClick={() => { setRowFilter("all"); setSearchQuery(""); }}>Show all</button>
           </div>
         )}
 
@@ -544,15 +627,15 @@ const StudentMarksPage = () => {
                 <thead>
                   <tr>
                     <th className="sticky-col roll-col" rowSpan="2">
-                      Roll No
+                      <SortButton label="Roll No" sortKey="roll" sort={sort} onSort={onSort} />
                     </th>
                     <th className="sticky-col name-col" rowSpan="2">
-                      Student Name
+                      <SortButton label="Student Name" sortKey="name" sort={sort} onSort={onSort} />
                     </th>
                     {assessments.map((assessment) => (
                       <React.Fragment key={assessment.id}>
                         <th className={assessment.isBonus ? "bonus-col-header" : undefined}>
-                          {assessment.title} Marks
+                          <SortButton label={`${assessment.title} Marks`} sortKey={`a:${assessment.id}`} sort={sort} onSort={onSort} />
                           {assessment.isBonus ? <span className="bonus-pill">Bonus</span> : null}
                         </th>
                         <th
@@ -563,7 +646,7 @@ const StudentMarksPage = () => {
                       </React.Fragment>
                     ))}
                     <th className="total-header" rowSpan="2">
-                      Total
+                      <SortButton label="Total" sortKey="total" sort={sort} onSort={onSort} />
                     </th>
                     <th className="grade-header" rowSpan="2">
                       Estimated Grade
@@ -589,7 +672,7 @@ const StudentMarksPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {gradebookRows.map((student) => (
+                  {displayedRows.map((student) => (
                     <tr key={student.id}>
                       <td className="sticky-col roll-col">{student.rollNumber || "-"}</td>
                       <td className="sticky-col name-col">{student.name || "Unnamed Student"}</td>
@@ -625,6 +708,9 @@ const StudentMarksPage = () => {
                       </td>
                     </tr>
                   ))}
+                  {displayedRows.length === 0 && (
+                    <tr className="no-match-row"><td colSpan={4 + assessments.length * 2}>No students match. <button type="button" className="link-btn" onClick={() => { setRowFilter("all"); setSearchQuery(""); }}>Show all students</button></td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
