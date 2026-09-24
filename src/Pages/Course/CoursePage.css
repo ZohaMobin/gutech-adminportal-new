@@ -613,3 +613,13 @@ details.offerings-group td { overflow-wrap: anywhere; }
 /* Offerings table: the edit button sits in an ordinary table cell (a flex <td> drops out of the row). */
 .offering-action-cell { width: 3.25rem; text-align: right; white-space: nowrap; }
 .offering-action-cell .edit-btn { display: inline-flex; }
+
+/* A row whose status is changing or that is being deleted: still there, but not clickable, so nothing jumps. */
+.courses-table tr.is-busy { opacity: 0.55; }
+.courses-table tr.is-busy button { pointer-events: none; }
+.toggle-btn:disabled, .edit-btn:disabled, .delete-btn:disabled { cursor: not-allowed; }
+
+/* Keep the Actions cell an ordinary table cell (a flex <td> drops out of the row and its borders stop lining up). */
+.courses-table td.action-buttons { display: table-cell; white-space: nowrap; }
+.courses-table td.action-buttons > button { display: inline-flex; vertical-align: middle; margin-right: var(--spacing-sm, 8px); }
+.courses-table td.action-buttons > button:last-child { margin-right: 0; }
