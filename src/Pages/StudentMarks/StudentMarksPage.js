@@ -5,6 +5,7 @@ import axios from "axios";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
 import { semesters } from "../../config/academicConfig";
 import { formatSectionOptionLabel } from "../../utils/sectionTeachers";
+import { readSelection, saveSelection } from "./savedSelection";
 import "./StudentMarksPage.css";
 
 const getPerformanceClass = (percentage) => {
@@ -48,14 +49,7 @@ const StudentMarksPage = () => {
     courseWeightage: 0,
     bonusWeightage: 0,
   });
-  const [filters, setFilters] = useState({
-    department: "",
-    program: "",
-    academicYearId: "",
-    semester: "",
-    course: "",
-    section: "",
-  });
+  const [filters, setFilters] = useState(() => readSelection(window.location.search, window.localStorage));
   const [availableFilters, setAvailableFilters] = useState({
     courses: [],
     sections: [],
@@ -82,11 +76,13 @@ const StudentMarksPage = () => {
         const terms = Array.isArray(response.data) ? response.data : [];
         setAcademicTerms(terms);
 
+        // A term named in the address (or remembered) stays; otherwise start on the active one.
         const activeTerm = terms.find((term) => term.status === "active" || term.isCurrent);
         const initialTerm = activeTerm || terms[0];
-        if (initialTerm) {
-          setFilters((prev) => ({ ...prev, academicYearId: initialTerm._id }));
-        }
+        setFilters((prev) => {
+          if (terms.some((term) => term._id === prev.academicYearId)) return prev;
+          return { ...prev, academicYearId: initialTerm?._id || "" };
+        });
       } catch (err) {
         setError("Failed to load academic terms. Please try again.");
         console.error("Error loading academic terms:", err);
@@ -158,10 +154,10 @@ const StudentMarksPage = () => {
           },
           headers: requestHeaders(),
         });
-        setAvailableFilters((prev) => ({
-          ...prev,
-          sections: sectionRes.data.sections || [],
-        }));
+        const loaded = sectionRes.data.sections || [];
+        setAvailableFilters((prev) => ({ ...prev, sections: loaded }));
+        // A section from an old link or a remembered choice that is not in this course any more: start from the list.
+        setFilters((prev) => (prev.section && !loaded.some((item) => item.id === prev.section) ? { ...prev, section: "" } : prev));
       } catch (err) {
         setError("Failed to load sections. Please try again.");
         console.error("Error loading sections:", err);
@@ -178,6 +174,8 @@ const StudentMarksPage = () => {
       if (!filters.academicYearId || !filters.department || !filters.program || !filters.semester || !filters.course || !filters.section) {
         setMarksData([]);
         setMarksMeta({ assessments: [], courseWeightage: 0, bonusWeightage: 0 });
+        setError(null);
+        setEmptyReason(null);
         return;
       }
 
@@ -212,6 +210,10 @@ const StudentMarksPage = () => {
 
     fetchMarksData();
   }, [filters.academicYearId, filters.department, filters.program, filters.semester, filters.course, filters.section, apiUrl]);
+
+  useEffect(() => {
+    saveSelection(filters, { history: window.history, location: window.location, storage: window.localStorage });
+  }, [filters]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
@@ -319,6 +321,11 @@ const StudentMarksPage = () => {
 
   const selectedCourse = availableFilters.courses.find((c) => c._id === filters.course);
   const selectedSection = availableFilters.sections.find((s) => s.id === filters.section);
+  const sectionIndex = availableFilters.sections.findIndex((item) => item.id === filters.section);
+  const stepSection = (delta) => {
+    const next = availableFilters.sections[sectionIndex + delta];
+    if (next) handleFilterChange("section", next.id);
+  };
   const filtersComplete = Boolean(
     filters.academicYearId && filters.department && filters.program && filters.semester && filters.course && filters.section
   );
@@ -457,6 +464,13 @@ const StudentMarksPage = () => {
                 {selectedSection ? ` — Section ${selectedSection.section}` : ""}
               </h2>
             </div>
+            {availableFilters.sections.length > 1 && sectionIndex >= 0 && (
+              <div className="section-stepper" role="group" aria-label="Move between this course's sections">
+                <button type="button" className="stepper-btn" onClick={() => stepSection(-1)} disabled={sectionIndex === 0 || loading} aria-label="Previous section">‹</button>
+                <span>Section {sectionIndex + 1} of {availableFilters.sections.length}</span>
+                <button type="button" className="stepper-btn" onClick={() => stepSection(1)} disabled={sectionIndex === availableFilters.sections.length - 1 || loading} aria-label="Next section">›</button>
+              </div>
+            )}
             {!emptyReason && !error && (
             <div className="workspace-search">
               <input
