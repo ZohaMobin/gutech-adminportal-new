@@ -1,5 +1,5 @@
 /* Teacher assignments: filters on top, courses on the left, the chosen course's sections on the right. */
-.ta { --ink: #1f2937; --muted: #6b7280; --line: #e6e8ec; --brand: #8b1538; --brand-soft: #fbf1f4; --ok: #17693a; --ok-bg: #e7f6ec; --bad: #b42318; --bad-bg: #fef2f2; --warn: #9a5b06; --warn-bg: #fff7e6;
+.ta { --ink: #1f2937; --muted: #6b7280; --line: #e6e8ec; --brand: var(--primary-color); --brand-soft: var(--primary-tint); --ok: #17693a; --ok-bg: #e7f6ec; --bad: #b42318; --bad-bg: #fef2f2; --warn: #9a5b06; --warn-bg: #fff7e6;
   display: grid; gap: 0.9rem; color: var(--ink); text-align: left; }
 .ta *, .ta *::before, .ta *::after { box-sizing: border-box; }
 .ta h2, .ta h3, .ta h4, .ta p { margin: 0; }
@@ -49,7 +49,7 @@
 .ta-sections { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.75rem; }
 .ta-section { display: grid; gap: 0.6rem; align-content: start; padding: 0.85rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 0.85rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
 .ta-section.needs { border-color: #f3d9a4; background: #fffdf8; }
-.ta-section.editing { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.08); }
+.ta-section.editing { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.08); }
 .ta-section-head { display: flex; align-items: center; gap: 0.5rem; }
 .ta-section-head strong { font-size: 0.98rem; }
 .ta-section-head .ta-link { margin-left: auto; }
@@ -77,7 +77,7 @@
 .ta-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.42rem 0.9rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 0.85rem; font-weight: 500; color: var(--ink); cursor: pointer; white-space: nowrap; }
 .ta-btn:hover:not(:disabled) { background: #f6f7f9; }
 .ta-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.ta-primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; } .ta-primary:hover:not(:disabled) { background: #741230; }
+.ta-primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; } .ta-primary:hover:not(:disabled) { background: var(--primary-dark); }
 .ta-add { padding: 0.9rem 1rem; background: #fafbfc; border: 1px dashed #d5d8de; border-radius: 0.85rem; display: grid; gap: 0.7rem; }
 .ta-add h4 { display: flex; align-items: center; gap: 0.4rem; font-size: 0.95rem; }
 .ta-add-row { display: grid; grid-template-columns: 9rem minmax(0, 1fr) auto; gap: 0.75rem; align-items: start; }

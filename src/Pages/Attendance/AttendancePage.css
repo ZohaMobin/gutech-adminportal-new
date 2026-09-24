@@ -1,7 +1,7 @@
 /* Attendance Page Styles */
 .attendance-page {
   padding: 2rem;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: inherit;
   background-color: #f8fafc;
   min-height: 100vh;
   width: 100%;
@@ -800,7 +800,7 @@
 .att-f select, .att-f input { width: 100%; height: 2.3rem; padding: 0 0.7rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 0.9rem; color: #1f2937; }
 .att-f select:disabled, .att-f input:disabled { background: #f6f7f9; color: #9aa1ad; }
 .att-f-search { flex: 1.3 1 13rem; }
-.att-filters :is(select, input):focus-visible { outline: 2px solid #8b1538; outline-offset: 1px; }
+.att-filters :is(select, input):focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
 .att-filters .term-status-pill { align-self: center; margin-top: 1rem; }
 
 .attendance-content { min-height: 0; gap: 1rem; align-items: flex-start; }
@@ -810,13 +810,13 @@
 .att-courses { display: grid; gap: 0.35rem; max-height: calc(100vh - 17rem); min-height: 12rem; overflow-y: auto; padding-right: 0.25rem; align-content: start; }
 .att-course { display: block; padding: 0.55rem 0.7rem; border: 1px solid #e6e8ec; border-radius: 0.55rem; background: #fff; cursor: pointer; }
 .att-course:hover { background: #f8fafc; border-color: #cbd5e1; }
-.att-course.is-on { background: #fbf1f4; border-color: #8b1538; }
-.att-course:focus-visible { outline: 2px solid #8b1538; outline-offset: 1px; }
+.att-course.is-on { background: var(--primary-tint); border-color: var(--primary-color); }
+.att-course:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
 .att-course-info { display: grid; gap: 1px; }
-.att-course-code { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.03em; color: #8b1538; }
+.att-course-code { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.03em; color: var(--primary-color); }
 .att-course-name { font-size: 0.88rem; font-weight: 500; line-height: 1.3; color: #1f2937; }
 .att-course-meta { font-size: 0.74rem; color: #6b7280; }
-.att-clear { border: 0; background: none; padding: 0; color: #8b1538; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.att-clear { border: 0; background: none; padding: 0; color: var(--primary-color); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 @media (max-width: 900px) {
   .attendance-content { flex-direction: column; align-items: stretch; }
   .att-sidebar { width: 100%; min-width: 0; }

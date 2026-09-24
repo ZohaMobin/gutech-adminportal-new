@@ -2,10 +2,10 @@
    Same shell as the rest of the admin portal (Attendance, Marks): light background, Inter, a plain
    maroon-on-white title with no icon badge, and filters in their own bordered card. */
 .ra-page {
-  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: #8b1538; --accent-hover: #741230; --tint: #fbf1f4;
+  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-dark); --tint: var(--primary-tint);
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4; --info: #1b5e9b; --info-bg: #eaf3fb;
   padding: 1.25rem; width: 100%; max-width: 100%; color: var(--ink); display: flex; flex-direction: column; gap: 1.25rem;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: inherit;
 }
 .ra-page *, .ra-page *::before, .ra-page *::after { box-sizing: border-box; }
 .ra-page h1, .ra-page h2, .ra-page h3, .ra-page p { margin: 0; }
@@ -75,7 +75,7 @@
 .ra-steps li.done:not(:last-child)::after { background: var(--accent); }
 .ra-step-dot { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #f8fafc; border: 1.5px solid var(--line); font-size: 11px; font-weight: 700; }
 .ra-steps li.done .ra-step-dot { background: var(--accent); border-color: var(--accent); color: #fff; }
-.ra-steps li.current .ra-step-dot { border-color: var(--accent); color: var(--accent); background: #fff; box-shadow: 0 0 0 4px rgba(139, 21, 56, 0.1); }
+.ra-steps li.current .ra-step-dot { border-color: var(--accent); color: var(--accent); background: #fff; box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1); }
 .ra-steps li.current.done .ra-step-dot { color: #fff; background: var(--accent); }
 .ra-steps li.current .ra-step-label, .ra-steps li.done .ra-step-label { color: var(--ink); font-weight: 600; }
 .ra-step-label { white-space: nowrap; }
@@ -216,7 +216,7 @@
 .ra-table .name strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 .ra-table .total { font-weight: 700; }
 .ra-table .grade { display: flex; justify-content: flex-end; }
-.ra-table .ra-row.changed { background: rgba(139, 21, 56, 0.025); }
+.ra-table .ra-row.changed { background: rgba(var(--primary-rgb), 0.025); }
 .ra-table .ra-row.failing .total { color: #b42318; }
 .ra-nomarks-cell { color: var(--muted); font-style: italic; font-size: 13.5px; }
 .ra-added { color: #0f9d6b; }
@@ -273,7 +273,7 @@
 .ra-strip-stat strong { font-size: 22px; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .ra-strip-upgrade { display: flex; align-items: center; margin-left: auto; padding: 0 20px; }
 .ra-upgrade-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e9c3cf; border-radius: 999px; background: var(--tint); color: var(--accent); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
-.ra-upgrade-chip:hover { background: #f7e3e9; }
+.ra-upgrade-chip:hover { background: var(--primary-tint-line); }
 .ra-upgrade-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ra-upgrade-chip i { font-style: normal; font-size: 11px; }
 .ra-spreadline { padding: 8px 22px 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }

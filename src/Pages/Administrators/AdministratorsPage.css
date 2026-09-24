@@ -49,13 +49,13 @@
 }
 
 .am-btn-primary {
-  background: #8b1538;
-  border-color: #8b1538;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
   color: #fff;
 }
 
 .am-btn-primary:hover:not(:disabled) {
-  background: #741230;
+  background: var(--primary-dark);
 }
 
 .am-btn-danger {
@@ -113,8 +113,8 @@
 .am-field input:focus,
 .am-field select:focus {
   outline: none;
-  border-color: #8b1538;
-  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.12);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
 }
 
 .am-tabs {
@@ -137,7 +137,7 @@
 
 .am-tab.is-active {
   background: #fff;
-  color: #8b1538;
+  color: var(--primary-color);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
@@ -207,8 +207,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #f6e3e8;
-  color: #8b1538;
+  background: var(--primary-tint-line);
+  color: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -524,8 +524,8 @@
 
 .pw-field input:focus {
   outline: none;
-  border-color: #8b1538;
-  box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.12);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
 }
 
 .pw-toggle {
@@ -544,13 +544,13 @@
 
 .pw-toggle:hover {
   background: #f0f0f0;
-  color: #8b1538;
+  color: var(--primary-color);
 }
 
 /* Also used by the course offering editor */
 .am-field select { background: #fff; }
 .am-check { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 14px; font-size: 14px; color: #333; cursor: pointer; }
-.am-check input { flex: none; width: auto; height: auto; min-width: 0; margin: 3px 0 0; padding: 0; border: 0; box-shadow: none; accent-color: #8b1538; }
+.am-check input { flex: none; width: auto; height: auto; min-width: 0; margin: 3px 0 0; padding: 0; border: 0; box-shadow: none; accent-color: var(--primary-color); }
 .am-check em { font-style: normal; color: #888; }
 .oem-summary { margin: 0 0 16px; padding: 10px 12px; background: #f8f9fb; border: 1px solid #e6e8ec; border-radius: 8px; font-size: 14px; color: #333; }
 .oem-summary span { color: #6b7280; }
