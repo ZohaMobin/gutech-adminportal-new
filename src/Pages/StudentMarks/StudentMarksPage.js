@@ -1,4 +1,5 @@
 import Loading from "../../Components/Loading/Loading";
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
@@ -52,11 +53,9 @@ const StudentMarksPage = () => {
     courses: [],
     sections: [],
   });
-  const [showHelp, setShowHelp] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   const getAuthToken = () => sessionStorage.getItem("adminToken");
-  const selectedAcademicTerm = academicTerms.find((term) => term._id === filters.academicYearId);
 
   const requestHeaders = () => ({
     "x-auth-token": getAuthToken(),
@@ -311,59 +310,14 @@ const StudentMarksPage = () => {
   );
 
   return (
-    <div className="student-marks-container">
-      <div className="marks-page-header">
-        <div className="marks-header-content">
-          <h1>Student Marks</h1>
-          <p>Choose an academic term first, then review section-level gradebooks</p>
-        </div>
-      </div>
-
-      <div className="term-selector-card">
-        <div className="term-selector-copy">
-          <span className="term-eyebrow">Academic Term</span>
-          <h2>{getTermDisplayName(selectedAcademicTerm)}</h2>
-          <p>
-            Marks below are scoped to the selected term. Choose a closed or archived term to audit historical results.
-          </p>
-        </div>
-        <div className="term-selector-control">
-          <label htmlFor="marks-academic-term">View marks for</label>
-          <select
-            id="marks-academic-term"
-            value={filters.academicYearId}
-            onChange={(e) => handleFilterChange("academicYearId", e.target.value)}
-            disabled={academicTerms.length === 0}
-          >
-            <option value="">Select academic term</option>
-            {academicTerms.map((term) => (
-              <option key={term._id} value={term._id}>
-                {getTermDisplayName(term)} - {getTermStatusLabel(term.status)}
-              </option>
-            ))}
-          </select>
-          {selectedAcademicTerm && (
-            <span className={`term-status-pill ${selectedAcademicTerm.status || "unknown"}`}>
-              {getTermStatusLabel(selectedAcademicTerm.status)}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {showHelp && (
-        <div className="help-text">
-          <p>
-            Select Department → Program → Semester → Course → Section. Marks are read-only here;
-            teachers enter them. Bonus assessments add points without increasing course weightage.
-          </p>
-          <button className="close-help" onClick={() => setShowHelp(false)} aria-label="Close help text">
-            ×
-          </button>
-        </div>
-      )}
+    <div className="student-marks-container page-shell">
+      <PageHeader
+        title="Student Marks"
+        subtitle="Review a section's gradebook. Marks are read-only here; teachers enter them."
+      />
 
       {error && (
-        <div className="error-message">
+        <div className="error-message" role="alert">
           <p>{error}</p>
           <button onClick={() => setError(null)} className="dismiss-error-btn">
             Dismiss
@@ -371,98 +325,113 @@ const StudentMarksPage = () => {
         </div>
       )}
 
-      <div className="filters-section">
-        <div className="filters-grid">
-          <div className="filter-group">
-            <label htmlFor="department">Department</label>
-            <select
-              id="department"
-              value={filters.department}
-              onChange={(e) => handleFilterChange("department", e.target.value)}
-              disabled={!filters.academicYearId || deptProgLoading}
-            >
-              <option value="">Select Department</option>
-              {departments.map((dept) => (
-                <option key={dept._id} value={dept._id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-          </div>
+      <section className="marks-filters" aria-label="Choose a section">
+        <label htmlFor="marks-academic-term">
+          <span>Term</span>
+          <select
+            id="marks-academic-term"
+            value={filters.academicYearId}
+            onChange={(e) => handleFilterChange("academicYearId", e.target.value)}
+            disabled={academicTerms.length === 0}
+          >
+            <option value="">Select term</option>
+            {academicTerms.map((term) => (
+              <option key={term._id} value={term._id}>
+                {getTermDisplayName(term)} ({getTermStatusLabel(term.status)})
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="program">Program</label>
-            <select
-              id="program"
-              value={filters.program}
-              onChange={(e) => handleFilterChange("program", e.target.value)}
-              disabled={!filters.academicYearId || !filters.department || deptProgLoading}
-            >
-              <option value="">Select Program</option>
-              {programs.map((prog) => (
-                <option key={prog._id} value={prog._id}>
-                  {prog.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label htmlFor="department">
+          <span>Department</span>
+          <select
+            id="department"
+            value={filters.department}
+            onChange={(e) => handleFilterChange("department", e.target.value)}
+            disabled={!filters.academicYearId || deptProgLoading}
+          >
+            <option value="">Select department</option>
+            {departments.map((dept) => (
+              <option key={dept._id} value={dept._id}>
+                {dept.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="semester">Semester</label>
-            <select
-              id="semester"
-              value={filters.semester}
-              onChange={(e) => handleFilterChange("semester", e.target.value)}
-              disabled={!filters.academicYearId || !filters.program}
-            >
-              <option value="">Select Semester</option>
-              {semesters.map((sem) => (
-                <option key={sem} value={sem}>
-                  Semester {sem}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label htmlFor="program">
+          <span>Program</span>
+          <select
+            id="program"
+            value={filters.program}
+            onChange={(e) => handleFilterChange("program", e.target.value)}
+            disabled={!filters.academicYearId || !filters.department || deptProgLoading}
+          >
+            <option value="">Select program</option>
+            {programs.map((prog) => (
+              <option key={prog._id} value={prog._id}>
+                {prog.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="course">Course</label>
-            <select
-              id="course"
-              value={filters.course}
-              onChange={(e) => handleFilterChange("course", e.target.value)}
-              disabled={!filters.semester || loading}
-            >
-              <option value="">Select Course</option>
-              {availableFilters.courses.map((course) => (
-                <option key={course._id} value={course._id}>
-                  {course.code ? `${course.code}: ${course.name}` : course.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label htmlFor="semester">
+          <span>Semester</span>
+          <select
+            id="semester"
+            value={filters.semester}
+            onChange={(e) => handleFilterChange("semester", e.target.value)}
+            disabled={!filters.academicYearId || !filters.program}
+          >
+            <option value="">Select semester</option>
+            {semesters.map((sem) => (
+              <option key={sem} value={sem}>
+                Semester {sem}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="section">Section</label>
-            <select
-              id="section"
-              value={filters.section}
-              onChange={(e) => handleFilterChange("section", e.target.value)}
-              disabled={!filters.course || loading}
-            >
-              <option value="">Select Section</option>
-              {availableFilters.sections.map((section) => (
-                <option key={section.id} value={section.id}>
-                  {formatSectionOptionLabel(section)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <label htmlFor="course">
+          <span>Course</span>
+          <select
+            id="course"
+            value={filters.course}
+            onChange={(e) => handleFilterChange("course", e.target.value)}
+            disabled={!filters.semester || loading}
+          >
+            <option value="">Select course</option>
+            {availableFilters.courses.map((course) => (
+              <option key={course._id} value={course._id}>
+                {course.code ? `${course.code}: ${course.name}` : course.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <button className="clear-filters-btn" onClick={clearFilters}>
-          Clear Filters
+        <label htmlFor="section">
+          <span>Section</span>
+          <select
+            id="section"
+            value={filters.section}
+            onChange={(e) => handleFilterChange("section", e.target.value)}
+            disabled={!filters.course || loading}
+          >
+            <option value="">Select section</option>
+            {availableFilters.sections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {formatSectionOptionLabel(section)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button type="button" className="clear-filters-btn" onClick={clearFilters}>
+          Clear
         </button>
-      </div>
+      </section>
 
       <div className="marks-table-section">
         {filtersComplete && (
@@ -522,7 +491,8 @@ const StudentMarksPage = () => {
             <Loading variant="table" rows={8} label="Loading marks" />
           ) : !filtersComplete ? (
             <div className="no-data-container">
-              <p>Select all filters to view the section gradebook.</p>
+              <p className="marks-empty-title">Pick a section to see its gradebook</p>
+              <p>Choose a term, department, program, semester, course and section above.</p>
             </div>
           ) : error ? (
             <div className="error-container">
@@ -632,6 +602,7 @@ const StudentMarksPage = () => {
             <span className="legend-item watch">50–69% Watch</span>
             <span className="legend-item risk">&lt;50% Risk</span>
             <span className="legend-item missing">— Missing</span>
+            <span className="legend-note">Bonus assessments add points without increasing course weightage.</span>
           </div>
         )}
       </div>

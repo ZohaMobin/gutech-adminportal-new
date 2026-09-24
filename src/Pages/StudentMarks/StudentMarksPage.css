@@ -1,265 +1,44 @@
-.student-marks-container {
-  /* Same page shell as Attendance and Result Approvals: full width, no centered max-width, same top padding. */
-  padding: 1.25rem;
-  width: 100%;
-  max-width: 100%;
-  background: var(--light-bg);
-  min-height: 100vh;
-  box-sizing: border-box;
-}
-
-/* Named marks-page-header/-content (not the generic .page-header/.header-content also used by other admin pages'
-   stylesheets) so this page's layout can never be overridden by whichever of those happens to load later in the bundle. */
-.marks-page-header {
-  margin-bottom: var(--spacing-lg);
-  padding: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--spacing-lg);
-  flex-wrap: wrap;
-}
-
-.marks-header-content h1 {
-  font-size: 1.8rem;
-  color: var(--text-dark);
-  margin: 0 0 var(--spacing-xs) 0;
-}
-
-.marks-header-content p {
-  color: var(--text-color);
-  margin: 0;
-}
+/* Page width, padding and the title come from .page-shell and <PageHeader>, like every other admin page. */
+.student-marks-container { min-height: 100vh; box-sizing: border-box; text-align: left; }
 
 .error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-md);
-  margin-bottom: var(--spacing-lg);
+  background: #fef2f2;
+  color: #b42318;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.6rem;
+  margin-bottom: 0.9rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.error-message p {
-  margin: 0;
-  flex-grow: 1;
-}
-
-.dismiss-error-btn {
-  background: none;
-  border: none;
-  color: #721c24;
-  cursor: pointer;
-  font-size: 0.9rem;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-}
-
-.dismiss-error-btn:hover {
-  background: rgba(114, 28, 36, 0.1);
-}
-
-.term-selector-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.25rem 1.5rem;
-  margin-bottom: var(--spacing-lg);
-  border: 1px solid rgba(153, 29, 32, 0.18);
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at top left, rgba(153, 29, 32, 0.1), transparent 34%),
-    linear-gradient(135deg, #ffffff 0%, #fff8f5 100%);
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.07);
-}
-
-.term-selector-copy {
-  min-width: 0;
-}
-
-.term-eyebrow {
-  display: inline-flex;
-  margin-bottom: 0.35rem;
-  color: #991d20;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.term-selector-copy h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-
-.term-selector-copy p {
-  max-width: 680px;
-  margin: 0.35rem 0 0;
-  color: #64748b;
   font-size: 0.9rem;
 }
+.error-message p { margin: 0; flex-grow: 1; }
+.dismiss-error-btn { background: none; border: none; color: inherit; cursor: pointer; font-size: 0.85rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 0.4rem; }
+.dismiss-error-btn:hover { background: rgba(180, 35, 24, 0.1); }
 
-.term-selector-control {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+/* One slim filter row, the same look as the Teacher Assignments and Attendance filters. */
+.marks-filters {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 0.7rem 0.9rem;
+  padding: 0.85rem 1rem; margin-bottom: 1rem;
+  background: #fff; border: 1px solid #e6e8ec; border-radius: 0.85rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
-
-.term-selector-control label {
-  color: #475569;
-  font-size: 0.82rem;
-  font-weight: 700;
+.marks-filters label { display: grid; gap: 0.25rem; min-width: 0; margin: 0; }
+.marks-filters label:nth-of-type(5) { grid-column: span 2; }   /* Course names are the longest */
+.marks-filters label > span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
+.marks-filters select {
+  width: 100%; height: 2.3rem; margin: 0; padding: 0 0.7rem;
+  border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff;
+  font: inherit; font-size: 0.9rem; color: #1f2937;
 }
-
-.term-selector-control select {
-  min-width: 230px;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.65rem;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 0.9rem;
-  font-weight: 600;
-  outline: none;
-}
-
-.term-selector-control select:focus {
-  border-color: #991d20;
-  box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12);
-}
-
-.term-status-pill {
-  padding: 0.45rem 0.7rem;
-  border-radius: 999px;
-  background: #e2e8f0;
-  color: #334155;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.term-status-pill.active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.term-status-pill.upcoming {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.term-status-pill.closed,
-.term-status-pill.completed {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.term-status-pill.archived {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.filters-section {
-  background: var(--white);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-}
-
-.filters-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-md);
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.filter-group label {
-  font-size: 0.9rem;
-  color: var(--text-color);
-  font-weight: 500;
-}
-
-.filter-group select {
-  padding: var(--spacing-sm);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background: var(--white);
-  font-size: 0.9rem;
-  color: var(--text-dark);
-}
-
-.filter-group select:hover:not(:disabled) {
-  border-color: var(--primary-color);
-}
-
-.filter-group select:disabled {
-  background: var(--light-bg);
-  cursor: not-allowed;
-}
-
+.marks-filters select:hover:not(:disabled) { border-color: var(--primary-color); }
+.marks-filters select:disabled { background: #f6f7f9; color: #9aa1ad; cursor: not-allowed; }
+.marks-filters :is(select, button):focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 .clear-filters-btn {
-  background: none;
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 0.9rem;
+  justify-self: start; height: 2.3rem; width: auto; margin: 0; padding: 0 1.25rem;
+  border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff;
+  font: inherit; font-size: 0.85rem; font-weight: 600; color: #4b5563; cursor: pointer;
 }
-
-.clear-filters-btn:hover {
-  background: var(--primary-color);
-  color: var(--white);
-}
-
-.help-text {
-  background-color: var(--light-bg);
-  border-left: 3px solid var(--primary-color);
-  padding: 8px 12px;
-  margin: 0 0 15px 0;
-  border-radius: var(--border-radius-sm);
-  font-size: 0.85rem;
-  max-width: 900px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.help-text p {
-  margin: 0;
-  color: var(--text-color);
-  flex: 1;
-}
-
-.close-help {
-  background: none;
-  border: none;
-  color: var(--text-color);
-  cursor: pointer;
-  padding: 4px;
-  font-size: 1rem;
-  opacity: 0.7;
-}
-
-.close-help:hover {
-  opacity: 1;
-}
+.clear-filters-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }
 
 .marks-table-section {
   background: var(--white);
@@ -284,7 +63,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #991d20;
+  color: var(--primary-color);
 }
 
 .workspace-header h2 {
@@ -323,7 +102,7 @@
 .workspace-search .search-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(153, 29, 32, 0.12);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.12);
 }
 
 .workspace-summary-grid {
@@ -500,7 +279,7 @@
 .total-header,
 .grade-header {
   background: #fef2f2 !important;
-  color: #991d20 !important;
+  color: var(--primary-color) !important;
 }
 
 .total-cell.strong,
@@ -625,7 +404,7 @@
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #991d20;
+  border-top: 4px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -639,11 +418,11 @@
   }
 }
 
-.no-data-container {
-  padding: var(--spacing-xl);
-  text-align: center;
-  color: var(--text-color);
-}
+.no-data-container { padding: 2.5rem 1rem; text-align: center; color: #6b7280; font-size: 0.9rem; }
+.no-data-container p { margin: 0; }
+.no-data-container .marks-empty-title { margin-bottom: 0.25rem; font-size: 1rem; font-weight: 600; color: #1f2937; }
+@media (max-width: 1100px) { .marks-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .marks-filters label:nth-of-type(5) { grid-column: auto; } }
+.legend-note { margin-left: auto; align-self: center; font-size: 0.75rem; color: #6b7280; }
 
 .error-container {
   padding: var(--spacing-xl);
@@ -655,27 +434,10 @@
 }
 
 @media (max-width: 768px) {
-  .student-marks-container {
-    padding: var(--spacing-md);
-  }
-
-  .filters-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .term-selector-card {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .term-selector-control {
-    justify-content: flex-start;
-    width: 100%;
-  }
-
-  .term-selector-control select {
-    width: 100%;
-  }
+  .marks-filters { grid-template-columns: 1fr; }
+  .marks-filters label:nth-of-type(5) { grid-column: auto; }
+  .clear-filters-btn { justify-self: stretch; }
+  .legend-note { margin-left: 0; flex-basis: 100%; }
 
   .workspace-header {
     align-items: stretch;
