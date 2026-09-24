@@ -5,6 +5,8 @@ import axios from "axios";
 import TeacherAssignmentPage from "./TeacherAssignmentPage";
 
 jest.mock("axios");
+jest.mock("../../Components/Toast/Toast", () => ({ showToast: jest.fn(), TOAST_TYPES: { SUCCESS: "success", ERROR: "error", INFO: "info", WARNING: "warning" } }));
+import { showToast } from "../../Components/Toast/Toast";
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const term = { _id: "t1", semesterType: "Fall", year: 2026, displayName: "Fall 2026" };
@@ -98,6 +100,7 @@ test("editing a section shows its name, and saving a new name sends it", async (
   const [url, body] = axios.put.mock.calls[0];
   expect(url).toContain("/api/sections/s1");
   expect(body).toMatchObject({ section: "B", teacherIds: ["t1"] });
+  expect(showToast).toHaveBeenCalledWith("Section A is now Section B.", "success");
 });
 
 test("Save stays off until something changed, and off again for a blank name", async () => {
@@ -125,7 +128,8 @@ test("confirming the delete removes that section", async () => {
   await click(container.querySelector(".ta-confirm .ta-danger-solid"));
   expect(axios.delete).toHaveBeenCalledTimes(1);
   expect(axios.delete.mock.calls[0][0]).toContain("/api/sections/s1");
-  expect(container.querySelector(".ta-banner.ok").textContent).toContain("Section A deleted.");
+  expect(showToast).toHaveBeenCalledWith("Section A deleted.", "success");
+  expect(container.querySelector(".ta-banner.ok")).toBeNull();        // no second, in-page message
 });
 
 test("when the server refuses (students are enrolled) its reason is shown and the section stays", async () => {
