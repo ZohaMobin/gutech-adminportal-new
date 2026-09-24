@@ -147,8 +147,8 @@ const TimetableGrid = ({
                                 </p>
                               </div>
                               <div className="schedule-actions">
-                                <button onClick={() => handleEditSchedule(schedule)}>Edit</button>
-                                <button onClick={() => handleDeleteSchedule(schedule._id)}>Delete</button>
+                                <button type="button" className="row-btn" onClick={() => handleEditSchedule(schedule)}>Edit</button>
+                                <button type="button" className="row-btn row-btn--danger" onClick={() => handleDeleteSchedule(schedule._id)}>Delete</button>
                               </div>
                             </div>
                           );

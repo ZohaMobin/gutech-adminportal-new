@@ -25,7 +25,7 @@
 .marks-filters label { display: grid; gap: 0.25rem; min-width: 0; margin: 0; }
 .marks-filters label { grid-column: span 3; }
 .marks-filters label:nth-of-type(n+5) { grid-column: span 5; }   /* Course and section names (with the teacher) are the longest */
-.clear-filters-btn { grid-column: span 2; }
+.marks-clear-btn { grid-column: span 2; }
 .marks-filters label > span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
 .marks-filters select {
   width: 100%; height: 2.3rem; margin: 0; padding: 0 0.7rem;
@@ -35,12 +35,12 @@
 .marks-filters select:hover:not(:disabled) { border-color: var(--primary-color); }
 .marks-filters select:disabled { background: #f6f7f9; color: #9aa1ad; cursor: not-allowed; }
 .marks-filters :is(select, button):focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-.clear-filters-btn {
+.marks-clear-btn {
   justify-self: start; height: 2.3rem; width: auto; margin: 0; padding: 0 1.25rem;
   border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff;
   font: inherit; font-size: 0.85rem; font-weight: 600; color: #4b5563; cursor: pointer;
 }
-.clear-filters-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }
+.marks-clear-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }
 
 .marks-table-section {
   background: var(--white);
@@ -430,12 +430,12 @@
 .no-data-container { padding: 2.5rem 1rem; text-align: center; color: #6b7280; font-size: 0.9rem; }
 .no-data-container p { margin: 0; }
 .no-data-container .marks-empty-title { margin-bottom: 0.25rem; font-size: 1rem; font-weight: 600; color: #1f2937; }
-@media (max-width: 1100px) { .marks-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .marks-filters label, .marks-filters label:nth-of-type(n+5), .clear-filters-btn { grid-column: auto; } }
+@media (max-width: 1100px) { .marks-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .marks-filters label, .marks-filters label:nth-of-type(n+5), .marks-clear-btn { grid-column: auto; } }
 .legend-note { margin-left: auto; align-self: center; font-size: 0.75rem; color: #6b7280; }
 
 @media (max-width: 768px) {
   .marks-filters { grid-template-columns: 1fr; }
-  .clear-filters-btn { justify-self: stretch; }
+  .marks-clear-btn { justify-self: stretch; }
   .legend-note { margin-left: 0; flex-basis: 100%; }
 
   .workspace-header {

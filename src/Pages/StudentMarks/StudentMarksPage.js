@@ -518,7 +518,7 @@ const StudentMarksPage = () => {
           </select>
         </label>
 
-        <button type="button" className="clear-filters-btn" onClick={clearFilters}>
+        <button type="button" className="marks-clear-btn" onClick={clearFilters}>
           Clear
         </button>
       </section>
