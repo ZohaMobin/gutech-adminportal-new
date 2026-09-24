@@ -486,7 +486,7 @@ const CoursePage = () => {
     return (
       <details className="offerings-group" key={groupName} open={filteredOfferings.length <= 40}>
         <summary className="group-title"><span>{groupName}</span><span className="group-count">{offerings.length} course{offerings.length === 1 ? '' : 's'}</span></summary>
-        <div className="group-scroll"><table>
+        <div className="group-scroll"><table className="pk-table">
           <thead>
             <tr>
               <th>Course</th>
@@ -724,7 +724,7 @@ const CoursePage = () => {
                 {editingCourse && (
                   <button 
                     type="button" 
-                    className="cancel-btn"
+                    className="pk-btn"
                     onClick={() => {
                       setEditingCourse(null);
                       setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
@@ -733,7 +733,7 @@ const CoursePage = () => {
                     Cancel
                   </button>
                 )}
-          <button className="submit-btn" type="submit" disabled={saving}>
+          <button className="pk-btn pk-btn-primary" type="submit" disabled={saving}>
                   <BusyLabel busy={saving} busyText="Saving…" idle={editingCourse ? "Update Course" : "Create Course"} />
           </button>
               </div>
@@ -807,7 +807,7 @@ const CoursePage = () => {
                   onActionButtonClick={clearFilters}
                 />
               ) : (
-                <table className="courses-table">
+                <table className="courses-table pk-table">
                   <thead>
                     <tr>
                       <th>Code</th>
@@ -982,7 +982,7 @@ const CoursePage = () => {
                 </small>
               )}
             </div>
-            <button className="submit-btn" type="submit">Create Course Offering</button>
+            <button className="pk-btn pk-btn-primary" type="submit">Create Course Offering</button>
           </form>
 
           <div className="offerings-list">
