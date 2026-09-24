@@ -243,31 +243,6 @@ input:focus, select:focus, textarea:focus {
   overflow-x: auto;
 }
 
-.courses-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: var(--spacing-md);
-}
-
-.courses-table th {
-  background-color: #f8f9fa;
-  padding: var(--spacing-sm);
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-dark);
-  border-bottom: 2px solid var(--border-color);
-}
-
-.courses-table td {
-  padding: var(--spacing-sm);
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-color);
-}
-
-.courses-table tr:hover {
-  background-color: #f8f9fa;
-}
-
 .description-cell {
   max-width: 300px;
   white-space: nowrap;
@@ -360,27 +335,27 @@ input:focus, select:focus, textarea:focus {
 }
 
 .academic-year-tab {
-  border: 1px solid #d6dbe4;
-  background: #f6f8fb;
-  color: #435168;
-  padding: 10px 16px;
+  border: 1px solid #d5d8de;
+  background: #fff;
+  color: #4b5563;
+  padding: 6px 14px;
   border-radius: 999px;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-normal);
 }
 
 .academic-year-tab:hover {
-  background: #e9eef7;
-  border-color: #b9c7dc;
+  background: var(--primary-tint);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .academic-year-tab.active {
-  background: #143b63;
-  border-color: #143b63;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(20, 59, 99, 0.18);
 }
 
 .deactivate-offerings-btn {
@@ -589,3 +564,28 @@ details.offerings-group td { overflow-wrap: anywhere; }
 .courses-table td.action-buttons { display: table-cell; white-space: nowrap; }
 .courses-table td.action-buttons > button { display: inline-flex; vertical-align: middle; margin-right: var(--spacing-sm, 8px); }
 .courses-table td.action-buttons > button:last-child { margin-right: 0; }
+
+/* The course and offering forms in the portal's one field style: a small bold label over a 2.5rem field, brand focus ring. */
+.course-form, .offering-form { padding: 1.25rem 1.5rem; }
+.course-form h2 { font-size: 1.15rem; font-weight: 600; }
+.course-form div, .offering-form div { margin-bottom: 0.9rem; }
+.course-form label, .offering-form label { display: block; margin: 0 0 0.3rem; font-size: 0.8rem; font-weight: 600; color: #4b5563; }
+.course-form input:not([type="checkbox"]), .course-form select, .course-form textarea,
+.offering-form input:not([type="checkbox"]), .offering-form select, .offering-form textarea {
+  width: 100%; margin: 0; padding: 0 0.75rem; height: 2.5rem; border: 1px solid #d5d8de; border-radius: 0.5rem;
+  background: #fff; font: inherit; font-size: 0.9rem; color: #1f2937; box-sizing: border-box;
+}
+.course-form textarea, .offering-form textarea { height: auto; padding: 0.6rem 0.75rem; resize: vertical; }
+.course-form input::placeholder, .course-form textarea::placeholder { color: #9aa1ad; }
+.course-form :is(input, select, textarea):focus, .offering-form :is(input, select, textarea):focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12); }
+.course-form :is(input, select, textarea):disabled, .offering-form :is(input, select, textarea):disabled { background: #f6f7f9; color: #9aa1ad; }
+.offering-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.9rem 1rem; align-items: end; }
+.offering-form div { margin-bottom: 0; }
+.offering-form > button { grid-column: 1 / -1; justify-self: start; }
+
+/* Manage Courses / Offerings filter bars at the portal's filter size. */
+.course-container .search-input { height: 2.3rem; font-size: 0.9rem; border: 1px solid #d5d8de; border-radius: 0.5rem; }
+.course-container .filter-container label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
+.course-container .filter-container select { height: 2.3rem; width: auto; margin: 0; padding: 0 0.7rem; font-size: 0.9rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; }
+.course-container .course-clear-btn { height: 2.3rem; padding: 0 1rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; color: #4b5563; font-size: 0.85rem; font-weight: 600; }
+.course-container .course-clear-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }
