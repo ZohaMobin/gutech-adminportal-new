@@ -121,14 +121,14 @@ const DepartmentsPage = () => {
     <div className="departments-page page-shell">
       <PageHeader
         title="Departments"
-        actions={<button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Department</button>}
+        actions={<button className="pk-btn pk-btn-primary" onClick={() => setShowModal(true)}>+ Add Department</button>}
       />
 
       {error && <div className="error-message" role="alert">{error}</div>}
 
       <Refreshing active={refreshing}>
-      <div className="departments-table-container">
-        <table className="departments-table">
+      <div className="pk-table-wrap">
+        <table className="pk-table">
           <thead>
             <tr>
               <th>Code</th>
@@ -141,7 +141,7 @@ const DepartmentsPage = () => {
           <tbody>
             {departments.length === 0 ? (
               <tr>
-                <td colSpan="5" className="empty-state">
+                <td colSpan="5" className="pk-empty-cell">
                   No departments found. Add your first department!
                 </td>
               </tr>

@@ -77,14 +77,14 @@ const AccountApprovalsPage = () => {
     <div className="aa-page page-shell">
       <PageHeader title="Account Approvals" />
 
-      <div className="approval-tabs" role="tablist">
+      <div className="pk-tabs" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             role="tab"
             aria-selected={tab === t.id}
-            className={`approval-tab ${tab === t.id ? "active" : ""}`}
+            className={`pk-tab ${tab === t.id ? "is-on" : ""}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}
@@ -97,10 +97,10 @@ const AccountApprovalsPage = () => {
       {loading ? (
         <Loading variant="list" rows={3} label="Loading accounts" />
       ) : accounts.length === 0 ? (
-        <p className="aa-empty">{isRejectedTab ? "No rejected accounts." : "No accounts are waiting for approval."}</p>
+        <p className="pk-empty">{isRejectedTab ? "No rejected accounts." : "No accounts are waiting for approval."}</p>
       ) : (
-        <div className="programs-table-container">
-          <table className="programs-table">
+        <div className="pk-table-wrap">
+          <table className="pk-table">
             <thead>
               <tr>
                 <th>Name</th>

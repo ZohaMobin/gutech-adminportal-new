@@ -27,49 +27,6 @@
   border: 1px solid #fcc;
 }
 
-.departments-table-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.departments-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.departments-table thead {
-  background-color: #f5f5f5;
-}
-
-.departments-table th {
-  padding: 16px;
-  text-align: left;
-  font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.departments-table td {
-  padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.departments-table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-
-.departments-table tbody tr.inactive {
-  opacity: 0.6;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px;
-  color: #999;
-}
-
 .status-badge {
   display: inline-block;
   padding: 4px 12px;

@@ -123,14 +123,14 @@ const ProgramsPage = () => {
     <div className="programs-page page-shell">
       <PageHeader
         title="Programs"
-        actions={<button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Program</button>}
+        actions={<button className="pk-btn pk-btn-primary" onClick={() => setShowModal(true)}>+ Add Program</button>}
       />
 
       {error && <div className="error-message" role="alert">{error}</div>}
 
       <Refreshing active={refreshing}>
-      <div className="programs-table-container">
-        <table className="programs-table">
+      <div className="pk-table-wrap">
+        <table className="pk-table">
           <thead>
             <tr>
               <th>Code</th>
@@ -145,7 +145,7 @@ const ProgramsPage = () => {
           <tbody>
             {programs.length === 0 ? (
               <tr>
-                <td colSpan="7" className="empty-state">
+                <td colSpan="7" className="pk-empty-cell">
                   No programs found. Add your first program!
                 </td>
               </tr>

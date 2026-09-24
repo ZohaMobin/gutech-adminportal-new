@@ -253,9 +253,9 @@ const CourseRegistrationPage = () => {
         actions={termLabel && <span className="enr-term" title="Students are enrolled in the current academic term"><i aria-hidden="true" />Term: <strong>{termLabel}</strong></span>}
       />
 
-      <div className="enr-tabs" role="tablist" aria-label="Enroll students">
-        <button type="button" role="tab" id="enr-tab-enroll" aria-selected={view === "enroll"} className={view === "enroll" ? "is-on" : ""} onClick={() => setView("enroll")}>New enrollment</button>
-        <button type="button" role="tab" id="enr-tab-history" aria-selected={view === "history"} className={view === "history" ? "is-on" : ""} onClick={() => setView("history")}>Upload history</button>
+      <div className="pk-tabs" role="tablist" aria-label="Enroll students">
+        <button type="button" role="tab" id="enr-tab-enroll" aria-selected={view === "enroll"} className={`pk-tab ${view === "enroll" ? "is-on" : ""}`} onClick={() => setView("enroll")}>New enrollment</button>
+        <button type="button" role="tab" id="enr-tab-history" aria-selected={view === "history"} className={`pk-tab ${view === "history" ? "is-on" : ""}`} onClick={() => setView("history")}>Upload history</button>
       </div>
 
       <div className={view === "enroll" ? "" : "enr-hidden"}>

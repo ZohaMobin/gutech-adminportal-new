@@ -623,9 +623,9 @@ const CoursePage = () => {
   return (
     <div className="course-container page-shell">
       <PageHeader title="Courses" subtitle="Create courses, offer them to programs and semesters, and assign teachers." />
-      <div className="tabs">
+      <div className="pk-tabs" role="tablist">
         <button 
-          className={`tab ${activeTab === 'create' ? 'active' : ''}`}
+          role="tab" aria-selected={activeTab === 'create'} className={`pk-tab ${activeTab === 'create' ? 'is-on' : ''}`}
           onClick={() => {
             setActiveTab('create');
             setEditingCourse(null);
@@ -634,19 +634,19 @@ const CoursePage = () => {
           Create Course
         </button>
         <button 
-          className={`tab ${activeTab === 'manage' ? 'active' : ''}`} 
+          role="tab" aria-selected={activeTab === 'manage'} className={`pk-tab ${activeTab === 'manage' ? 'is-on' : ''}`} 
           onClick={() => setActiveTab('manage')}
         >
           Manage Courses
         </button>
         <button 
-          className={`tab ${activeTab === 'offerings' ? 'active' : ''}`}
+          role="tab" aria-selected={activeTab === 'offerings'} className={`pk-tab ${activeTab === 'offerings' ? 'is-on' : ''}`}
           onClick={() => setActiveTab('offerings')}
         >
           Course Offerings
         </button>
         <button 
-          className={`tab ${activeTab === 'assignments' ? 'active' : ''}`}
+          role="tab" aria-selected={activeTab === 'assignments'} className={`pk-tab ${activeTab === 'assignments' ? 'is-on' : ''}`}
           onClick={() => setActiveTab('assignments')}
         >
           Teacher Assignments
