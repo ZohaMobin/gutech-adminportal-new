@@ -125,3 +125,66 @@ test("a remembered section that no longer exists in the course is dropped quietl
   expect(container.querySelector("#section").value).toBe("");
   expect(container.querySelector(".error-message")).toBeNull();
 });
+
+// ---- the gradebook itself: filter cards, sorting, export ----
+const assessments = [{ id: "a1", title: "Quiz 1", maxMarks: 10, weightage: 10 }, { id: "a2", title: "Bonus", maxMarks: 5, weightage: 2, isBonus: true }];
+const student = (id, name, roll, quiz, total, percentage, grade) => ({ id, name, rollNumber: roll, weightedTotal: total, percentage, estimatedGrade: grade, assessments: [{ id: "a1", obtainedMarks: quiz, hasMark: quiz !== null }, { id: "a2", obtainedMarks: null, hasMark: false }] });
+const roster = [student("s1", "Ayesha", "21K-1002", 9, 9, 90, "A"), student("s2", "Bilal", "21K-1001", 2, 2, 20, "F"), student("s3", "Sana", "21K-1003", null, 0, 0, "F")];
+const gradebook = () => Promise.resolve({ data: { data: roster, meta: { assessments, courseWeightage: 10, bonusWeightage: 2 } } });
+const rowNames = () => [...container.querySelectorAll("tbody tr td:nth-child(2)")].map((td) => td.textContent);
+const click = (el) => act(async () => { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+const card = (label) => [...container.querySelectorAll(".workspace-summary-card")].find((c) => c.textContent.startsWith(label));
+
+test("an optional bonus nobody sat is not counted as a missing mark", async () => {
+  await openSection(gradebook);
+  expect(card("Missing Marks").querySelector("strong").textContent).toBe("1"); // only Sana's quiz, not three empty bonus cells
+});
+
+test("the Students with F card filters the table, says so, and toggles off", async () => {
+  await openSection(gradebook);
+  expect(rowNames()).toEqual(["Ayesha", "Bilal", "Sana"]);
+  await click(card("Students with F"));
+  expect(rowNames()).toEqual(["Bilal", "Sana"]);
+  expect(container.querySelector(".filter-note").textContent).toMatch(/Showing 2 of 3 students with F/);
+  expect(card("Students with F").getAttribute("aria-pressed")).toBe("true");
+  await click(card("Students with F"));
+  expect(rowNames()).toEqual(["Ayesha", "Bilal", "Sana"]);
+  expect(container.querySelector(".filter-note")).toBeNull();
+});
+
+test("the Missing Marks card shows only students who have a mark missing", async () => {
+  await openSection(gradebook);
+  await click(card("Missing Marks"));
+  expect(rowNames()).toEqual(["Sana"]);
+});
+
+test("clicking a heading sorts, again reverses, a third time restores; students with no mark stay last", async () => {
+  await openSection(gradebook);
+  const header = (label) => container.querySelector(`button[aria-label="Sort by ${label}"]`);
+  await click(header("Roll No"));
+  expect(rowNames()).toEqual(["Bilal", "Ayesha", "Sana"]);
+  await click(header("Roll No"));
+  expect(rowNames()).toEqual(["Sana", "Ayesha", "Bilal"]);
+  await click(header("Roll No"));
+  expect(rowNames()).toEqual(["Ayesha", "Bilal", "Sana"]);
+  await click(header("Quiz 1 Marks"));
+  expect(rowNames()).toEqual(["Bilal", "Ayesha", "Sana"]);
+  await click(header("Quiz 1 Marks"));
+  expect(rowNames()).toEqual(["Ayesha", "Bilal", "Sana"]); // Sana has no mark: last in both directions
+});
+
+test("Export CSV writes what is on screen: the filtered, sorted rows", async () => {
+  const saved = [];
+  const realBlob = global.Blob;
+  global.Blob = class { constructor(parts) { saved.push(parts.join("")); } };
+  global.URL.createObjectURL = jest.fn(() => "blob:x");
+  global.URL.revokeObjectURL = jest.fn();
+  try {
+    await openSection(gradebook);
+    await click(card("Students with F"));
+    await click(container.querySelector(".export-csv-btn"));
+  } finally { global.Blob = realBlob; }
+  const lines = saved[0].replace("﻿", "").split("\r\n");
+  expect(lines[0]).toBe("Roll No,Student Name,Quiz 1 marks (/10),Quiz 1 weighted (/10),Bonus (bonus) marks (/5),Bonus weighted (/2),Total (/10),Percentage,Estimated Grade");
+  expect(lines.slice(1).map((line) => line.split(",")[1])).toEqual(["Bilal", "Sana"]);
+});

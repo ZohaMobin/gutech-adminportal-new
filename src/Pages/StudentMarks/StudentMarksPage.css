@@ -74,15 +74,16 @@
   color: var(--text-dark);
 }
 
-.section-stepper { display: inline-flex; align-items: center; gap: 0.5rem; margin-right: auto; margin-left: 1rem; font-size: 0.82rem; font-weight: 600; color: #4b5563; }
+.section-stepper { white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; color: #4b5563; }
 .stepper-btn { width: 2rem; height: 2rem; margin: 0; padding: 0; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 1.1rem; line-height: 1; color: #374151; cursor: pointer; }
 .stepper-btn:hover:not(:disabled) { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }
 .stepper-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .stepper-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 
+.workspace-tools { flex: 0 0 auto; display: flex; align-items: center; gap: 0.6rem 0.9rem; justify-content: flex-end; }
 .workspace-search {
   position: relative;
-  width: min(320px, 100%);
+  flex: 0 0 240px;
 }
 
 .workspace-search .search-input,
@@ -441,6 +442,9 @@
     align-items: stretch;
   }
 
+  .workspace-tools { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; width: 100%; }
+  .workspace-search { flex: 1 1 100%; }
+
   .workspace-search {
     width: 100%;
   }
@@ -454,3 +458,27 @@
     min-width: 100px;
   }
 }
+
+/* Sortable headings */
+.sort-btn { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; padding: 0; border: 0; background: none; font: inherit; font-weight: inherit; color: inherit; white-space: nowrap; cursor: pointer; }
+.sort-btn:hover { color: var(--primary-color); }
+.sort-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 3px; border-radius: 3px; }
+.sort-arrow { font-size: 0.65rem; color: #9aa1ad; }
+.sort-btn.is-active .sort-arrow { color: var(--primary-color); }
+.total-header .sort-btn, .total-header .sort-btn:hover { color: inherit; }
+
+/* The summary cards that filter the table */
+button.workspace-summary-card { font: inherit; text-align: left; margin: 0; }
+.workspace-summary-card.is-action { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s; }
+.workspace-summary-card.is-action:hover { border-color: var(--primary-color); }
+.workspace-summary-card.is-action:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.workspace-summary-card.is-on { border-color: var(--primary-color); background: var(--primary-tint); box-shadow: 0 0 0 1px var(--primary-color); }
+.workspace-summary-card.is-dim { opacity: 0.75; }
+
+.filter-note { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 1.5rem; font-size: 0.85rem; color: #4b5563; background: var(--primary-tint); border-bottom: 1px solid var(--primary-tint-line); }
+.filter-note button, .link-btn { margin: 0; padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--primary-color); text-decoration: underline; cursor: pointer; }
+.no-match-row td { padding: 1.5rem; color: #6b7280; }
+
+.export-csv-btn { flex: none; white-space: nowrap; height: 2.3rem; margin: 0; padding: 0 1rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 0.85rem; font-weight: 600; color: #374151; cursor: pointer; }
+.export-csv-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }
+.export-csv-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
