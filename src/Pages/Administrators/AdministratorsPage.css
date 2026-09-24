@@ -110,7 +110,8 @@
 }
 
 .am-search:focus,
-.am-field input:focus {
+.am-field input:focus,
+.am-field select:focus {
   outline: none;
   border-color: #8b1538;
   box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.12);
@@ -419,7 +420,8 @@
   font-style: normal;
 }
 
-.am-field input {
+.am-field input,
+.am-field select {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
@@ -429,7 +431,8 @@
   font-size: 14px;
 }
 
-.am-field input:disabled {
+.am-field input:disabled,
+.am-field select:disabled {
   background: #f4f4f4;
   color: #777;
 }
@@ -543,3 +546,11 @@
   background: #f0f0f0;
   color: #8b1538;
 }
+
+/* Also used by the course offering editor */
+.am-field select { background: #fff; }
+.am-check { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 14px; font-size: 14px; color: #333; cursor: pointer; }
+.am-check input { flex: none; width: auto; height: auto; min-width: 0; margin: 3px 0 0; padding: 0; border: 0; box-shadow: none; accent-color: #8b1538; }
+.am-check em { font-style: normal; color: #888; }
+.oem-summary { margin: 0 0 16px; padding: 10px 12px; background: #f8f9fb; border: 1px solid #e6e8ec; border-radius: 8px; font-size: 14px; color: #333; }
+.oem-summary span { color: #6b7280; }

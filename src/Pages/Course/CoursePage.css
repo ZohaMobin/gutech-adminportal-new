@@ -609,3 +609,7 @@ details.offerings-group th:nth-child(1) { width: 34%; }
 details.offerings-group th:nth-child(4) { width: 9%; }
 details.offerings-group th:nth-child(6) { width: 9%; }
 details.offerings-group td { overflow-wrap: anywhere; }
+
+/* Offerings table: the edit button sits in an ordinary table cell (a flex <td> drops out of the row). */
+.offering-action-cell { width: 3.25rem; text-align: right; white-space: nowrap; }
+.offering-action-cell .edit-btn { display: inline-flex; }
