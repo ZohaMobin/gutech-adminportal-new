@@ -7,6 +7,7 @@ import TeacherAssignmentPage from '../TeacherAssignment/TeacherAssignmentPage';
 import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "react-icons/fi";
 import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import NoResultsFound from '../../Components/NoResultsFound';
+import OfferingEditModal from './OfferingEditModal';
 
 const COURSES_PER_PAGE = 25;
 
@@ -50,6 +51,9 @@ const CoursePage = () => {
   const [coursePage, setCoursePage] = useState(0);
   const [showCreateHelp, setShowCreateHelp] = useState(true);
   const [showOfferingsHelp, setShowOfferingsHelp] = useState(true);
+  const [editingOffering, setEditingOffering] = useState(null);
+  const [savingOffering, setSavingOffering] = useState(false);
+  const [offeringEditError, setOfferingEditError] = useState('');
   const [showManageHelp, setShowManageHelp] = useState(true);
   const [selectedOfferingAcademicYear, setSelectedOfferingAcademicYear] = useState("");
   
@@ -445,6 +449,28 @@ const CoursePage = () => {
   };
 
   // Render a table for a specific group of offerings
+  const closeOfferingEditor = () => { setEditingOffering(null); setOfferingEditError(''); };
+  const handleOfferingEdit = async (form) => {
+    setSavingOffering(true);
+    setOfferingEditError('');
+    try {
+      const token = sessionStorage.getItem('adminToken');
+      const { data } = await axios.put(
+        `${apiUrl}/api/course-offerings/${editingOffering._id}`,
+        { department: form.department, program: form.program, semester: Number(form.semester), isActive: form.isActive },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // The server answers with the updated, populated offering: swap it in rather than reloading the whole list.
+      setCourseOfferings((prev) => prev.map((o) => (o._id === data._id ? data : o)));
+      closeOfferingEditor();
+      toast.success('Course offering updated');
+    } catch (error) {
+      setOfferingEditError(error.response?.data?.message || 'The offering could not be saved. Please try again.');
+    } finally {
+      setSavingOffering(false);
+    }
+  };
+
   const renderOfferingsTable = (groupName, offerings) => {
     return (
       <details className="offerings-group" key={groupName} open={filteredOfferings.length <= 40}>
@@ -458,6 +484,7 @@ const CoursePage = () => {
               <th>Semester</th>
               <th>Academic Year</th>
               <th>Status</th>
+              <th aria-label="Actions"></th>
             </tr>
           </thead>
           <tbody>
@@ -475,6 +502,11 @@ const CoursePage = () => {
                     : 'N/A'}
                 </td>
                 <td>{offering.isActive ? 'Active' : 'Inactive'}</td>
+                <td className="offering-action-cell">
+                  <button type="button" className="edit-btn" onClick={() => setEditingOffering(offering)} title="Edit offering" aria-label={`Edit ${offering.courseId?.code || ''} offering`}>
+                    <FiEdit2 />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -786,6 +818,17 @@ const CoursePage = () => {
 
       {activeTab === 'offerings' && (
         <>
+          {editingOffering && (
+            <OfferingEditModal
+              offering={editingOffering}
+              departments={departments}
+              programs={programs}
+              saving={savingOffering}
+              error={offeringEditError}
+              onSubmit={handleOfferingEdit}
+              onClose={closeOfferingEditor}
+            />
+          )}
           {showOfferingsHelp && (
             <div className="course-important-note">
               <p>Course Offerings: Schedule courses for specific semesters. Select department and program to create offerings.</p>
