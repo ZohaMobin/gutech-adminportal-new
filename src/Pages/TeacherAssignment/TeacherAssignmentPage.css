@@ -64,7 +64,16 @@
 .ta-none { color: var(--muted); font-size: 0.85rem; }
 .ta-picker { display: grid; gap: 0.5rem; }
 .ta-add-select { height: 2.1rem !important; }
-.ta-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.ta-actions { display: flex; justify-content: flex-end; gap: 0.5rem; align-items: center; }
+.ta-actions .ta-danger { margin-right: auto; }
+.ta-field { display: grid; gap: 0.25rem; }
+.ta-field > span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.ta-link.ta-danger { color: var(--bad); }
+.ta-link:disabled { opacity: 0.5; cursor: not-allowed; }
+.ta-confirm { display: grid; gap: 0.6rem; padding: 0.7rem 0.8rem; border: 1px solid #f3c9c5; border-radius: 0.6rem; background: var(--bad-bg); color: #7a1a12; font-size: 0.85rem; line-height: 1.4; }
+.ta-btn.ta-danger-solid { background: var(--bad); border-color: var(--bad); color: #fff; }
+.ta-btn.ta-danger-solid:hover:not(:disabled) { background: #912018; }
+.ta input[aria-invalid="true"] { border-color: var(--bad); }
 .ta-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.42rem 0.9rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 0.85rem; font-weight: 500; color: var(--ink); cursor: pointer; white-space: nowrap; }
 .ta-btn:hover:not(:disabled) { background: #f6f7f9; }
 .ta-btn:disabled { opacity: 0.5; cursor: not-allowed; }

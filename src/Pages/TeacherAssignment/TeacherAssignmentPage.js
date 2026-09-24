@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { FiX, FiCheck, FiPlus, FiEdit2, FiSearch, FiUser } from 'react-icons/fi';
+import { FiX, FiCheck, FiPlus, FiEdit2, FiSearch, FiUser, FiTrash2 } from 'react-icons/fi';
 import Loading, { BusyLabel, Refreshing } from '../../Components/Loading/Loading';
 import { messageOf } from '../../utils/apiMessage';
 import './TeacherAssignmentPage.css';
@@ -43,29 +43,49 @@ const TeacherPicker = ({ teachers, selectedTeacherIds, onAddTeacher, onRemoveTea
   );
 };
 
-const SectionCard = ({ section, teachers, onAssign, saving }) => {
+const SectionCard = ({ section, teachers, onAssign, onDelete, saving }) => {
   const initial = useMemo(() => getAssignedTeacherIds(section), [section]);
   const [ids, setIds] = useState(initial);
+  const [name, setName] = useState(section.section);
   const [editing, setEditing] = useState(false);
-  useEffect(() => { setIds(initial); setEditing(false); }, [initial]);
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => { setIds(initial); setName(section.section); setEditing(false); setConfirming(false); }, [initial, section.section]);
   const assigned = teachers.filter((teacher) => ids.includes(teacher._id));
-  const changed = !arraysEqual(ids, initial);
+  const cleanName = name.trim();
+  const changed = cleanName !== section.section || !arraysEqual(ids, initial);
+  const cancel = () => { setIds(initial); setName(section.section); setEditing(false); setConfirming(false); };
   return (
     <div className={`ta-section ${initial.length === 0 ? 'needs' : ''} ${editing ? 'editing' : ''}`}>
       <div className="ta-section-head">
         <strong>Section {section.section}</strong>
         {initial.length === 0 && <span className="ta-flag">Needs a teacher</span>}
-        {!editing && <button type="button" className="ta-link" onClick={() => setEditing(true)}><FiEdit2 /> {initial.length ? 'Change' : 'Assign'}</button>}
+        {!editing && <button type="button" className="ta-link" onClick={() => setEditing(true)}><FiEdit2 /> {initial.length ? 'Edit' : 'Assign'}</button>}
       </div>
       {!editing ? (
         <div className="ta-chips">{assigned.length ? assigned.map((teacher) => <TeacherChip key={teacher._id} teacher={teacher} />) : <span className="ta-none">No teacher assigned yet</span>}</div>
       ) : (
         <>
-          <TeacherPicker teachers={teachers} selectedTeacherIds={ids} onAddTeacher={(id) => setIds((prev) => (prev.includes(id) ? prev : [...prev, id]))} onRemoveTeacher={(id) => setIds((prev) => prev.filter((x) => x !== id))} />
-          <div className="ta-actions">
-            <button type="button" className="ta-btn" onClick={() => { setIds(initial); setEditing(false); }} disabled={saving}>Cancel</button>
-            <button type="button" className="ta-btn ta-primary" onClick={() => onAssign(section, ids)} disabled={!changed || ids.length === 0 || saving}><BusyLabel busy={saving} busyText="Saving…" idle="Save" /></button>
+          <label className="ta-field"><span>Section name</span>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} disabled={saving} aria-invalid={!cleanName} />
+          </label>
+          <div className="ta-field"><span>Teachers</span>
+            <TeacherPicker teachers={teachers} selectedTeacherIds={ids} onAddTeacher={(id) => setIds((prev) => (prev.includes(id) ? prev : [...prev, id]))} onRemoveTeacher={(id) => setIds((prev) => prev.filter((x) => x !== id))} />
           </div>
+          {confirming ? (
+            <div className="ta-confirm" role="group" aria-label={`Delete Section ${section.section}`}>
+              <p><strong>Delete Section {section.section}?</strong> It is removed from this term. A section with enrolled students can't be deleted.</p>
+              <div className="ta-actions">
+                <button type="button" className="ta-btn" onClick={() => setConfirming(false)} disabled={saving}>Keep it</button>
+                <button type="button" className="ta-btn ta-danger-solid" onClick={() => onDelete(section)} disabled={saving}><BusyLabel busy={saving} busyText="Deleting…" idle="Delete section" /></button>
+              </div>
+            </div>
+          ) : (
+            <div className="ta-actions">
+              <button type="button" className="ta-link ta-danger" onClick={() => setConfirming(true)} disabled={saving}><FiTrash2 /> Delete section</button>
+              <button type="button" className="ta-btn" onClick={cancel} disabled={saving}>Cancel</button>
+              <button type="button" className="ta-btn ta-primary" onClick={() => onAssign(section, { name: cleanName, teacherIds: ids })} disabled={!changed || ids.length === 0 || !cleanName || saving}><BusyLabel busy={saving} busyText="Saving…" idle="Save" /></button>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -207,7 +227,11 @@ const TeacherAssignmentPage = () => {
       setError(messageOf(err, 'That could not be saved. Please try again.'));
     } finally { setSaving(false); }
   };
-  const assign = (section, teacherIds) => save(() => axios.put(`${apiUrl}/api/sections/${section._id || section.id}`, { teacherId: teacherIds[0], teacherIds, section: section.section }, { headers: headers() }), `Section ${section.section} saved.`);
+  const assign = (section, { name, teacherIds }) => save(
+    () => axios.put(`${apiUrl}/api/sections/${section._id || section.id}`, { teacherId: teacherIds[0], teacherIds, section: name }, { headers: headers() }),
+    name === section.section ? `Section ${name} saved.` : `Section ${section.section} is now Section ${name}.`,
+  );
+  const removeSection = (section) => save(() => axios.delete(`${apiUrl}/api/sections/${section._id || section.id}`, { headers: headers() }), `Section ${section.section} deleted.`);
   const addSection = () => {
     const name = newSection.section.trim();
     if (!name || newSection.teacherIds.length === 0) return;
@@ -229,7 +253,7 @@ const TeacherAssignmentPage = () => {
           <h2>Teacher assignments</h2>
           <p>Choose a course, then decide who teaches each of its sections. Term: <strong>{term.displayName || `${term.semesterType} ${term.year}`}</strong></p>
         </div>
-        <span className={`ta-summary ${totalNeeds ? 'warn' : 'ok'}`}>{totalNeeds ? `${totalNeeds} section${totalNeeds === 1 ? '' : 's'} still need a teacher` : 'Every section has a teacher'}</span>
+        <span className={`ta-summary ${totalNeeds ? 'warn' : 'ok'}`}>{totalNeeds ? `${totalNeeds} section${totalNeeds === 1 ? ' still needs' : 's still need'} a teacher` : 'Every section has a teacher'}</span>
       </header>
 
       {error && <div className="ta-banner bad" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Dismiss"><FiX /></button></div>}
@@ -297,7 +321,7 @@ const TeacherAssignmentPage = () => {
                 <>
                   <Refreshing active={saving}>
                   <div className="ta-sections">
-                    {sections.length ? sections.map((section) => <SectionCard key={section._id || section.id} section={section} teachers={teachers} onAssign={assign} saving={saving} />) : <p className="ta-empty">This course has no sections in this term yet. Add the first one below.</p>}
+                    {sections.length ? sections.map((section) => <SectionCard key={section._id || section.id} section={section} teachers={teachers} onAssign={assign} onDelete={removeSection} saving={saving} />) : <p className="ta-empty">This course has no sections in this term yet. Add the first one below.</p>}
                   </div>
                   </Refreshing>
                   <section className="ta-add" aria-label="Add a section">
