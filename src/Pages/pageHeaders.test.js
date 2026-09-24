@@ -6,8 +6,12 @@ import DepartmentsPage from "./Departments/DepartmentsPage";
 import ProgramsPage from "./Programs/ProgramsPage";
 import AcademicYearsPage from "./AcademicYears/AcademicYearsPage";
 import AccountApprovalsPage from "./AccountApprovals/AccountApprovalsPage";
+import ImportStudentsPage from "./ImportStudents/ImportStudentsPage";
+import StudentDirectoryPage from "./StudentDirectory/StudentDirectoryPage";
+import ClassSchedulePage from "./Class Schedule/Class Schedule";
 
 jest.mock("axios");
+jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 let container; let root;
@@ -27,6 +31,9 @@ const pages = [
   ["Programs", ProgramsPage, "+ Add Program"],
   ["Academic Years", AcademicYearsPage, "+ Add Academic Year"],
   ["Account Approvals", AccountApprovalsPage, null],
+  ["Import Students", ImportStudentsPage, null],
+  ["Student Directory", StudentDirectoryPage, null],
+  ["Class Schedule", ClassSchedulePage, null],
 ];
 
 describe.each(pages)("%s", (title, Page, action) => {

@@ -787,7 +787,7 @@ const CoursePage = () => {
               </div>
               
               <button 
-                className="clear-filters-btn"
+                className="course-clear-btn"
                 onClick={clearFilters}
               >
                 <FiX /> Clear Filters

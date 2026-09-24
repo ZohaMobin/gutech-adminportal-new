@@ -42,7 +42,7 @@ test("term and the five section filters share one filter row, with the current t
   expect(selects.map((s) => s.id)).toEqual(["marks-academic-term", "department", "program", "semester", "course", "section"]);
   expect(selects[0].value).toBe("t1");
   expect(selects[0].selectedOptions[0].textContent).toBe("Fall 2026 (Active)");
-  expect(container.querySelector(".clear-filters-btn").textContent).toBe("Clear");
+  expect(container.querySelector(".marks-clear-btn").textContent).toBe("Clear");
 });
 
 test("before a section is chosen it says what to pick", async () => {

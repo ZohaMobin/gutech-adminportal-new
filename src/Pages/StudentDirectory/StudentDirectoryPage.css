@@ -1,45 +1,5 @@
-.student-directory-container {
-  padding: var(--spacing-lg);
-  max-width: 1400px;
-  margin: 0 auto;
-  background: var(--light-bg);
-  min-height: 100vh;
-}
-
-/* Header Styles */
-.sd-page-header {
-  margin-bottom: var(--spacing-lg);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--spacing-lg);
-  flex-wrap: wrap;
-  background: var(--white);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-sm);
-  border-bottom: 3px solid var(--primary-color);
-}
-
-.sd-header-content {
-  flex: 1;
-  min-width: 300px;
-}
-
-.sd-header-content h1 {
-  font-size: 2rem;
-  color: var(--text-dark);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-}
-
-.sd-header-content p {
-  color: var(--text-color);
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.5;
-}
+/* Page width, padding and the title come from .page-shell and <PageHeader>. */
+.student-directory-container { min-width: 0; }
 
 .header-actions {
   display: flex;
@@ -357,7 +317,7 @@
 }
 
 /* Clear Filters Button */
-.clear-filters-btn {
+.sd-clear-btn {
   background: none;
   border: 1px solid var(--primary-color);
   color: var(--primary-color);
@@ -368,22 +328,13 @@
   font-size: 0.9rem;
 }
 
-.clear-filters-btn:hover {
+.sd-clear-btn:hover {
   background: var(--primary-color);
   color: var(--white);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .student-directory-container {
-    padding: var(--spacing-md);
-  }
-
-  .sd-page-header {
-    flex-direction: column;
-    gap: var(--spacing-md);
-  }
-
   .header-actions {
     width: 100%;
     flex-direction: column;

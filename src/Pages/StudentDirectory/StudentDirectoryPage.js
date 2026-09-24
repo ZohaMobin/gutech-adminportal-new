@@ -1,7 +1,8 @@
 import Loading from "../../Components/Loading/Loading";
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { showToast, TOAST_TYPES } from '../../Components/Toast/Toast';
 import './StudentDirectoryPage.css';
 import { FiSearch, FiFilter, FiX } from 'react-icons/fi'; // Import icons
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
@@ -29,7 +30,7 @@ const StudentDirectoryPage = () => {
       const token = sessionStorage.getItem('adminToken');
       
       if (!token) {
-        toast.error('Authentication required. Please login again.');
+        showToast('Authentication required. Please login again.', TOAST_TYPES.ERROR);
         return;
       }
 
@@ -51,9 +52,9 @@ const StudentDirectoryPage = () => {
     } catch (error) {
       console.error('Error fetching students:', error);
       if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
+        showToast('Session expired. Please login again.', TOAST_TYPES.ERROR);
       } else {
-        toast.error('Failed to fetch students. Please try again.');
+        showToast('Failed to fetch students. Please try again.', TOAST_TYPES.ERROR);
       }
     } finally {
       setLoading(false);
@@ -139,31 +140,32 @@ const StudentDirectoryPage = () => {
   };
 
   return (
-    <div className="student-directory-container">
-      <div className="sd-page-header">
-        <div className="sd-header-content">
-          <h1>Student Directory</h1>
-          <p>Manage and view student information across all departments</p>
-        </div>
-        <div className="header-actions">
-          <div className="search-bar">
-            <FiSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search by name or roll number..."
-              value={searchInput}
-              onChange={handleSearchChange}
-              onKeyPress={handleKeyPress}
-            />
-            <button className="search-button" onClick={handleSearch}>
-              Search
+    <div className="student-directory-container page-shell">
+      <PageHeader
+        title="Student Directory"
+        subtitle="Manage and view student information across all departments"
+        actions={
+          <>
+            <div className="search-bar">
+              <FiSearch className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search by name or roll number..."
+                value={searchInput}
+                onChange={handleSearchChange}
+                onKeyPress={handleKeyPress}
+                aria-label="Search students"
+              />
+              <button className="search-button" onClick={handleSearch}>
+                Search
+              </button>
+            </div>
+            <button className="filter-toggle" onClick={toggleFilters}>
+              <FiFilter /> Filters
             </button>
-          </div>
-          <button className="filter-toggle" onClick={toggleFilters}>
-            <FiFilter /> Filters
-          </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className={`filters-panel ${showFilters ? 'show' : ''}`}>
         <div className="filters-header">
@@ -221,7 +223,7 @@ const StudentDirectoryPage = () => {
             </select>
           </div>
 
-          <button className="clear-filters-btn" onClick={clearFilters}>
+          <button className="sd-clear-btn" onClick={clearFilters}>
             Clear All Filters
           </button>
         </div>
