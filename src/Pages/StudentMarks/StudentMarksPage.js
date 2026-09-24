@@ -15,6 +15,13 @@ const getPerformanceClass = (percentage) => {
   return "risk";
 };
 
+// A section with nobody enrolled, or nothing published yet, is a normal state, not a failure: the server answers 404 with
+// one of these codes, and the page explains it instead of showing an error (and the raw section id).
+const EMPTY_SECTION = {
+  NO_STUDENTS_IN_SECTION: { title: "No students are enrolled in this section yet", hint: "Marks will appear here once students are registered in it." },
+  NO_ASSESSMENTS_IN_SECTION: { title: "No assessments have been published for this section", hint: "The teacher's assessments show up here once they are published." },
+};
+
 const getTermDisplayName = (term) => {
   if (!term) return "Select academic term";
   return term.displayName || `${term.semesterType} ${term.year}`;
@@ -54,6 +61,7 @@ const StudentMarksPage = () => {
     sections: [],
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [emptyReason, setEmptyReason] = useState(null);
 
   const getAuthToken = () => sessionStorage.getItem("adminToken");
 
@@ -175,6 +183,7 @@ const StudentMarksPage = () => {
 
       setLoading(true);
       setError(null);
+      setEmptyReason(null);
       try {
         const response = await axios.get(`${apiUrl}/api/student-marks`, {
           params: filters,
@@ -187,8 +196,13 @@ const StudentMarksPage = () => {
           bonusWeightage: response.data.meta?.bonusWeightage || 0,
         });
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load marks data. Please try again.");
-        console.error("Error loading marks data:", err);
+        const code = err.response?.data?.error;
+        if (err.response?.status === 404 && EMPTY_SECTION[code]) {
+          setEmptyReason(code);
+        } else {
+          setError(err.response?.data?.message || "Failed to load marks data. Please try again.");
+          console.error("Error loading marks data:", err);
+        }
         setMarksData([]);
         setMarksMeta({ assessments: [], courseWeightage: 0, bonusWeightage: 0 });
       } finally {
@@ -443,6 +457,7 @@ const StudentMarksPage = () => {
                 {selectedSection ? ` — Section ${selectedSection.section}` : ""}
               </h2>
             </div>
+            {!emptyReason && !error && (
             <div className="workspace-search">
               <input
                 type="text"
@@ -452,6 +467,7 @@ const StudentMarksPage = () => {
                 className="search-input"
               />
             </div>
+            )}
           </div>
         )}
 
@@ -495,8 +511,14 @@ const StudentMarksPage = () => {
               <p>Choose a term, department, program, semester, course and section above.</p>
             </div>
           ) : error ? (
-            <div className="error-container">
-              <p>{error}</p>
+            <div className="no-data-container">
+              <p className="marks-empty-title">This gradebook could not be loaded</p>
+              <p>The reason is shown above. Choose the section again to retry.</p>
+            </div>
+          ) : emptyReason ? (
+            <div className="no-data-container">
+              <p className="marks-empty-title">{EMPTY_SECTION[emptyReason].title}</p>
+              <p>{EMPTY_SECTION[emptyReason].hint}</p>
             </div>
           ) : gradebookRows.length === 0 ? (
             <div className="no-data-container">
