@@ -2,7 +2,7 @@
 /* Variables are now defined in global.css */
   
 .main-layout {
-  min-height: 100vh;
+  min-height: 125vh;
   width: 100%;
   max-width: 100%;
   display: flex;
@@ -22,7 +22,7 @@
 .content-area {
   flex: 1;
   margin-top: var(--header-height);
-  min-height: calc(100vh - var(--header-height));
+  min-height: calc(125vh - var(--header-height));
   width: 100%;
   transition: all 0.3s ease;
   background-color: var(--white);
