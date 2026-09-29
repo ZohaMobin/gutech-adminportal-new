@@ -3,7 +3,7 @@
   
 .sidebar {
   width: 250px;
-  height: 100vh;
+  bottom: 0;
   background-color: #ffffff;
   position: fixed;
   left: 0;
