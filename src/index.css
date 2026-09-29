@@ -4,5 +4,6 @@ body {
   font-weight: 500;
   font-style: normal;
   overflow-x: hidden !important;
+  zoom: 0.8;
 }
 
