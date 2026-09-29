@@ -1,7 +1,8 @@
 import Loading, { BusyLabel } from '../../Components/Loading/Loading';
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import "./ImportStudentsPage.css";
@@ -15,12 +16,13 @@ const ImportStudentsPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [importErrors, setImportErrors] = useState([]);
 
   useEffect(() => {
     // Check if user is authenticated
     const token = sessionStorage.getItem("adminToken");
     if (!token) {
-      toast.error("Please login to access this page");
+      showToast("Please login to access this page", TOAST_TYPES.ERROR);
       navigate("/");
       return;
     }
@@ -32,6 +34,7 @@ const ImportStudentsPage = () => {
       setFile(selectedFile);
       setError("");
       setSuccess("");
+      setImportErrors([]);
 
       // Read the Excel file and create preview
       const reader = new FileReader();
@@ -120,6 +123,7 @@ const ImportStudentsPage = () => {
     setLoading(true);
     setError("");
     setSuccess("");
+    setImportErrors([]);
 
     try {
       const reader = new FileReader();
@@ -180,27 +184,10 @@ const ImportStudentsPage = () => {
           }
 
           setSuccess(successMessage);
-          toast.success(successMessage, {
-            position: "top-right",
-            autoClose: 5000,
-          });
-
-          // Show errors in toast if any
-          if (errors.length > 0) {
-            errors.slice(0, 5).forEach((error) => {
-              toast.error(error, {
-                position: "top-right",
-                autoClose: 4000,
-              });
-            });
-            if (errors.length > 5) {
-              toast.info(`... and ${errors.length - 5} more errors. Check console for details.`, {
-                position: "top-right",
-                autoClose: 4000,
-              });
-            }
-            console.error("Import errors:", errors);
-          }
+          showToast(successMessage, errors.length > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS);
+          // The rows that were refused stay on the page (a toast would vanish before they could be read).
+          setImportErrors(errors);
+          if (errors.length > 0) console.error("Import errors:", errors);
 
           setFile(null);
           setPreview([]);
@@ -230,9 +217,8 @@ const ImportStudentsPage = () => {
   };
 
   return (
-    <div className="import-students-container">
-      <h2>Import Students</h2>
-      <p className="import-description">Import multiple students at once using an Excel file. Download the template below to see the required format.</p>
+    <div className="import-students-container page-shell">
+      <PageHeader title="Import Students" subtitle="Import many students at once from an Excel file. Download the template to see the format it needs." />
 
       <div className="import-section">
         <div className="file-upload">
@@ -264,6 +250,16 @@ const ImportStudentsPage = () => {
             <button onClick={() => setSuccess("")} className="dismiss-success-btn">
               Dismiss
             </button>
+          </div>
+        )}
+
+        {importErrors.length > 0 && (
+          <div className="import-errors" role="alert">
+            <strong>{importErrors.length} row{importErrors.length === 1 ? "" : "s"} could not be imported</strong>
+            <ul>
+              {importErrors.slice(0, 100).map((message, index) => <li key={index}>{message}</li>)}
+            </ul>
+            {importErrors.length > 100 && <p>…and {importErrors.length - 100} more. Check the file for these rows.</p>}
           </div>
         )}
 

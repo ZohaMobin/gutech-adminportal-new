@@ -1,9 +1,12 @@
 import Loading from "../../Components/Loading/Loading";
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useDepartmentsAndPrograms } from "../../hooks/useDepartmentsAndPrograms";
 import { semesters } from "../../config/academicConfig";
 import { formatSectionOptionLabel } from "../../utils/sectionTeachers";
+import { downloadCsv } from "../../utils/csv";
+import { readSelection, saveSelection } from "./savedSelection";
 import "./StudentMarksPage.css";
 
 const getPerformanceClass = (percentage) => {
@@ -12,6 +15,45 @@ const getPerformanceClass = (percentage) => {
   if (percentage >= 70) return "good";
   if (percentage >= 50) return "watch";
   return "risk";
+};
+
+// A section with nobody enrolled, or nothing published yet, is a normal state, not a failure: the server answers 404 with
+// one of these codes, and the page explains it instead of showing an error (and the raw section id).
+const EMPTY_SECTION = {
+  NO_STUDENTS_IN_SECTION: { title: "No students are enrolled in this section yet", hint: "Marks will appear here once students are registered in it." },
+  NO_ASSESSMENTS_IN_SECTION: { title: "No assessments have been published for this section", hint: "The teacher's assessments show up here once they are published." },
+};
+
+// Sorting the gradebook: click a heading to sort by it, again to reverse, a third time to go back to the server's order.
+// A student with no mark for the column always sorts last, in either direction.
+const sortValue = (row, key) => {
+  if (key === "roll") return row.rollNumber || "";
+  if (key === "name") return row.name || "";
+  if (key === "total") return row.weightedTotal;
+  const cell = row.cells.find((c) => `a:${c.assessmentId}` === key);
+  return cell && cell.hasMark ? Number(cell.obtainedMarks) : null;
+};
+const compareRows = (a, b, { key, dir }) => {
+  const x = sortValue(a, key); const y = sortValue(b, key);
+  if (x === null && y === null) return 0;
+  if (x === null) return 1;
+  if (y === null) return -1;
+  const result = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: "base" });
+  return dir === "desc" ? -result : result;
+};
+const nextSort = (current, key) => {
+  if (current.key !== key) return { key, dir: "asc" };
+  if (current.dir === "asc") return { key, dir: "desc" };
+  return { key: null, dir: "asc" };
+};
+const SortButton = ({ label, sortKey, sort, onSort }) => {
+  const active = sort.key === sortKey;
+  return (
+    <button type="button" className={`sort-btn${active ? " is-active" : ""}`} onClick={() => onSort(sortKey)} aria-label={`Sort by ${label}`}>
+      {label}
+      <span className="sort-arrow" aria-hidden="true">{active ? (sort.dir === "asc" ? "▲" : "▼") : "↕"}</span>
+    </button>
+  );
 };
 
 const getTermDisplayName = (term) => {
@@ -40,23 +82,17 @@ const StudentMarksPage = () => {
     courseWeightage: 0,
     bonusWeightage: 0,
   });
-  const [filters, setFilters] = useState({
-    department: "",
-    program: "",
-    academicYearId: "",
-    semester: "",
-    course: "",
-    section: "",
-  });
+  const [filters, setFilters] = useState(() => readSelection(window.location.search, window.localStorage));
   const [availableFilters, setAvailableFilters] = useState({
     courses: [],
     sections: [],
   });
-  const [showHelp, setShowHelp] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [emptyReason, setEmptyReason] = useState(null);
+  const [rowFilter, setRowFilter] = useState("all"); // all | failing | missing
+  const [sort, setSort] = useState({ key: null, dir: "asc" });
 
   const getAuthToken = () => sessionStorage.getItem("adminToken");
-  const selectedAcademicTerm = academicTerms.find((term) => term._id === filters.academicYearId);
 
   const requestHeaders = () => ({
     "x-auth-token": getAuthToken(),
@@ -75,11 +111,13 @@ const StudentMarksPage = () => {
         const terms = Array.isArray(response.data) ? response.data : [];
         setAcademicTerms(terms);
 
+        // A term named in the address (or remembered) stays; otherwise start on the active one.
         const activeTerm = terms.find((term) => term.status === "active" || term.isCurrent);
         const initialTerm = activeTerm || terms[0];
-        if (initialTerm) {
-          setFilters((prev) => ({ ...prev, academicYearId: initialTerm._id }));
-        }
+        setFilters((prev) => {
+          if (terms.some((term) => term._id === prev.academicYearId)) return prev;
+          return { ...prev, academicYearId: initialTerm?._id || "" };
+        });
       } catch (err) {
         setError("Failed to load academic terms. Please try again.");
         console.error("Error loading academic terms:", err);
@@ -151,10 +189,10 @@ const StudentMarksPage = () => {
           },
           headers: requestHeaders(),
         });
-        setAvailableFilters((prev) => ({
-          ...prev,
-          sections: sectionRes.data.sections || [],
-        }));
+        const loaded = sectionRes.data.sections || [];
+        setAvailableFilters((prev) => ({ ...prev, sections: loaded }));
+        // A section from an old link or a remembered choice that is not in this course any more: start from the list.
+        setFilters((prev) => (prev.section && !loaded.some((item) => item.id === prev.section) ? { ...prev, section: "" } : prev));
       } catch (err) {
         setError("Failed to load sections. Please try again.");
         console.error("Error loading sections:", err);
@@ -171,11 +209,14 @@ const StudentMarksPage = () => {
       if (!filters.academicYearId || !filters.department || !filters.program || !filters.semester || !filters.course || !filters.section) {
         setMarksData([]);
         setMarksMeta({ assessments: [], courseWeightage: 0, bonusWeightage: 0 });
+        setError(null);
+        setEmptyReason(null);
         return;
       }
 
       setLoading(true);
       setError(null);
+      setEmptyReason(null);
       try {
         const response = await axios.get(`${apiUrl}/api/student-marks`, {
           params: filters,
@@ -188,8 +229,13 @@ const StudentMarksPage = () => {
           bonusWeightage: response.data.meta?.bonusWeightage || 0,
         });
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load marks data. Please try again.");
-        console.error("Error loading marks data:", err);
+        const code = err.response?.data?.error;
+        if (err.response?.status === 404 && EMPTY_SECTION[code]) {
+          setEmptyReason(code);
+        } else {
+          setError(err.response?.data?.message || "Failed to load marks data. Please try again.");
+          console.error("Error loading marks data:", err);
+        }
         setMarksData([]);
         setMarksMeta({ assessments: [], courseWeightage: 0, bonusWeightage: 0 });
       } finally {
@@ -199,6 +245,17 @@ const StudentMarksPage = () => {
 
     fetchMarksData();
   }, [filters.academicYearId, filters.department, filters.program, filters.semester, filters.course, filters.section, apiUrl]);
+
+  useEffect(() => {
+    saveSelection(filters, { history: window.history, location: window.location, storage: window.localStorage });
+  }, [filters]);
+
+  // A different section starts with everyone showing and the server's order.
+  useEffect(() => {
+    setRowFilter("all");
+    setSort({ key: null, dir: "asc" });
+    setSearchQuery("");
+  }, [filters.section]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
@@ -270,8 +327,9 @@ const StudentMarksPage = () => {
       const percentage =
         student.percentage ??
         (courseWeightage > 0 ? Math.min(100, (weightedTotal / courseWeightage) * 100) : null);
-      const missingMarks =
-        student.missingMarks ?? cells.filter((cell) => !cell.hasMark).length;
+      // A bonus assessment nobody has to sit is not a missing mark.
+      const bonusIds = new Set(assessments.filter((a) => a.isBonus).map((a) => String(a.id)));
+      const missingMarks = cells.filter((cell) => !cell.hasMark && !bonusIds.has(String(cell.assessmentId))).length;
 
       return {
         ...student,
@@ -304,66 +362,52 @@ const StudentMarksPage = () => {
     };
   }, [gradebookRows]);
 
+  const displayedRows = useMemo(() => {
+    let rows = gradebookRows;
+    if (rowFilter === "failing") rows = rows.filter((row) => row.estimatedGrade === "F");
+    if (rowFilter === "missing") rows = rows.filter((row) => row.missingMarks > 0);
+    if (sort.key) rows = [...rows].sort((a, b) => compareRows(a, b, sort));
+    return rows;
+  }, [gradebookRows, rowFilter, sort]);
+
+  const toggleFilter = (name) => setRowFilter((current) => (current === name ? "all" : name));
+  const onSort = (key) => setSort((current) => nextSort(current, key));
+
+  const exportGradebook = () => {
+    const head = [
+      "Roll No", "Student Name",
+      ...assessments.flatMap((a) => [`${a.title}${a.isBonus ? " (bonus)" : ""} marks (/${a.maxMarks})`, `${a.title} weighted (/${a.weightage})`]),
+      `Total (/${courseWeightage || 0})`, "Percentage", "Estimated Grade",
+    ];
+    const lines = displayedRows.map((row) => [
+      row.rollNumber || "", row.name || "",
+      ...row.cells.flatMap((cell) => [cell.hasMark ? Number(cell.obtainedMarks) : "", cell.weightedScore == null ? "" : Number(cell.weightedScore.toFixed(2))]),
+      Number(row.weightedTotal.toFixed(2)), row.percentage == null ? "" : Number(row.percentage.toFixed(1)), row.estimatedGrade,
+    ]);
+    const name = [selectedCourse?.code || "marks", selectedSection ? `section-${selectedSection.section}` : ""].filter(Boolean).join("-");
+    downloadCsv(`${name}.csv`.replace(/[^\w.-]+/g, "_"), [head, ...lines]);
+  };
+
   const selectedCourse = availableFilters.courses.find((c) => c._id === filters.course);
   const selectedSection = availableFilters.sections.find((s) => s.id === filters.section);
+  const sectionIndex = availableFilters.sections.findIndex((item) => item.id === filters.section);
+  const stepSection = (delta) => {
+    const next = availableFilters.sections[sectionIndex + delta];
+    if (next) handleFilterChange("section", next.id);
+  };
   const filtersComplete = Boolean(
     filters.academicYearId && filters.department && filters.program && filters.semester && filters.course && filters.section
   );
 
   return (
-    <div className="student-marks-container">
-      <div className="marks-page-header">
-        <div className="marks-header-content">
-          <h1>Student Marks</h1>
-          <p>Choose an academic term first, then review section-level gradebooks</p>
-        </div>
-      </div>
-
-      <div className="term-selector-card">
-        <div className="term-selector-copy">
-          <span className="term-eyebrow">Academic Term</span>
-          <h2>{getTermDisplayName(selectedAcademicTerm)}</h2>
-          <p>
-            Marks below are scoped to the selected term. Choose a closed or archived term to audit historical results.
-          </p>
-        </div>
-        <div className="term-selector-control">
-          <label htmlFor="marks-academic-term">View marks for</label>
-          <select
-            id="marks-academic-term"
-            value={filters.academicYearId}
-            onChange={(e) => handleFilterChange("academicYearId", e.target.value)}
-            disabled={academicTerms.length === 0}
-          >
-            <option value="">Select academic term</option>
-            {academicTerms.map((term) => (
-              <option key={term._id} value={term._id}>
-                {getTermDisplayName(term)} - {getTermStatusLabel(term.status)}
-              </option>
-            ))}
-          </select>
-          {selectedAcademicTerm && (
-            <span className={`term-status-pill ${selectedAcademicTerm.status || "unknown"}`}>
-              {getTermStatusLabel(selectedAcademicTerm.status)}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {showHelp && (
-        <div className="help-text">
-          <p>
-            Select Department → Program → Semester → Course → Section. Marks are read-only here;
-            teachers enter them. Bonus assessments add points without increasing course weightage.
-          </p>
-          <button className="close-help" onClick={() => setShowHelp(false)} aria-label="Close help text">
-            ×
-          </button>
-        </div>
-      )}
+    <div className="student-marks-container page-shell">
+      <PageHeader
+        title="Marks"
+        subtitle="Review a section's gradebook. Marks are read-only here; teachers enter them."
+      />
 
       {error && (
-        <div className="error-message">
+        <div className="error-message" role="alert">
           <p>{error}</p>
           <button onClick={() => setError(null)} className="dismiss-error-btn">
             Dismiss
@@ -371,98 +415,113 @@ const StudentMarksPage = () => {
         </div>
       )}
 
-      <div className="filters-section">
-        <div className="filters-grid">
-          <div className="filter-group">
-            <label htmlFor="department">Department</label>
-            <select
-              id="department"
-              value={filters.department}
-              onChange={(e) => handleFilterChange("department", e.target.value)}
-              disabled={!filters.academicYearId || deptProgLoading}
-            >
-              <option value="">Select Department</option>
-              {departments.map((dept) => (
-                <option key={dept._id} value={dept._id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-          </div>
+      <section className="marks-filters" aria-label="Choose a section">
+        <label htmlFor="marks-academic-term">
+          <span>Term</span>
+          <select
+            id="marks-academic-term"
+            value={filters.academicYearId}
+            onChange={(e) => handleFilterChange("academicYearId", e.target.value)}
+            disabled={academicTerms.length === 0}
+          >
+            <option value="">Select term</option>
+            {academicTerms.map((term) => (
+              <option key={term._id} value={term._id}>
+                {getTermDisplayName(term)} ({getTermStatusLabel(term.status)})
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="program">Program</label>
-            <select
-              id="program"
-              value={filters.program}
-              onChange={(e) => handleFilterChange("program", e.target.value)}
-              disabled={!filters.academicYearId || !filters.department || deptProgLoading}
-            >
-              <option value="">Select Program</option>
-              {programs.map((prog) => (
-                <option key={prog._id} value={prog._id}>
-                  {prog.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label htmlFor="department">
+          <span>Department</span>
+          <select
+            id="department"
+            value={filters.department}
+            onChange={(e) => handleFilterChange("department", e.target.value)}
+            disabled={!filters.academicYearId || deptProgLoading}
+          >
+            <option value="">Select department</option>
+            {departments.map((dept) => (
+              <option key={dept._id} value={dept._id}>
+                {dept.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="semester">Semester</label>
-            <select
-              id="semester"
-              value={filters.semester}
-              onChange={(e) => handleFilterChange("semester", e.target.value)}
-              disabled={!filters.academicYearId || !filters.program}
-            >
-              <option value="">Select Semester</option>
-              {semesters.map((sem) => (
-                <option key={sem} value={sem}>
-                  Semester {sem}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label htmlFor="program">
+          <span>Program</span>
+          <select
+            id="program"
+            value={filters.program}
+            onChange={(e) => handleFilterChange("program", e.target.value)}
+            disabled={!filters.academicYearId || !filters.department || deptProgLoading}
+          >
+            <option value="">Select program</option>
+            {programs.map((prog) => (
+              <option key={prog._id} value={prog._id}>
+                {prog.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="course">Course</label>
-            <select
-              id="course"
-              value={filters.course}
-              onChange={(e) => handleFilterChange("course", e.target.value)}
-              disabled={!filters.semester || loading}
-            >
-              <option value="">Select Course</option>
-              {availableFilters.courses.map((course) => (
-                <option key={course._id} value={course._id}>
-                  {course.code ? `${course.code}: ${course.name}` : course.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label htmlFor="semester">
+          <span>Semester</span>
+          <select
+            id="semester"
+            value={filters.semester}
+            onChange={(e) => handleFilterChange("semester", e.target.value)}
+            disabled={!filters.academicYearId || !filters.program}
+          >
+            <option value="">Select semester</option>
+            {semesters.map((sem) => (
+              <option key={sem} value={sem}>
+                Semester {sem}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <div className="filter-group">
-            <label htmlFor="section">Section</label>
-            <select
-              id="section"
-              value={filters.section}
-              onChange={(e) => handleFilterChange("section", e.target.value)}
-              disabled={!filters.course || loading}
-            >
-              <option value="">Select Section</option>
-              {availableFilters.sections.map((section) => (
-                <option key={section.id} value={section.id}>
-                  {formatSectionOptionLabel(section)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <label htmlFor="course">
+          <span>Course</span>
+          <select
+            id="course"
+            value={filters.course}
+            onChange={(e) => handleFilterChange("course", e.target.value)}
+            disabled={!filters.semester || loading}
+          >
+            <option value="">Select course</option>
+            {availableFilters.courses.map((course) => (
+              <option key={course._id} value={course._id}>
+                {course.code ? `${course.code}: ${course.name}` : course.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <button className="clear-filters-btn" onClick={clearFilters}>
-          Clear Filters
+        <label htmlFor="section">
+          <span>Section</span>
+          <select
+            id="section"
+            value={filters.section}
+            onChange={(e) => handleFilterChange("section", e.target.value)}
+            disabled={!filters.course || loading}
+          >
+            <option value="">Select section</option>
+            {availableFilters.sections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {formatSectionOptionLabel(section)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button type="button" className="marks-clear-btn" onClick={clearFilters}>
+          Clear
         </button>
-      </div>
+      </section>
 
       <div className="marks-table-section">
         {filtersComplete && (
@@ -474,14 +533,28 @@ const StudentMarksPage = () => {
                 {selectedSection ? ` — Section ${selectedSection.section}` : ""}
               </h2>
             </div>
-            <div className="workspace-search">
-              <input
-                type="text"
-                placeholder="Search by name or roll number..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
+            <div className="workspace-tools">
+              {availableFilters.sections.length > 1 && sectionIndex >= 0 && (
+                <div className="section-stepper" role="group" aria-label="Move between this course's sections">
+                  <button type="button" className="stepper-btn" onClick={() => stepSection(-1)} disabled={sectionIndex === 0 || loading} aria-label="Previous section">‹</button>
+                  <span>Section {sectionIndex + 1} of {availableFilters.sections.length}</span>
+                  <button type="button" className="stepper-btn" onClick={() => stepSection(1)} disabled={sectionIndex === availableFilters.sections.length - 1 || loading} aria-label="Next section">›</button>
+                </div>
+              )}
+              {!emptyReason && !error && gradebookRows.length > 0 && (
+                <button type="button" className="export-csv-btn" onClick={exportGradebook}>Export CSV</button>
+              )}
+              {!emptyReason && !error && (
+              <div className="workspace-search">
+                <input
+                  type="text"
+                  placeholder="Search name or roll no."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              )}
             </div>
           </div>
         )}
@@ -498,22 +571,31 @@ const StudentMarksPage = () => {
                 {courseWeightage} / 100
               </strong>
             </div>
-            <div className="workspace-summary-card">
+            <button type="button" className={`workspace-summary-card is-action${rowFilter === "failing" ? " is-on" : ""}`} aria-pressed={rowFilter === "failing"} onClick={() => toggleFilter("failing")} title="Show only students with F">
               <span>Students with F</span>
               <strong className={summary.failingCount ? "summary-warning" : ""}>
                 {summary.failingCount}
               </strong>
-            </div>
-            <div className="workspace-summary-card">
+            </button>
+            <button type="button" className={`workspace-summary-card is-action${rowFilter === "all" ? "" : " is-dim"}`} onClick={() => setRowFilter("all")} title="Show everyone">
               <span>Students</span>
               <strong>{summary.studentCount}</strong>
-            </div>
-            <div className="workspace-summary-card">
+            </button>
+            <button type="button" className={`workspace-summary-card is-action${rowFilter === "missing" ? " is-on" : ""}`} aria-pressed={rowFilter === "missing"} onClick={() => toggleFilter("missing")} title="Show only students with a missing mark">
               <span>Missing Marks</span>
               <strong className={summary.missingMarks ? "summary-warning" : ""}>
                 {summary.missingMarks}
               </strong>
-            </div>
+            </button>
+          </div>
+        )}
+
+        {filtersComplete && !loading && !error && gradebookRows.length > 0 && (rowFilter !== "all" || searchQuery.trim()) && (
+          <div className="filter-note" role="status">
+            Showing {displayedRows.length} of {marksData.length} students
+            {rowFilter === "failing" ? " with F" : rowFilter === "missing" ? " with a missing mark" : ""}
+            {searchQuery.trim() ? ` matching “${searchQuery.trim()}”` : ""}
+            <button type="button" onClick={() => { setRowFilter("all"); setSearchQuery(""); }}>Show all</button>
           </div>
         )}
 
@@ -522,11 +604,18 @@ const StudentMarksPage = () => {
             <Loading variant="table" rows={8} label="Loading marks" />
           ) : !filtersComplete ? (
             <div className="no-data-container">
-              <p>Select all filters to view the section gradebook.</p>
+              <p className="marks-empty-title">Pick a section to see its gradebook</p>
+              <p>Choose a term, department, program, semester, course and section above.</p>
             </div>
           ) : error ? (
-            <div className="error-container">
-              <p>{error}</p>
+            <div className="no-data-container">
+              <p className="marks-empty-title">This gradebook could not be loaded</p>
+              <p>The reason is shown above. Choose the section again to retry.</p>
+            </div>
+          ) : emptyReason ? (
+            <div className="no-data-container">
+              <p className="marks-empty-title">{EMPTY_SECTION[emptyReason].title}</p>
+              <p>{EMPTY_SECTION[emptyReason].hint}</p>
             </div>
           ) : gradebookRows.length === 0 ? (
             <div className="no-data-container">
@@ -538,15 +627,15 @@ const StudentMarksPage = () => {
                 <thead>
                   <tr>
                     <th className="sticky-col roll-col" rowSpan="2">
-                      Roll No
+                      <SortButton label="Roll No" sortKey="roll" sort={sort} onSort={onSort} />
                     </th>
                     <th className="sticky-col name-col" rowSpan="2">
-                      Student Name
+                      <SortButton label="Student Name" sortKey="name" sort={sort} onSort={onSort} />
                     </th>
                     {assessments.map((assessment) => (
                       <React.Fragment key={assessment.id}>
                         <th className={assessment.isBonus ? "bonus-col-header" : undefined}>
-                          {assessment.title} Marks
+                          <SortButton label={`${assessment.title} Marks`} sortKey={`a:${assessment.id}`} sort={sort} onSort={onSort} />
                           {assessment.isBonus ? <span className="bonus-pill">Bonus</span> : null}
                         </th>
                         <th
@@ -557,7 +646,7 @@ const StudentMarksPage = () => {
                       </React.Fragment>
                     ))}
                     <th className="total-header" rowSpan="2">
-                      Total
+                      <SortButton label="Total" sortKey="total" sort={sort} onSort={onSort} />
                     </th>
                     <th className="grade-header" rowSpan="2">
                       Estimated Grade
@@ -583,7 +672,7 @@ const StudentMarksPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {gradebookRows.map((student) => (
+                  {displayedRows.map((student) => (
                     <tr key={student.id}>
                       <td className="sticky-col roll-col">{student.rollNumber || "-"}</td>
                       <td className="sticky-col name-col">{student.name || "Unnamed Student"}</td>
@@ -619,6 +708,9 @@ const StudentMarksPage = () => {
                       </td>
                     </tr>
                   ))}
+                  {displayedRows.length === 0 && (
+                    <tr className="no-match-row"><td colSpan={4 + assessments.length * 2}>No students match. <button type="button" className="link-btn" onClick={() => { setRowFilter("all"); setSearchQuery(""); }}>Show all students</button></td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -632,6 +724,7 @@ const StudentMarksPage = () => {
             <span className="legend-item watch">50–69% Watch</span>
             <span className="legend-item risk">&lt;50% Risk</span>
             <span className="legend-item missing">— Missing</span>
+            <span className="legend-note">Bonus assessments add points without increasing course weightage.</span>
           </div>
         )}
       </div>

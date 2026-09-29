@@ -1,45 +1,5 @@
-.student-directory-container {
-  padding: var(--spacing-lg);
-  max-width: 1400px;
-  margin: 0 auto;
-  background: var(--light-bg);
-  min-height: 100vh;
-}
-
-/* Header Styles */
-.sd-page-header {
-  margin-bottom: var(--spacing-lg);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--spacing-lg);
-  flex-wrap: wrap;
-  background: var(--white);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-sm);
-  border-bottom: 3px solid var(--primary-color);
-}
-
-.sd-header-content {
-  flex: 1;
-  min-width: 300px;
-}
-
-.sd-header-content h1 {
-  font-size: 2rem;
-  color: var(--text-dark);
-  margin: 0 0 var(--spacing-xs) 0;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-}
-
-.sd-header-content p {
-  color: var(--text-color);
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.5;
-}
+/* Page width, padding and the title come from .page-shell and <PageHeader>. */
+.student-directory-container { min-width: 0; }
 
 .header-actions {
   display: flex;
@@ -260,31 +220,6 @@
   overflow-x: auto;
 }
 
-.students-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.students-table th {
-  background: var(--light-bg);
-  padding: var(--spacing-md);
-  text-align: left;
-  color: var(--text-dark);
-  font-weight: 500;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.students-table td {
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-dark);
-}
-
-.students-table tr:hover {
-  background: var(--primary-light);
-}
-
 /* CGPA Badge */
 .cgpa-cell {
   text-align: center;
@@ -357,7 +292,7 @@
 }
 
 /* Clear Filters Button */
-.clear-filters-btn {
+.sd-clear-btn {
   background: none;
   border: 1px solid var(--primary-color);
   color: var(--primary-color);
@@ -368,22 +303,13 @@
   font-size: 0.9rem;
 }
 
-.clear-filters-btn:hover {
+.sd-clear-btn:hover {
   background: var(--primary-color);
   color: var(--white);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .student-directory-container {
-    padding: var(--spacing-md);
-  }
-
-  .sd-page-header {
-    flex-direction: column;
-    gap: var(--spacing-md);
-  }
-
   .header-actions {
     width: 100%;
     flex-direction: column;
@@ -403,3 +329,14 @@
     padding: var(--spacing-sm);
   }
 } 
+/* The filters panel in the portal's one filter style: small uppercase labels over 2.3rem selects, a plain header. */
+.student-directory-container .filters-header { background: #fff; padding: 0.75rem 1rem; }
+.student-directory-container .filters-header h3 { font-size: 0.95rem; font-weight: 600; }
+.student-directory-container .filters-content { padding: 0.85rem 1rem; gap: 0.7rem 0.9rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+.student-directory-container .filter-group { gap: 0.25rem; margin: 0; }
+.student-directory-container .filter-group label { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
+.student-directory-container .filter-group select { width: 100%; height: 2.3rem; margin: 0; padding: 0 0.7rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; font: inherit; font-size: 0.9rem; color: #1f2937; }
+.student-directory-container .filter-group select:hover:not(:disabled) { border-color: var(--primary-color); }
+.student-directory-container .filter-group select:disabled { background: #f6f7f9; color: #9aa1ad; }
+.student-directory-container .sd-clear-btn { height: 2.3rem; padding: 0 1rem; align-self: end; border-color: #d5d8de; border-radius: 0.5rem; background: #fff; color: #4b5563; font-size: 0.85rem; font-weight: 600; }
+.student-directory-container .sd-clear-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }

@@ -1,32 +1,11 @@
-.import-students-container {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-/* Header Styles */
-.import-students-container h2 {
-    font-size: 2rem;
-    color: var(--text-dark, #333);
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    letter-spacing: -0.5px;
-}
-
-.import-description {
-    margin-bottom: 2rem;
-    color: var(--text-color, #666);
-    line-height: 1.5;
-    font-size: 1rem;
-    max-width: 800px;
-}
+/* Page width, padding and the title come from .page-shell and <PageHeader>. */
+.import-students-container { min-width: 0; }
 
 .import-section {
     background: var(--white, white);
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: var(--border-radius-md, 8px);
     box-shadow: var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.1));
-    border-top: 3px solid var(--primary-color, #991D20);
 }
 
 .file-upload {
@@ -293,3 +272,7 @@
     background: #2e7d32;
     color: white;
 } 
+.import-errors { margin: 0 0 1rem; padding: 0.75rem 1rem; border: 1px solid #f0c4c0; border-radius: 0.6rem; background: #fef2f2; color: #7f1d1d; font-size: 0.9rem; }
+.import-errors ul { margin: 0.5rem 0 0; padding-left: 1.2rem; max-height: 14rem; overflow-y: auto; }
+.import-errors li { margin: 0.15rem 0; }
+.import-errors p { margin: 0.5rem 0 0; }

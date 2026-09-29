@@ -23,6 +23,6 @@ installNoWheelNumbers();
 } catch (error) {
   // Show the configuration problem instead of a blank page.
   container.textContent = error.message;
-  container.style.cssText = 'padding:24px;font-family:sans-serif;color:#8b1538';
+  container.style.cssText = 'padding:24px;font-family:sans-serif;color:#991d20';
   throw error;
 }

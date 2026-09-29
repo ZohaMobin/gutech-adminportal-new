@@ -1,3 +1,4 @@
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -599,23 +600,23 @@ const AttendancePage = () => {
   }, [selectedAcademicTermId]);
 
   return (
-    <div className="attendance-page">
-      <div className="attendance-header">
-        <div className="att-header-content">
-          <h1>Attendance Management</h1>
-          <p>Choose an academic term first, then inspect attendance course-wise</p>
-        </div>
-        {selectedCourse && sections.some((section) => {
+    <div className="attendance-page page-shell">
+      <PageHeader
+        title="Attendance"
+        subtitle="Choose an academic term first, then inspect attendance course-wise"
+        actions={
+          selectedCourse && sections.some((section) => {
           const sectionId = section.id || section._id;
           const sectionData = sectionAttendanceData[sectionId];
           return sectionData && sectionData.students.length > 0 && Object.keys(sectionData.attendanceData || {}).length > 0;
         }) && (
-          <button className="export-btn" onClick={exportCourseAttendanceToExcel}>
-            <Download size={18} />
-            Export All Sections
-          </button>
-        )}
-      </div>
+            <button className="export-btn" onClick={exportCourseAttendanceToExcel}>
+              <Download size={18} />
+              Export All Sections
+            </button>
+          )
+        }
+      />
 
       {error && (
         <div className="error-message">

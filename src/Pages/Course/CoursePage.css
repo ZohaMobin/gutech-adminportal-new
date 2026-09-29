@@ -1,8 +1,5 @@
-.course-container {
-  padding: var(--spacing-lg);
-  max-width: 1200px;
-  margin: 0 auto;
-}
+/* Page width and padding come from .page-shell (Components/PageHeader). */
+.course-container { min-width: 0; }
 
 /* Important note - Standalone style */
 .course-important-note {
@@ -95,37 +92,6 @@
     padding: 10px 14px;
     font-size: 13px;
   }
-}
-
-.tabs {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
-  background-color: var(--white);
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-sm);
-}
-
-.tab {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border: none;
-  background-color: transparent;
-  color: var(--text-color);
-  cursor: pointer;
-  border-radius: var(--border-radius-sm);
-  transition: var(--transition-normal);
-  font-weight: 500;
-}
-
-.tab:hover {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.tab.active {
-  background-color: var(--primary-color);
-  color: var(--white);
 }
 
 .course-form, .offering-form {
@@ -256,7 +222,7 @@ input:focus, select:focus, textarea:focus {
   min-width: 150px;
 }
 
-.clear-filters-btn {
+.course-clear-btn {
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: #e9ecef;
   color: #495057;
@@ -269,37 +235,12 @@ input:focus, select:focus, textarea:focus {
   gap: var(--spacing-xs);
 }
 
-.clear-filters-btn:hover {
+.course-clear-btn:hover {
   background-color: #dee2e6;
 }
 
 .courses-table-container {
   overflow-x: auto;
-}
-
-.courses-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: var(--spacing-md);
-}
-
-.courses-table th {
-  background-color: #f8f9fa;
-  padding: var(--spacing-sm);
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-dark);
-  border-bottom: 2px solid var(--border-color);
-}
-
-.courses-table td {
-  padding: var(--spacing-sm);
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-color);
-}
-
-.courses-table tr:hover {
-  background-color: #f8f9fa;
 }
 
 .description-cell {
@@ -394,27 +335,27 @@ input:focus, select:focus, textarea:focus {
 }
 
 .academic-year-tab {
-  border: 1px solid #d6dbe4;
-  background: #f6f8fb;
-  color: #435168;
-  padding: 10px 16px;
+  border: 1px solid #d5d8de;
+  background: #fff;
+  color: #4b5563;
+  padding: 6px 14px;
   border-radius: 999px;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-normal);
 }
 
 .academic-year-tab:hover {
-  background: #e9eef7;
-  border-color: #b9c7dc;
+  background: var(--primary-tint);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .academic-year-tab.active {
-  background: #143b63;
-  border-color: #143b63;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(20, 59, 99, 0.18);
 }
 
 .deactivate-offerings-btn {
@@ -600,7 +541,7 @@ tr:hover {
 details.offerings-group { margin-bottom: 0.6rem; border: 1px solid #e6e8ec; border-radius: 0.75rem; background: #fff; overflow: hidden; }
 details.offerings-group > summary.group-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.65rem 0.9rem; cursor: pointer; list-style: none; font-size: 0.95rem; font-weight: 600; background: #f8f9fb; margin: 0; }
 details.offerings-group > summary.group-title::-webkit-details-marker { display: none; }
-details.offerings-group > summary.group-title::before { content: "▸"; color: #8b1538; margin-right: 0.5rem; transition: transform 0.15s; }
+details.offerings-group > summary.group-title::before { content: "▸"; color: var(--primary-color); margin-right: 0.5rem; transition: transform 0.15s; }
 details.offerings-group[open] > summary.group-title::before { transform: rotate(90deg); }
 details.offerings-group > summary .group-count { margin-left: auto; font-size: 0.78rem; font-weight: 600; color: #6b7280; }
 .group-scroll { overflow-x: auto; }
@@ -609,3 +550,42 @@ details.offerings-group th:nth-child(1) { width: 34%; }
 details.offerings-group th:nth-child(4) { width: 9%; }
 details.offerings-group th:nth-child(6) { width: 9%; }
 details.offerings-group td { overflow-wrap: anywhere; }
+
+/* Offerings table: the edit button sits in an ordinary table cell (a flex <td> drops out of the row). */
+.offering-action-cell { width: 3.25rem; text-align: right; white-space: nowrap; }
+.offering-action-cell .edit-btn { display: inline-flex; }
+
+/* A row whose status is changing or that is being deleted: still there, but not clickable, so nothing jumps. */
+.courses-table tr.is-busy { opacity: 0.55; }
+.courses-table tr.is-busy button { pointer-events: none; }
+.toggle-btn:disabled, .edit-btn:disabled, .delete-btn:disabled { cursor: not-allowed; }
+
+/* Keep the Actions cell an ordinary table cell (a flex <td> drops out of the row and its borders stop lining up). */
+.courses-table td.action-buttons { display: table-cell; white-space: nowrap; }
+.courses-table td.action-buttons > button { display: inline-flex; vertical-align: middle; margin-right: var(--spacing-sm, 8px); }
+.courses-table td.action-buttons > button:last-child { margin-right: 0; }
+
+/* The course and offering forms in the portal's one field style: a small bold label over a 2.5rem field, brand focus ring. */
+.course-form, .offering-form { padding: 1.25rem 1.5rem; }
+.course-form h2 { font-size: 1.15rem; font-weight: 600; }
+.course-form div, .offering-form div { margin-bottom: 0.9rem; }
+.course-form label, .offering-form label { display: block; margin: 0 0 0.3rem; font-size: 0.8rem; font-weight: 600; color: #4b5563; }
+.course-form input:not([type="checkbox"]), .course-form select, .course-form textarea,
+.offering-form input:not([type="checkbox"]), .offering-form select, .offering-form textarea {
+  width: 100%; margin: 0; padding: 0 0.75rem; height: 2.5rem; border: 1px solid #d5d8de; border-radius: 0.5rem;
+  background: #fff; font: inherit; font-size: 0.9rem; color: #1f2937; box-sizing: border-box;
+}
+.course-form textarea, .offering-form textarea { height: auto; padding: 0.6rem 0.75rem; resize: vertical; }
+.course-form input::placeholder, .course-form textarea::placeholder { color: #9aa1ad; }
+.course-form :is(input, select, textarea):focus, .offering-form :is(input, select, textarea):focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12); }
+.course-form :is(input, select, textarea):disabled, .offering-form :is(input, select, textarea):disabled { background: #f6f7f9; color: #9aa1ad; }
+.offering-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.9rem 1rem; align-items: end; }
+.offering-form div { margin-bottom: 0; }
+.offering-form > button { grid-column: 1 / -1; justify-self: start; }
+
+/* Manage Courses / Offerings filter bars at the portal's filter size. */
+.course-container .search-input { height: 2.3rem; font-size: 0.9rem; border: 1px solid #d5d8de; border-radius: 0.5rem; }
+.course-container .filter-container label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
+.course-container .filter-container select { height: 2.3rem; width: auto; margin: 0; padding: 0 0.7rem; font-size: 0.9rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; }
+.course-container .course-clear-btn { height: 2.3rem; padding: 0 1rem; border: 1px solid #d5d8de; border-radius: 0.5rem; background: #fff; color: #4b5563; font-size: 0.85rem; font-weight: 600; }
+.course-container .course-clear-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-tint); }

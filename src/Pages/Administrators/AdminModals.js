@@ -88,7 +88,7 @@ export const AdminFormModal = ({ admin, saving, error, onSubmit, onClose }) => {
 };
 
 // Confirmation for anything with consequences, with the consequence spelled out.
-export const ConfirmModal = ({ title, body, confirmLabel, danger = false, busy, error, onConfirm, onClose }) => (
+export const ConfirmModal = ({ title, body, confirmLabel, busyText = "Working…", danger = false, busy, error, onConfirm, onClose, children }) => (
   <Modal
     title={title}
     onClose={onClose}
@@ -99,12 +99,13 @@ export const ConfirmModal = ({ title, body, confirmLabel, danger = false, busy, 
           Cancel
         </button>
         <button type="button" className={`am-btn ${danger ? "am-btn-danger" : "am-btn-primary"}`} onClick={onConfirm} disabled={busy}>
-          <BusyLabel busy={busy} busyText="Working…" idle={confirmLabel} />
+          <BusyLabel busy={busy} busyText={busyText} idle={confirmLabel} />
         </button>
       </>
     }
   >
     <p className="am-confirm-text">{body}</p>
+    {children}
     {error && <div className="am-error" role="alert">{error}</div>}
   </Modal>
 );

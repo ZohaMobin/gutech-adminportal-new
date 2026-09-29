@@ -1,3 +1,4 @@
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
@@ -80,13 +81,8 @@ const ResultApprovalsPage = () => {
   if (selected) return <ApprovalDetail sectionId={selected} queue={queue} onOpen={open} onBack={close} onChanged={load} />;
 
   return (
-    <div className="ra-page">
-      <header className="ra-header">
-        <div>
-          <h1>Result approvals</h1>
-          <p>Review the results teachers submit, approve them into the record, then publish them to students.</p>
-        </div>
-      </header>
+    <div className="ra-page page-shell">
+      <PageHeader title="Result Approvals" subtitle="Review the results teachers submit, approve them into the record, then publish them to students." />
 
       {error && <div className="ra-error" role="alert">{error} <button type="button" className="ra-link" onClick={load}>Try again</button></div>}
 

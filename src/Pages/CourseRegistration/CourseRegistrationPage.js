@@ -1,3 +1,4 @@
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
@@ -245,18 +246,16 @@ const CourseRegistrationPage = () => {
   const step3Done = students.length > 0 && sheet?.parsed.usable;
 
   return (
-    <div className="enr-page">
-      <header className="enr-header">
-        <div>
-          <h1>Enroll students</h1>
-          <p>Add a class list to a course for the current term, and keep track of every upload.</p>
-        </div>
-        {termLabel && <span className="enr-term" title="Students are enrolled in the current academic term"><i aria-hidden="true" />Term: <strong>{termLabel}</strong></span>}
-      </header>
+    <div className="enr-page page-shell">
+      <PageHeader
+        title="Enroll Students"
+        subtitle="Add a class list to a course for the current term, and keep track of every upload."
+        actions={termLabel && <span className="enr-term" title="Students are enrolled in the current academic term"><i aria-hidden="true" />Term: <strong>{termLabel}</strong></span>}
+      />
 
-      <div className="enr-tabs" role="tablist" aria-label="Enroll students">
-        <button type="button" role="tab" id="enr-tab-enroll" aria-selected={view === "enroll"} className={view === "enroll" ? "is-on" : ""} onClick={() => setView("enroll")}>New enrollment</button>
-        <button type="button" role="tab" id="enr-tab-history" aria-selected={view === "history"} className={view === "history" ? "is-on" : ""} onClick={() => setView("history")}>Upload history</button>
+      <div className="pk-tabs" role="tablist" aria-label="Enroll students">
+        <button type="button" role="tab" id="enr-tab-enroll" aria-selected={view === "enroll"} className={`pk-tab ${view === "enroll" ? "is-on" : ""}`} onClick={() => setView("enroll")}>New enrollment</button>
+        <button type="button" role="tab" id="enr-tab-history" aria-selected={view === "history"} className={`pk-tab ${view === "history" ? "is-on" : ""}`} onClick={() => setView("history")}>Upload history</button>
       </div>
 
       <div className={view === "enroll" ? "" : "enr-hidden"}>

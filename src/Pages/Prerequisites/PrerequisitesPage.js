@@ -1,3 +1,4 @@
+import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./PrerequisitesPage.css";
@@ -6,7 +7,6 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const Svg = ({ children, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{children}</svg>
 );
-const LinkIcon = () => <Svg size={20}><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 00-5.7 0l-3 3A4 4 0 0011 18.7l1-1" /></Svg>;
 const CheckIcon = ({ size = 14 }) => <Svg size={size}><path d="M5 12l5 5 9-10" /></Svg>;
 const XIcon = () => <Svg size={12}><path d="M6 6l12 12M18 6L6 18" /></Svg>;
 const PlusIcon = () => <Svg size={14}><path d="M12 5v14M5 12h14" /></Svg>;
@@ -236,24 +236,21 @@ const PrerequisitesPage = () => {
   };
 
   return (
-    <div className="pre-page">
-      <header className="pre-header">
-        <div className="pre-title">
-          <span className="pre-icon"><LinkIcon /></span>
-          <div>
-            <h1>Prerequisites</h1>
-            <p>Choose which courses a student must pass before taking another one.</p>
-          </div>
-        </div>
-        {versions.length > 0 && (
-          <label className="pre-picker">
-            <span>Program and curriculum version</span>
-            <select value={versionId} onChange={(e) => choose(e.target.value)} aria-label="Program and curriculum version" disabled={busy}>
-              {versions.map((v) => <option key={v.id} value={v.id}>{versionLabel(v)}</option>)}
-            </select>
-          </label>
-        )}
-      </header>
+    <div className="pre-page page-shell">
+      <PageHeader
+        title="Prerequisites"
+        subtitle="Choose which courses a student must pass before taking another one."
+        actions={
+          versions.length > 0 && (
+            <label className="pre-picker">
+              <span>Program and curriculum version</span>
+              <select value={versionId} onChange={(e) => choose(e.target.value)} aria-label="Program and curriculum version" disabled={busy}>
+                {versions.map((v) => <option key={v.id} value={v.id}>{versionLabel(v)}</option>)}
+              </select>
+            </label>
+          )
+        }
+      />
 
       {error && <div className="pre-error" role="alert">{error}</div>}
       {notice && <div className="pre-notice" role="status"><CheckIcon /> {notice}</div>}

@@ -1,7 +1,8 @@
 import Loading from "../../Components/Loading/Loading";
+import PageHeader from "../../Components/PageHeader/PageHeader";
+import { ConfirmModal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Toaster } from "react-hot-toast";
 import FiltersPanel from "./components/FiltersPanel";
 import TimetableGrid from "./components/TimetableGrid";
 import ScheduleModal from "./components/ScheduleModal";
@@ -14,6 +15,7 @@ function ClassSchedule() {
   const [teachers, setTeachers] = useState([]);
   const [rooms] = useState(["Room 101", "Room 102", "Room 103", "Lab 1", "Lab 2", "Lab 3"]);
   const [selectedSection, setSelectedSection] = useState(null);
+  const [scheduleToDelete, setScheduleToDelete] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentAcademicYear, setCurrentAcademicYear] = useState(null);
@@ -410,11 +412,12 @@ function ClassSchedule() {
     }
   };
 
-  const handleDeleteSchedule = async (scheduleId) => {
-    if (!window.confirm("Are you sure you want to delete this schedule?")) {
-      return;
-    }
+  // Deleting asks first, in a dialog that names the class; nothing is deleted until it is confirmed.
+  const handleDeleteSchedule = (scheduleId) => setScheduleToDelete(schedules.find((item) => item._id === scheduleId) || { _id: scheduleId });
 
+  const confirmDeleteSchedule = async () => {
+    const scheduleId = scheduleToDelete._id;
+    setScheduleToDelete(null);
     try {
       setLoading(true); // Show loader during API call
       await axios.delete(`${apiUrl}/api/section-schedules/${scheduleId}`, {
@@ -633,42 +636,8 @@ function ClassSchedule() {
   };
 
   return (
-    <div className="schedule-container">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 5000,
-          style: {
-            background: "#ffffff",
-            color: "#333333",
-            padding: "16px",
-            borderRadius: "8px",
-            maxWidth: "500px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            border: "1px solid #e0e0e0",
-            fontSize: "14px",
-            fontWeight: "500",
-          },
-          success: {
-            style: {
-              background: "#f0fdf4",
-              color: "#166534",
-              border: "1px solid #86efac",
-            },
-            icon: "✅",
-          },
-          error: {
-            style: {
-              background: "#fef2f2",
-              color: "#991b1b",
-              border: "1px solid #fecaca",
-            },
-            icon: "❌",
-          },
-        }}
-      />
-
-      <h1 className="heading">Class Schedule Management</h1>
+    <div className="class-schedule-page page-shell">
+      <PageHeader title="Class Schedule" subtitle="The weekly timetable of every section. Filter it, or add a class to a section." />
 
       <div className="dashboard-layout">
         <FiltersPanel
@@ -706,6 +675,17 @@ function ClassSchedule() {
         </div>
       </div>
 
+      {scheduleToDelete && (
+        <ConfirmModal
+          title="Delete class"
+          body={`Delete ${scheduleToDelete.day ? `the ${scheduleToDelete.day} ${scheduleToDelete.timeSlot?.startTime || ""}-${scheduleToDelete.timeSlot?.endTime || ""} class` : "this class"} from the timetable? This cannot be undone.`}
+          confirmLabel="Delete class"
+          danger
+          onConfirm={confirmDeleteSchedule}
+          onClose={() => setScheduleToDelete(null)}
+        />
+      )}
+
       <ScheduleModal
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
@@ -719,6 +699,7 @@ function ClassSchedule() {
         formatTeacherName={formatTeacherName}
         rooms={rooms}
         teachers={teachers}
+        saving={loading}
       />
     </div>
   );

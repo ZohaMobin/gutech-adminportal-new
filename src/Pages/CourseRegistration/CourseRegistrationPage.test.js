@@ -185,7 +185,7 @@ test("the page has two tabs and a summary that follows the choices, and the enro
   expect(summary()).toContain("1 student");
   expect(button("Enroll 1 student", container.querySelector(".enr-summary"))).toBeTruthy();
   expect(container.querySelector(".enr-hidden .enh")).not.toBeNull();                    // history is on its own tab, out of sight
-  await click(container.querySelectorAll(".enr-tabs button")[1]);
+  await click(container.querySelectorAll(".pk-tabs button")[1]);
   expect(container.querySelector(".enr-hidden .enr-summary")).not.toBeNull();
   expect(container.querySelector("#enr-tab-history").getAttribute("aria-selected")).toBe("true");
 });
