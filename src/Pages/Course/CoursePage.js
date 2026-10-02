@@ -629,6 +629,19 @@ const CoursePage = () => {
     />
   );
 
+  // The offering being filled in, for the summary line and to know when the form is complete.
+  const offerDraft = (() => {
+    const draftCourse = courses.find((c) => c._id === courseOffering.courseId);
+    const draftProgram = programs.find((p) => p._id === courseOffering.program);
+    const draftTerm = academicYears.find((ay) => ay._id === courseOffering.academicYearId);
+    return {
+      course: draftCourse,
+      program: draftProgram,
+      termLabel: draftTerm ? (draftTerm.displayName || `${draftTerm.semesterType} ${draftTerm.year}`) : '',
+      complete: Boolean(draftCourse && courseOffering.department && draftProgram && draftTerm),
+    };
+  })();
+
   // Where things stand, in a few words under each step: how many courses exist, and how many are offered in the current term.
   const currentTerm = academicYears.find((ay) => ay.isCurrent);
   const offeredInCurrentTerm = currentTerm ? courseOfferings.filter((o) => String(o.academicYearId?._id ?? o.academicYearId) === String(currentTerm._id)).length : null;
@@ -881,95 +894,100 @@ const CoursePage = () => {
           <form className="offering-form" onSubmit={handleOfferingSubmit}>
             <div className="of-form-head">
               <h2>Offer a course for a term</h2>
-              <p>Fields marked * are required. Pick the course, then where and when it is taught.</p>
+              <p>Fields marked * are required.</p>
             </div>
-            <div className="of-course-field">
-              <label>Course *</label>
-              <select
-                name="courseId"
-                value={courseOffering.courseId}
-                onChange={handleOfferingChange}
-                required
-              >
-                <option value="">Select a Course</option>
-                {courses.map(course => (
-                  <option key={course._id} value={course._id}>
-                    {course.code} - {course.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>Department *</label>
-              <select
-                name="department"
-                value={courseOffering.department}
-                onChange={handleOfferingChange}
-                required
-                disabled={deptProgLoading}
-              >
-                <option value="">Select Department</option>
-                {departments.map(dept => (
-                  <option key={dept._id} value={dept._id}>{dept.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>Program *</label>
-              <select
-                name="program"
-                value={courseOffering.program}
-                onChange={handleOfferingChange}
-                required
-                disabled={deptProgLoading}
-              >
-                <option value="">Select Program</option>
-                {programs.map(prog => (
-                  <option key={prog._id} value={prog._id}>{prog.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>Semester *</label>
-              <select
-                name="semester"
-                value={courseOffering.semester}
-                onChange={handleOfferingChange}
-                required
-              >
-                {(() => {
-                  const program = getProgramById(courseOffering.program);
-                  const maxSemesters = program?.typicalDuration || 8;
-                  return Array.from({ length: maxSemesters + 1 }, (_, i) => (
-                    <option key={i} value={i}>Semester {i}</option>
-                  ));
-                })()}
-              </select>
-              <small className="field-hint">Which semester of the program the course sits in. Use Semester 0 if it isn't tied to one.</small>
-            </div>
-            <div>
-              <label>Academic term *</label>
-              <select
-                name="academicYearId"
-                value={courseOffering.academicYearId}
-                onChange={handleOfferingChange}
-                required
-              >
-                <option value="">Select Academic Term</option>
-                {academicYears.map(ay => (
-                  <option key={ay._id} value={ay._id}>
-                    {ay.displayName || `${ay.semesterType} ${ay.year}`} {ay.isCurrent ? '(Current)' : ''}
-                  </option>
-                ))}
-              </select>
-              <small className="field-hint">When it will be taught. A term that isn't listed is added under Academic Years.</small>
-              {academicYears.length === 0 && (
-                <small style={{ color: '#dc3545', display: 'block', marginTop: '4px' }}>
-                  No academic years available. Please create one in Academic Years page.
-                </small>
+
+            <section className="of-block">
+              <h3 className="of-block-title">Course</h3>
+              <div className="of-field">
+                <label htmlFor="of-course">Which course? *</label>
+                <select id="of-course" name="courseId" value={courseOffering.courseId} onChange={handleOfferingChange} required>
+                  <option value="">Select a course</option>
+                  {courses.map(course => (
+                    <option key={course._id} value={course._id}>{course.code} - {course.name}</option>
+                  ))}
+                </select>
+                {offerDraft.course ? (
+                  <p className="of-picked"><strong>{offerDraft.course.code}</strong> {offerDraft.course.name} · {offerDraft.course.creditHours} credit hour{Number(offerDraft.course.creditHours) === 1 ? '' : 's'}</p>
+                ) : (
+                  <small className="field-hint">Can't find it? It needs creating first, in step 1.</small>
+                )}
+              </div>
+            </section>
+
+            <section className="of-block">
+              <h3 className="of-block-title">Where it belongs</h3>
+              <p className="of-block-hint">The department and program that teach it, and the semester of that program it sits in.</p>
+              <div className="of-grid">
+                <div className="of-field">
+                  <label htmlFor="of-department">Department *</label>
+                  <select id="of-department" name="department" value={courseOffering.department} onChange={handleOfferingChange} required disabled={deptProgLoading}>
+                    <option value="">Select department</option>
+                    {departments.map(dept => (
+                      <option key={dept._id} value={dept._id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="of-field">
+                  <label htmlFor="of-program">Program *</label>
+                  <select id="of-program" name="program" value={courseOffering.program} onChange={handleOfferingChange} required disabled={deptProgLoading}>
+                    <option value="">Select program</option>
+                    {programs.map(prog => (
+                      <option key={prog._id} value={prog._id}>{prog.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="of-field">
+                  <label htmlFor="of-semester">Semester *</label>
+                  <select id="of-semester" name="semester" value={courseOffering.semester} onChange={handleOfferingChange} required>
+                    {(() => {
+                      const program = getProgramById(courseOffering.program);
+                      const maxSemesters = program?.typicalDuration || 8;
+                      return Array.from({ length: maxSemesters + 1 }, (_, i) => (
+                        <option key={i} value={i}>{i === 0 ? 'No semester (0)' : `Semester ${i}`}</option>
+                      ));
+                    })()}
+                  </select>
+                  <small className="field-hint">Which semester of the program the course sits in. Use Semester 0 if it isn't tied to one.</small>
+                </div>
+              </div>
+            </section>
+
+            <section className="of-block">
+              <h3 className="of-block-title" id="of-term-title">Academic term *</h3>
+              <p className="of-block-hint">When it will be taught. A term that isn't listed is added under Academic Years.</p>
+              {academicYears.length === 0 ? (
+                <p className="of-warn">No academic terms available yet. Add one in the Academic Years page first.</p>
+              ) : (
+                <div className="of-terms" role="radiogroup" aria-labelledby="of-term-title">
+                  {academicYears.map(ay => {
+                    const on = courseOffering.academicYearId === ay._id;
+                    return (
+                      <button
+                        key={ay._id}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        className={`of-term ${on ? 'is-on' : ''}`}
+                        onClick={() => handleOfferingChange({ target: { name: 'academicYearId', value: ay._id } })}
+                      >
+                        {ay.displayName || `${ay.semesterType} ${ay.year}`}
+                        {ay.isCurrent && <em>Current</em>}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-            </div>
-            <button className="pk-btn pk-btn-primary" type="submit">Create Course Offering</button>
+            </section>
+
+            <footer className="of-foot">
+              <p className="of-summary" aria-live="polite">
+                {offerDraft.complete
+                  ? <><strong>{offerDraft.course.code}</strong> will be taught in <strong>{offerDraft.termLabel}</strong> for <strong>{offerDraft.program.name}</strong>{Number(courseOffering.semester) === 0 ? ', not tied to a semester.' : `, Semester ${courseOffering.semester}.`}</>
+                  : 'Choose a course, where it belongs and a term to see a summary here.'}
+              </p>
+              <button className="pk-btn pk-btn-primary" type="submit" disabled={!offerDraft.complete}>Create offering</button>
+            </footer>
           </form>
 
           <div className="offerings-list">

@@ -72,6 +72,7 @@ test("after creating a course, one button takes you to the offering form with th
   expect(stepBtn("2Offer it for a term").getAttribute("aria-current")).toBe("step");
   await wait(20);
   expect(container.querySelector('.offering-form [name="courseId"]').value).toBe("c2");
+  expect(container.querySelector(".of-picked").textContent).toMatch(/CS201 Data Structures · 3 credit hours/);
 });
 
 test("the offering form explains semester and academic term, and after saving it leads on to assigning a teacher", async () => {
@@ -80,10 +81,15 @@ test("the offering form explains semester and academic term, and after saving it
   expect(container.textContent).toMatch(/When it will be taught/);
   axios.post.mockResolvedValue({ data: { _id: "o1" } });
   const form = container.querySelector(".offering-form");
+  expect(form.querySelector('button[type="submit"]').disabled).toBe(true);
+  expect(form.textContent).toMatch(/Choose a course, where it belongs and a term to see a summary here/);
   await choose(form.querySelector('[name="courseId"]'), "c1");
   await choose(form.querySelector('[name="department"]'), "d1");
   await choose(form.querySelector('[name="program"]'), "p1");
-  await choose(form.querySelector('[name="academicYearId"]'), "y1");
+  await click(form.querySelector('.of-term'));
+  expect(form.querySelector('.of-term').getAttribute("aria-checked")).toBe("true");
+  expect(form.querySelector(".of-summary").textContent).toMatch(/CS101 will be taught in Fall 2026 for BS Computer Science, not tied to a semester/);
+  expect(form.querySelector('button[type="submit"]').disabled).toBe(false);
   await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
   await wait(20);
   expect(container.querySelector(".cintro.is-done").textContent).toMatch(/CS101 Programming is now offered in Fall 2026. Next, give each of its sections a teacher/);
