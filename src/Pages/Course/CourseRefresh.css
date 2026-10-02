@@ -105,7 +105,8 @@
 /* ---------- Course offerings: one compact card (title and search, term and filters, grouped rows) ---------- */
 .ol { margin: 1.75rem 0 0; background: #fff; border: 1px solid var(--cr-line); border-radius: 0.9rem; box-shadow: var(--cr-card); }
 .ol-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.85rem 1.1rem; border-bottom: 1px solid #eef0f3; }
-.ol-titlebar { display: flex; align-items: center; gap: 0.6rem; }
+.ol-titlebar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.ol-titlebar .ol-terms { margin-left: 0.4rem; }
 .ol-titlebar h3 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--cr-ink); }
 .ol-count { padding: 0.05rem 0.55rem; border-radius: 999px; background: #eef0f4; color: #4b5563; font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ol-tools { display: flex; align-items: center; gap: 0.5rem; }
@@ -130,49 +131,30 @@
 .ol-filters { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
 .course-container .ol-filters select { width: auto; flex: 0 0 auto; margin: 0; height: 2rem; min-width: 8.5rem; max-width: 14rem; padding: 0 0.6rem; border: 1px solid #d5d8de; border-radius: 0.55rem; background-color: #fff; font: inherit; font-size: 0.82rem; color: #374151; }
 .course-container .ol-filters select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12); }
-.ol-group { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.35rem; padding-left: 0.65rem; border-left: 1px solid #e3e6eb; }
-.ol-group > span { margin-right: 0.15rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8a919c; }
-.course-container .ol-chip { height: 1.75rem; padding: 0 0.65rem; border: 1px solid #d5d8de; border-radius: 999px; background: #fff; color: #6b7280; font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
-.course-container .ol-chip:hover { background: #f6f7f9; }
-.course-container .ol-chip.is-on { border-color: #efc9ca; background: #fdf3f3; color: var(--primary-color); }
-.ol-chip:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
 
 .ol-empty { margin: 0; padding: 1.75rem 1.1rem; text-align: center; font-size: 0.9rem; color: var(--cr-muted); }
-.ol-groups { display: block; }
-.og + .og { border-top: 1px solid #eef0f3; }
-.og > summary.og-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem 1.1rem; background: #f8f9fb; cursor: pointer; list-style: none; }
-.og > summary.og-head::-webkit-details-marker { display: none; }
-.og-title { display: inline-flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; min-width: 0; }
-.og-title::before { content: "▸"; color: var(--primary-color); font-size: 0.7rem; transition: transform 0.15s; }
-.og[open] .og-title::before { transform: rotate(90deg); }
-.og-crumbs { font-size: 0.8rem; font-weight: 600; color: #4b5563; }
-.og-sem { padding: 0.1rem 0.55rem; border-radius: 999px; background: #fff; border: 1px solid #e3e6eb; font-size: 0.74rem; font-weight: 700; color: var(--cr-ink); }
-.og-count { flex: none; min-width: 1.4rem; padding: 0 0.45rem; border-radius: 999px; background: #eceef2; color: #4b5563; font-size: 0.72rem; font-weight: 700; line-height: 1.3rem; text-align: center; font-variant-numeric: tabular-nums; }
-.og > summary:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
-.og-scroll { overflow-x: auto; }
-.og-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.86rem; color: #1f2937; background: transparent; margin: 0; }
-.og-table th, .og-table td { border-top: 0; border-left: 0; border-right: 0; background: transparent; text-align: left; }
-.og-table th:nth-child(1), .og-table td:nth-child(1) { width: auto; }
-.og-table .num { width: 5.5rem; }
-.og-table th.col-wide, .og-table td.col-wide { width: 14rem; }
-.og-table th.col-status, .og-table td.col-status { width: 7.5rem; }
-.og-table td:nth-child(1) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.og-table th { padding: 0.4rem 1.1rem; text-align: left; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8a919c; border-bottom: 1px solid #f0f1f4; white-space: nowrap; }
-.og-table td { padding: 0.42rem 1.1rem; border-bottom: 1px solid #f3f4f7; vertical-align: middle; }
-.og-table tbody tr:last-child td { border-bottom: 0; }
-.og-table tbody tr:hover { background: #fafbfc; }
-.og-table th.num, .og-table td.num { text-align: right; font-variant-numeric: tabular-nums; color: #4b5563; }
-.og-table tr.is-off .of-code, .og-table tr.is-off .of-name { color: #9aa1ad; }
-.og-status { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 600; color: #4b5563; white-space: nowrap; }
-.og-status::before { content: ""; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #cfd4dc; }
-.og-status.on::before { background: #2f9e5c; }
-.og-status.off { color: #9aa1ad; }
-.og-table th.og-act, .og-table td.og-act { width: 3rem; text-align: right; }
-.course-container .og-edit { display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 0; border-radius: 0.5rem; background: transparent; color: #6b7280; cursor: pointer; }
-.course-container .og-edit:hover { background: #eef4ff; color: #2b4bb0; }
-.og-edit:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
-.of-code { display: inline-block; min-width: 4.2rem; font-weight: 700; color: var(--cr-ink); letter-spacing: 0.01em; }
-.of-name { color: #374151; }
+/* The term as a plan: a block per program, a column per semester, each course one line with its credit hours. */
+.sp-list { display: grid; gap: 1.5rem; padding: 1rem 1.1rem 1.25rem; }
+.sp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin: 0 0 0.7rem; }
+.sp-head h4 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--cr-ink); }
+.sp-head h4 span { margin-left: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--cr-muted); }
+.sp-head small { font-size: 0.8rem; font-weight: 600; color: #4b5563; font-variant-numeric: tabular-nums; }
+.sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.75rem; align-items: start; }
+.sp-col { background: #fff; border: 1px solid var(--cr-line); border-radius: 0.75rem; overflow: hidden; }
+.sp-col-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.8rem; background: #f8f9fb; border-bottom: 1px solid #eef0f3; }
+.sp-col-head strong { font-size: 0.84rem; font-weight: 700; color: var(--cr-ink); }
+.sp-col-head span { font-size: 0.74rem; font-weight: 600; color: #6b7280; font-variant-numeric: tabular-nums; }
+.sp-col ul { list-style: none; margin: 0; padding: 0.2rem 0; }
+.sp-col li + li { border-top: 1px solid #f3f4f7; }
+.course-container .sp-course { display: grid; grid-template-columns: 3.7rem minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; width: 100%; padding: 0.42rem 0.8rem; border: 0; background: none; text-align: left; font: inherit; font-size: 0.84rem; line-height: 1.35; color: #374151; cursor: pointer; }
+.course-container .sp-course:hover { background: #fafbfc; }
+.course-container .sp-course:hover .sp-code { color: var(--primary-color); }
+.sp-course:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
+.sp-code { font-weight: 700; color: var(--cr-ink); letter-spacing: 0.01em; }
+.sp-name { min-width: 0; overflow-wrap: anywhere; }
+.sp-cr { min-width: 1.5rem; padding: 0 0.35rem; border-radius: 0.4rem; background: #f1f3f6; color: #374151; font-size: 0.74rem; font-weight: 700; line-height: 1.35rem; text-align: center; font-variant-numeric: tabular-nums; }
+.sp-course.is-off .sp-code, .sp-course.is-off .sp-name { color: #a3a9b3; }
+.sp-course.is-off .sp-cr { background: transparent; border: 1px dashed #d5d8de; color: #a3a9b3; }
 
 /* ---------- All courses ---------- */
 .course-container .manage-courses-section { border: 1px solid var(--cr-line); border-radius: 0.9rem; background: #fff; box-shadow: var(--cr-card); }

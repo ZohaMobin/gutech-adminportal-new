@@ -43,37 +43,45 @@ beforeEach(async () => {
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); sessionStorage.clear(); jest.clearAllMocks(); });
 
-test("offerings are grouped under their department, program and semester, with the semester as a tag and a count", () => {
-  const heads = [...container.querySelectorAll(".og-head")].map((h) => h.textContent.replace(/\s+/g, " ").trim());
-  expect(heads).toEqual(["Computer Science · BS Computer ScienceSemester 12", "Computer Science · BS Computer SciencePre-semester1"]);
+test("the term reads as a plan: a column per semester, Pre-semester first, with the semester's credit total", () => {
+  const heads = [...container.querySelectorAll(".sp-col-head")].map((h) => h.textContent);
+  expect(heads).toEqual(["Pre-semester0 credits", "Semester 14 credits"]);
   expect(container.querySelector(".ol-count").textContent).toBe("3");
+  expect(container.querySelector(".sp-head").textContent).toMatch(/BS Computer Science.*Computer Science.*3 courses · 4 credits/);
 });
 
-test("the rows are compact: course code and name, credits and status, with no term column (the term is already chosen above)", () => {
-  const headers = [...container.querySelectorAll(".og-table")[0].querySelectorAll("th")].map((h) => h.textContent);
-  expect(headers).toEqual(["Course", "Credits", "Status", ""]);
-  const row = container.querySelector(".og-table tbody tr");
-  expect(row.textContent).toMatch(/CS101.*Programming.*3.*Active/);
-  expect(container.querySelector(".og-table tr.is-off").textContent).toMatch(/GE201.*Inactive/);
+test("each course is one line: code, name and credit hours, with no status column", () => {
+  const lines = [...container.querySelectorAll(".sp-course")].map((b) => b.textContent);
+  expect(lines).toEqual(["GE201Applied Physics2", "CL101Programming Lab1", "CS101Programming3"]);
+  expect(container.textContent).not.toMatch(/Active|Status/);
 });
 
-test("turning a grouping off moves that detail into a column", async () => {
-  await click(chip("Semester"));
-  expect(container.querySelectorAll(".og").length).toBe(1);
-  const headers = [...container.querySelector(".og-table").querySelectorAll("th")].map((h) => h.textContent);
-  expect(headers).toEqual(["Course", "Credits", "Semester", "Status", ""]);
-  expect(container.querySelector(".og-table").textContent).toMatch(/Pre-semester/);
-  expect(chip("Semester").getAttribute("aria-pressed")).toBe("false");
+test("an inactive offering stays visible but muted, and its credits are not counted", () => {
+  const off = container.querySelector(".sp-course.is-off");
+  expect(off.textContent).toMatch(/GE201/);
+  expect(off.getAttribute("aria-label")).toMatch(/inactive/);
+  expect(container.querySelector(".sp-col-head").textContent).toBe("Pre-semester0 credits");
 });
 
-test("search narrows the list and says how many of the total are shown", async () => {
+test("choosing a course opens it for editing", async () => {
+  await click(container.querySelector(".sp-course"));
+  expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+});
+
+test("search narrows the plan and says how many of the total are shown", async () => {
   const box = container.querySelector(".ol-search");
   await act(async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(box, "lab");
     box.dispatchEvent(new Event("input", { bubbles: true }));
   });
-  expect(container.querySelectorAll(".og-table tbody tr").length).toBe(1);
+  expect(container.querySelectorAll(".sp-course").length).toBe(1);
+  expect(container.querySelectorAll(".sp-col").length).toBe(1);
   expect(container.querySelector(".ol-count").textContent).toBe("1 of 3");
+});
+
+test("with a single program there is no program filter to clutter the bar", () => {
+  expect(container.querySelector('.ol-filters select[aria-label="Program"]')).toBeNull();
+  expect(container.querySelector(".ol-chip")).toBeNull();
 });
 
 test("the risky 'deactivate the whole term' action lives in the ⋯ menu, not on the page", async () => {
