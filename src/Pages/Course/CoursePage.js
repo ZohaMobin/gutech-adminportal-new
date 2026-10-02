@@ -48,15 +48,8 @@ const CoursePage = () => {
   const [busyCourseId, setBusyCourseId] = useState(null);    // the course whose status is being changed or that is being deleted
   const [deactivating, setDeactivating] = useState(false);   // "Deactivate Year Offerings"
   const [activeTab, setActiveTab] = useState('create'); // 'create', 'offerings', 'assignments', 'manage'
-  const [groupByOptions, setGroupByOptions] = useState({
-    department: true,
-    program: true,
-    semester: true
-  });
-  // Filters for the offerings list and for the course list: everything is shown until a filter is chosen.
-  const [offeringDepartment, setOfferingDepartment] = useState("");
+  // Filters for the offerings board and for the course list: everything is shown until a filter is chosen.
   const [offeringProgram, setOfferingProgram] = useState("");
-  const [offeringSemester, setOfferingSemester] = useState("");
   const [offeringQuery, setOfferingQuery] = useState("");
   const [courseDepartment, setCourseDepartment] = useState("");
   const [coursePage, setCoursePage] = useState(0);
@@ -346,13 +339,6 @@ const CoursePage = () => {
     }
   };
 
-  const handleGroupByChange = (option) => {
-    setGroupByOptions(prev => ({
-      ...prev,
-      [option]: !prev[option]
-    }));
-  };
-
   const getAcademicYearLabel = (offering) => {
     if (offering.academicYearId && typeof offering.academicYearId === 'object') {
       return offering.academicYearId.displayName || `${offering.academicYearId.semesterType} ${offering.academicYearId.year}`;
@@ -425,59 +411,45 @@ const CoursePage = () => {
 
   const idOfRef = (value) => String(value?._id ?? value ?? '');
   const filteredOfferings = visibleCourseOfferings.filter((offering) => {
-    if (offeringDepartment && idOfRef(offering.department) !== offeringDepartment) return false;
     if (offeringProgram && idOfRef(offering.program) !== offeringProgram) return false;
-    if (offeringSemester !== '' && Number(offering.semester) !== Number(offeringSemester)) return false;
     const needle = offeringQuery.trim().toLowerCase();
     return !needle || `${offering.courseId?.code || ''} ${offering.courseId?.name || ''}`.toLowerCase().includes(needle);
   });
-  const offeringDepartmentOptions = [...new Map(visibleCourseOfferings.filter((o) => o.department?._id).map((o) => [o.department._id, o.department.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  const offeringProgramOptions = [...new Map(visibleCourseOfferings.filter((o) => o.program?._id && (!offeringDepartment || idOfRef(o.department) === offeringDepartment)).map((o) => [o.program._id, o.program.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  const offeringSemesterOptions = [...new Set(visibleCourseOfferings.map((o) => Number(o.semester)))].sort((a, b) => a - b);
+  const offeringProgramOptions = [...new Map(visibleCourseOfferings.filter((o) => o.program?._id).map((o) => [o.program._id, o.program.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
 
-  // Group course offerings by selected criteria
-  const groupOfferings = () => {
-    const offeringsToGroup = filteredOfferings;
-
-    // If no grouping options are selected, return a single group
-    if (!Object.values(groupByOptions).some(value => value)) {
-      return { "All Offerings": offeringsToGroup };
+  // The term's offerings as a plan: one block per program, one column per semester (Pre-semester first), each listing
+  // its courses with credit hours and a credit total. Inactive offerings stay visible but muted and don't count.
+  const offeringPlan = () => {
+    const programsById = new Map();
+    for (const offering of filteredOfferings) {
+      const programId = idOfRef(offering.program) || 'none';
+      if (!programsById.has(programId)) {
+        programsById.set(programId, {
+          id: programId,
+          name: (typeof offering.program === 'object' ? offering.program?.name : null) || 'Program not set',
+          department: (typeof offering.department === 'object' ? offering.department?.name : null) || '',
+          semesters: new Map(),
+        });
+      }
+      const plan = programsById.get(programId);
+      const semester = Number(offering.semester) || 0;
+      if (!plan.semesters.has(semester)) plan.semesters.set(semester, []);
+      plan.semesters.get(semester).push(offering);
     }
-
-    const grouped = {};
-    
-    offeringsToGroup.forEach(offering => {
-      // Create a composite key based on selected grouping options
-      const keyParts = [];
-      
-      if (groupByOptions.department) {
-        const deptName = typeof offering.department === 'object' 
-          ? offering.department.name 
-          : (offering.department || 'Unassigned Department');
-        keyParts.push(deptName);
-      }
-      
-      if (groupByOptions.program) {
-        const progName = typeof offering.program === 'object' 
-          ? offering.program.name 
-          : (offering.program || 'Unassigned Program');
-        keyParts.push(progName);
-      }
-      
-      if (groupByOptions.semester) {
-        keyParts.push(semesterLabel(offering.semester));
-      }
-      
-      const key = keyParts.join(' - ');
-      
-      if (!grouped[key]) {
-        grouped[key] = [];
-      }
-      
-      grouped[key].push(offering);
-    });
-    
-    return grouped;
+    const creditsOf = (list) => list.filter((o) => o.isActive).reduce((sum, o) => sum + (Number(o.courseId?.creditHours) || 0), 0);
+    return [...programsById.values()]
+      .sort((x, y) => x.name.localeCompare(y.name))
+      .map((plan) => {
+        const semesters = [...plan.semesters.entries()]
+          .sort(([x], [y]) => x - y)
+          .map(([semester, list]) => ({
+            semester,
+            courses: [...list].sort((x, y) => String(x.courseId?.code || '').localeCompare(String(y.courseId?.code || ''), undefined, { numeric: true })),
+            credits: creditsOf(list),
+          }));
+        const all = semesters.flatMap((sem) => sem.courses);
+        return { ...plan, semesters, courseCount: all.length, credits: creditsOf(all) };
+      });
   };
 
   // Render a table for a specific group of offerings
@@ -503,58 +475,44 @@ const CoursePage = () => {
     }
   };
 
-  const renderOfferingsTable = (groupName, offerings) => {
-    const first = offerings[0];
-    const nameOf = (value, fallback) => (typeof value === 'object' ? value?.name : value) || fallback;
-    const crumbs = [];
-    if (groupByOptions.department) crumbs.push(nameOf(first.department, 'Unassigned department'));
-    if (groupByOptions.program) crumbs.push(nameOf(first.program, 'Unassigned program'));
-    const semesterChip = groupByOptions.semester ? semesterLabel(first.semester) : null;
-    return (
-      <details className="og" key={groupName} open={filteredOfferings.length <= 40}>
-        <summary className="og-head">
-          <span className="og-title">
-            {crumbs.length > 0 && <span className="og-crumbs">{crumbs.join(' · ')}</span>}
-            {semesterChip && <span className="og-sem">{semesterChip}</span>}
-            {crumbs.length === 0 && !semesterChip && <span className="og-crumbs">All offerings</span>}
-          </span>
-          <span className="og-count" aria-label={`${offerings.length} offerings`}>{offerings.length}</span>
-        </summary>
-        <div className="og-scroll">
-          <table className="og-table">
-            <thead>
-              <tr>
-                <th>Course</th>
-                <th className="num">Credits</th>
-                {!groupByOptions.department && <th className="col-wide">Department</th>}
-                {!groupByOptions.program && <th className="col-wide">Program</th>}
-                {!groupByOptions.semester && <th className="col-status">Semester</th>}
-                <th className="col-status">Status</th>
-                <th className="og-act" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {offerings.map((offering) => (
-                <tr key={offering._id} className={offering.isActive ? '' : 'is-off'}>
-                  <td><span className="of-code">{offering.courseId?.code}</span><span className="of-name">{offering.courseId?.name}</span></td>
-                  <td className="num">{offering.courseId?.creditHours ?? '–'}</td>
-                  {!groupByOptions.department && <td className="col-wide">{nameOf(offering.department, '–')}</td>}
-                  {!groupByOptions.program && <td className="col-wide">{nameOf(offering.program, '–')}</td>}
-                  {!groupByOptions.semester && <td className="col-status">{semesterLabel(offering.semester)}</td>}
-                  <td className="col-status"><span className={`og-status ${offering.isActive ? 'on' : 'off'}`}>{offering.isActive ? 'Active' : 'Inactive'}</span></td>
-                  <td className="og-act">
-                    <button type="button" className="og-edit" onClick={() => setEditingOffering(offering)} title="Edit offering" aria-label={`Edit ${offering.courseId?.code || ''} offering`}>
-                      <FiEdit2 />
-                    </button>
-                  </td>
-                </tr>
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const renderSemesterPlan = (plan, showProgramHeading) => (
+    <section className="sp" key={plan.id} aria-label={plan.name}>
+      {showProgramHeading && (
+        <header className="sp-head">
+          <h4>{plan.name}{plan.department && <span>{plan.department}</span>}</h4>
+          <small>{plural(plan.courseCount, 'course')} · {plural(plan.credits, 'credit')}</small>
+        </header>
+      )}
+      <div className="sp-grid">
+        {plan.semesters.map(({ semester, courses: list, credits }) => (
+          <article className="sp-col" key={semester} aria-label={semesterLabel(semester)}>
+            <header className="sp-col-head">
+              <strong>{semesterLabel(semester)}</strong>
+              <span>{plural(credits, 'credit')}</span>
+            </header>
+            <ul>
+              {list.map((offering) => (
+                <li key={offering._id}>
+                  <button
+                    type="button"
+                    className={`sp-course ${offering.isActive ? '' : 'is-off'}`}
+                    onClick={() => setEditingOffering(offering)}
+                    title={offering.isActive ? 'Edit this offering' : 'Inactive. Edit this offering'}
+                    aria-label={`${offering.courseId?.code || ''} ${offering.courseId?.name || ''}, ${offering.courseId?.creditHours ?? 0} credits${offering.isActive ? '' : ', inactive'}. Edit`}
+                  >
+                    <span className="sp-code">{offering.courseId?.code}</span>
+                    <span className="sp-name">{offering.courseId?.name}</span>
+                    <span className="sp-cr">{offering.courseId?.creditHours ?? '–'}</span>
+                  </button>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-    );
-  };
+            </ul>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -1059,8 +1017,25 @@ const CoursePage = () => {
           <section className="ol" aria-labelledby="ol-title">
             <header className="ol-head">
               <div className="ol-titlebar">
-                <h3 id="ol-title">Course offerings</h3>
+                <h3 id="ol-title">Offered this term</h3>
                 <span className="ol-count">{filteredOfferings.length === visibleCourseOfferings.length ? `${visibleCourseOfferings.length}` : `${filteredOfferings.length} of ${visibleCourseOfferings.length}`}</span>
+              {academicYearTabs.length > 0 && (
+                  <div className="ol-terms" role="tablist" aria-label="Academic term">
+                    {academicYearTabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedOfferingAcademicYear === tab.key}
+                        className={`ol-term ${selectedOfferingAcademicYear === tab.key ? 'is-on' : ''}`}
+                        onClick={() => setSelectedOfferingAcademicYear(tab.key)}
+                      >
+                        {tab.label}
+                        {tab.isCurrent && <em>Current</em>}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="ol-tools">
                 {visibleCourseOfferings.length > 0 && (
@@ -1085,47 +1060,14 @@ const CoursePage = () => {
               </div>
             </header>
 
-            {(academicYearTabs.length > 0 || visibleCourseOfferings.length > 0) && (
+            {offeringProgramOptions.length > 1 && (
               <div className="ol-bar">
-                {academicYearTabs.length > 0 && (
-                  <div className="ol-terms" role="tablist" aria-label="Academic term">
-                    {academicYearTabs.map((tab) => (
-                      <button
-                        key={tab.key}
-                        type="button"
-                        role="tab"
-                        aria-selected={selectedOfferingAcademicYear === tab.key}
-                        className={`ol-term ${selectedOfferingAcademicYear === tab.key ? 'is-on' : ''}`}
-                        onClick={() => setSelectedOfferingAcademicYear(tab.key)}
-                      >
-                        {tab.label}
-                        {tab.isCurrent && <em>Current</em>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {visibleCourseOfferings.length > 0 && (
-                  <div className="ol-filters" role="group" aria-label="Filter and group the offerings">
-                    <select value={offeringDepartment} onChange={(e) => { setOfferingDepartment(e.target.value); setOfferingProgram(''); }} aria-label="Department">
-                      <option value="">All departments</option>
-                      {offeringDepartmentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-                    </select>
-                    <select value={offeringProgram} onChange={(e) => setOfferingProgram(e.target.value)} aria-label="Program">
-                      <option value="">All programs</option>
-                      {offeringProgramOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-                    </select>
-                    <select value={offeringSemester} onChange={(e) => setOfferingSemester(e.target.value)} aria-label="Semester">
-                      <option value="">All semesters</option>
-                      {offeringSemesterOptions.map((n) => <option key={n} value={n}>{semesterLabel(n)}</option>)}
-                    </select>
-                    <div className="ol-group" role="group" aria-label="Group by">
-                      <span>Group</span>
-                      {[['department', 'Department'], ['program', 'Program'], ['semester', 'Semester']].map(([key, label]) => (
-                        <button key={key} type="button" className={`ol-chip ${groupByOptions[key] ? 'is-on' : ''}`} aria-pressed={groupByOptions[key]} onClick={() => handleGroupByChange(key)}>{label}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="ol-filters">
+                  <select value={offeringProgram} onChange={(e) => setOfferingProgram(e.target.value)} aria-label="Program">
+                    <option value="">All programs</option>
+                    {offeringProgramOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -1135,11 +1077,11 @@ const CoursePage = () => {
               ) : visibleCourseOfferings.length === 0 ? (
                 <p className="ol-empty">Nothing is offered {academicYearTabs.length ? 'in this term' : 'yet'}. Use the form above to offer the first course.</p>
               ) : filteredOfferings.length === 0 ? (
-                <p className="ol-empty">No offering matches those filters.</p>
+                <p className="ol-empty">No course matches that.</p>
               ) : (
                 <Refreshing active={refreshing}>
-                  <div className="ol-groups">
-                    {Object.entries(groupOfferings()).map(([groupName, offerings]) => renderOfferingsTable(groupName, offerings))}
+                  <div className="sp-list">
+                    {(() => { const plans = offeringPlan(); return plans.map((plan) => renderSemesterPlan(plan, plans.length > 1 || !offeringProgram)); })()}
                   </div>
                 </Refreshing>
               )}
