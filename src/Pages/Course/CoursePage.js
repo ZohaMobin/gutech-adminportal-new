@@ -8,6 +8,7 @@ import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "r
 import Loading, { BusyLabel, Refreshing, Spinner } from '../../Components/Loading/Loading';
 import NoResultsFound from '../../Components/NoResultsFound';
 import OfferingEditModal from './OfferingEditModal';
+import CourseSetupSteps from './CourseSetupSteps';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import { ConfirmModal } from '../Administrators/AdminModals';
 
@@ -57,12 +58,12 @@ const CoursePage = () => {
   const [offeringQuery, setOfferingQuery] = useState("");
   const [courseDepartment, setCourseDepartment] = useState("");
   const [coursePage, setCoursePage] = useState(0);
-  const [showCreateHelp, setShowCreateHelp] = useState(true);
-  const [showOfferingsHelp, setShowOfferingsHelp] = useState(true);
+  // What was just done, so the next step can pick up from it: { code, name, id } after creating a course, { course, term } after offering one.
+  const [justCreated, setJustCreated] = useState(null);
+  const [justOffered, setJustOffered] = useState(null);
   const [editingOffering, setEditingOffering] = useState(null);
   const [savingOffering, setSavingOffering] = useState(false);
   const [offeringEditError, setOfferingEditError] = useState('');
-  const [showManageHelp, setShowManageHelp] = useState(true);
   // One confirmation at a time: { kind: "delete" | "restore" | "deactivate-offerings", ... } (never window.confirm).
   const [confirm, setConfirm] = useState(null);
   const [confirming, setConfirming] = useState(false);
@@ -265,7 +266,7 @@ const CoursePage = () => {
         setMessage({ text: "Course updated successfully!", type: "success" });
       } else {
         // Create new course
-        await axios.post(
+        const created = await axios.post(
         `${apiUrl}/api/courses`,
         course,
         {
@@ -274,7 +275,8 @@ const CoursePage = () => {
           }
         }
       );
-      setMessage({ text: "Course created successfully!", type: "success" });
+      setMessage({ text: "", type: "" });
+      setJustCreated({ id: created?.data?._id, code: course.code, name: course.name });
       }
 
       setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
@@ -310,6 +312,12 @@ const CoursePage = () => {
         }
       );
       setCourseOfferings([...courseOfferings, response.data]);
+      const offeredCourse = courses.find((c) => c._id === courseOffering.courseId);
+      const offeredTerm = academicYears.find((ay) => ay._id === courseOffering.academicYearId);
+      setJustOffered({
+        course: offeredCourse ? `${offeredCourse.code} ${offeredCourse.name}` : "The course",
+        term: offeredTerm ? (offeredTerm.displayName || `${offeredTerm.semesterType} ${offeredTerm.year}`) : "",
+      });
       setCourseOffering({
         courseId: "",
         department: "",
@@ -622,45 +630,33 @@ const CoursePage = () => {
 
   return (
     <div className="course-container page-shell">
-      <PageHeader title="Courses" subtitle="Create courses, offer them to programs and semesters, and assign teachers." />
-      <div className="pk-tabs" role="tablist">
-        <button 
-          role="tab" aria-selected={activeTab === 'create'} className={`pk-tab ${activeTab === 'create' ? 'is-on' : ''}`}
-          onClick={() => {
-            setActiveTab('create');
-            setEditingCourse(null);
-          }}
-        >
-          Create Course
-        </button>
-        <button 
-          role="tab" aria-selected={activeTab === 'manage'} className={`pk-tab ${activeTab === 'manage' ? 'is-on' : ''}`} 
-          onClick={() => setActiveTab('manage')}
-        >
-          Manage Courses
-        </button>
-        <button 
-          role="tab" aria-selected={activeTab === 'offerings'} className={`pk-tab ${activeTab === 'offerings' ? 'is-on' : ''}`}
-          onClick={() => setActiveTab('offerings')}
-        >
-          Course Offerings
-        </button>
-        <button 
-          role="tab" aria-selected={activeTab === 'assignments'} className={`pk-tab ${activeTab === 'assignments' ? 'is-on' : ''}`}
-          onClick={() => setActiveTab('assignments')}
-        >
-          Teacher Assignments
-        </button>
-      </div>
+      <PageHeader title="Courses" subtitle="Set up a course in three steps: create it, offer it for a term, then assign a teacher." />
+      <CourseSetupSteps
+        active={activeTab}
+        counts={{ create: courses.length, offerings: courseOfferings.length }}
+        onSelect={(tab) => {
+          setActiveTab(tab);
+          if (tab === 'create') setEditingCourse(null);
+        }}
+      />
 
       {message.text && <p className={`message ${message.type}`}>{message.text}</p>}
 
       {activeTab === 'create' && (
         <>
-          {showCreateHelp && (
-            <div className="course-important-note">
-              <p>Create Course: Add new courses to the system. After creating, register it as a course offering, then assign to students, then teachers.</p>
-              <button className="course-close-note-btn" onClick={() => setShowCreateHelp(false)}>×</button>
+          {justCreated ? (
+            <div className="cintro is-done" role="status">
+              <p><strong>{justCreated.code} {justCreated.name}</strong> was created. Next, offer it for a term so it can be taught.</p>
+              <button type="button" className="cintro-btn" onClick={() => {
+                if (justCreated.id) setCourseOffering((current) => ({ ...current, courseId: justCreated.id }));
+                setJustCreated(null);
+                setActiveTab('offerings');
+              }}>Offer {justCreated.code} for a term →</button>
+            </div>
+          ) : !editingCourse && (
+            <div className="cintro">
+              <p>Add each course once. Not sure whether it already exists? Check <strong>All courses</strong> first, and if it does, go straight to step 2.</p>
+              <button type="button" className="cintro-link" onClick={() => setActiveTab('manage')}>Check existing courses</button>
             </div>
           )}
           <div className="course-form">
@@ -744,12 +740,10 @@ const CoursePage = () => {
 
       {activeTab === 'manage' && (
         <>
-          {showManageHelp && (
-            <div className="course-important-note">
-              <p>Manage Courses: View, edit, or delete existing courses. Use filters to find specific courses.</p>
-              <button className="course-close-note-btn" onClick={() => setShowManageHelp(false)}>×</button>
-            </div>
-          )}
+          <div className="cintro">
+            <p>Every course in the system. Edit or delete one here, or find a course before you offer it. A course that doesn't exist yet needs creating first.</p>
+            <button type="button" className="cintro-link" onClick={() => { setEditingCourse(null); setActiveTab('create'); }}>Create a new course</button>
+          </div>
           
           <div className="manage-courses-section">
             <div className="filters-container">
@@ -890,10 +884,14 @@ const CoursePage = () => {
               onClose={closeOfferingEditor}
             />
           )}
-          {showOfferingsHelp && (
-            <div className="course-important-note">
-              <p>Course Offerings: Schedule courses for specific semesters. Select department and program to create offerings.</p>
-              <button className="course-close-note-btn" onClick={() => setShowOfferingsHelp(false)}>×</button>
+          {justOffered ? (
+            <div className="cintro is-done" role="status">
+              <p><strong>{justOffered.course}</strong> is now offered{justOffered.term ? ` in ${justOffered.term}` : ""}. Next, give each of its sections a teacher.</p>
+              <button type="button" className="cintro-btn" onClick={() => { setJustOffered(null); setActiveTab('assignments'); }}>Assign a teacher →</button>
+            </div>
+          ) : (
+            <div className="cintro">
+              <p>An offering says which <strong>program</strong> and <strong>semester</strong> a course belongs to, and which <strong>academic term</strong> it is taught in. Pick the course first, then where and when. The course must exist already, so create it in step 1 if it doesn't.</p>
             </div>
           )}
         <div className="offerings-section">
@@ -960,22 +958,24 @@ const CoursePage = () => {
                   ));
                 })()}
               </select>
+              <small className="field-hint">Which semester of the program the course sits in. Use Semester 0 if it isn't tied to one.</small>
             </div>
             <div>
-              <label>Academic Year *</label>
+              <label>Academic term *</label>
               <select
                 name="academicYearId"
                 value={courseOffering.academicYearId}
                 onChange={handleOfferingChange}
                 required
               >
-                <option value="">Select Academic Year</option>
+                <option value="">Select Academic Term</option>
                 {academicYears.map(ay => (
                   <option key={ay._id} value={ay._id}>
                     {ay.displayName || `${ay.semesterType} ${ay.year}`} {ay.isCurrent ? '(Current)' : ''}
                   </option>
                 ))}
               </select>
+              <small className="field-hint">When it will be taught. A term that isn't listed is added under Academic Years.</small>
               {academicYears.length === 0 && (
                 <small style={{ color: '#dc3545', display: 'block', marginTop: '4px' }}>
                   No academic years available. Please create one in Academic Years page.
@@ -1089,7 +1089,13 @@ const CoursePage = () => {
       )}
 
       {activeTab === 'assignments' && (
+        <>
+          <div className="cintro">
+            <p>The courses offered for the current term are listed below. Choose one, add its sections if it has none (for example A26-F), and choose who teaches each. Don't see your course? Offer it for the term in step 2 first.</p>
+            <button type="button" className="cintro-link" onClick={() => setActiveTab('offerings')}>Go to step 2</button>
+          </div>
           <TeacherAssignmentPage />
+        </>
       )}
       {confirmDialog}
     </div>
