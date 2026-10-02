@@ -12,6 +12,7 @@ import EligibilityPreview from "./EligibilityPreview";
 import EnrollmentHistory from "./EnrollmentHistory";
 import { parseStudentSheet, ISSUES } from "./parseStudentSheet";
 import "./CourseRegistrationPage.css";
+import { semesterLabel } from "../../utils/semester";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const idOf = (value) => String(value?._id ?? value ?? "");
@@ -292,7 +293,7 @@ const CourseRegistrationPage = () => {
           <label><span>Semester</span>
             <select value={semester} onChange={(e) => { setSemester(e.target.value); setSelectedCourseId(""); clearNotices(); }} disabled={!program || availableSemesters.length === 0}>
               <option value="">{program && availableSemesters.length === 0 ? "No semesters" : "Select semester"}</option>
-              {availableSemesters.map((s) => <option key={s} value={s}>Semester {s}</option>)}
+              {availableSemesters.map((s) => <option key={s} value={s}>{semesterLabel(s)}</option>)}
             </select>
           </label>
         </div>

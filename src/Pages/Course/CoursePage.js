@@ -9,6 +9,7 @@ import Loading, { BusyLabel, Refreshing, Spinner } from '../../Components/Loadin
 import NoResultsFound from '../../Components/NoResultsFound';
 import OfferingEditModal from './OfferingEditModal';
 import CourseSetupSteps from './CourseSetupSteps';
+import { semesterLabel } from '../../utils/semester';
 import './CourseRefresh.css';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import { ConfirmModal } from '../Administrators/AdminModals';
@@ -453,7 +454,7 @@ const CoursePage = () => {
       }
       
       if (groupByOptions.semester) {
-        keyParts.push(`Semester ${offering.semester}`);
+        keyParts.push(semesterLabel(offering.semester));
       }
       
       const key = keyParts.join(' - ');
@@ -513,7 +514,7 @@ const CoursePage = () => {
                 <td><span className="of-code">{offering.courseId?.code}</span> <span className="of-name">{offering.courseId?.name}</span></td>
                 {!groupByOptions.department && <td>{typeof offering.department === 'object' ? offering.department.name : offering.department}</td>}
                 {!groupByOptions.program && <td>{typeof offering.program === 'object' ? offering.program.name : offering.program}</td>}
-                {!groupByOptions.semester && <td>{offering.semester}</td>}
+                {!groupByOptions.semester && <td>{semesterLabel(offering.semester)}</td>}
                 <td>
                   {offering.academicYearId && typeof offering.academicYearId === 'object'
                     ? offering.academicYearId.displayName || `${offering.academicYearId.semesterType} ${offering.academicYearId.year}`
@@ -681,17 +682,17 @@ const CoursePage = () => {
       <div className="cr-panel-head"><h3>Summary</h3></div>
       <ul className="cr-sum">
         <li className={offerDraft.course ? 'is-done' : ''}><i aria-hidden="true" /><span>Course</span><strong>{offerDraft.course ? `${offerDraft.course.code} ${offerDraft.course.name}` : 'Not chosen yet'}</strong></li>
-        <li className={draftDepartment && offerDraft.program ? 'is-done' : ''}><i aria-hidden="true" /><span>Belongs to</span><strong>{draftDepartment && offerDraft.program ? `${offerDraft.program.name} · ${Number(courseOffering.semester) === 0 ? 'No semester' : `Semester ${courseOffering.semester}`}` : 'Not chosen yet'}</strong></li>
+        <li className={draftDepartment && offerDraft.program ? 'is-done' : ''}><i aria-hidden="true" /><span>Belongs to</span><strong>{draftDepartment && offerDraft.program ? `${offerDraft.program.name} · ${semesterLabel(courseOffering.semester)}` : 'Not chosen yet'}</strong></li>
         <li className={offerDraft.termLabel ? 'is-done' : ''}><i aria-hidden="true" /><span>Term</span><strong>{offerDraft.termLabel || 'Not chosen yet'}</strong></li>
       </ul>
-      {alreadyOffered && <p className="of-warn">This exact offering already exists: {offerDraft.termLabel}, {offerDraft.program.name}, {Number(courseOffering.semester) === 0 ? 'no semester' : `Semester ${courseOffering.semester}`}.</p>}
+      {alreadyOffered && <p className="of-warn">This exact offering already exists: {offerDraft.termLabel}, {offerDraft.program.name}, {semesterLabel(courseOffering.semester)}.</p>}
       <button className="pk-btn pk-btn-primary cr-submit" type="submit" form="offering-form" disabled={!offerDraft.complete}>Create offering</button>
       {courseOfferingsOfDraft.length > 0 && (
         <div className="cr-already">
           <h4>{offerDraft.course.code} is already offered</h4>
           <ul>
             {courseOfferingsOfDraft.slice(0, 6).map((o) => (
-              <li key={o._id}>{getAcademicYearLabel(o)} · {typeof o.program === 'object' ? o.program?.name : 'Program'} · {Number(o.semester) === 0 ? 'No semester' : `Semester ${o.semester}`}</li>
+              <li key={o._id}>{getAcademicYearLabel(o)} · {typeof o.program === 'object' ? o.program?.name : 'Program'} · {semesterLabel(o.semester)}</li>
             ))}
           </ul>
         </div>
@@ -996,7 +997,7 @@ const CoursePage = () => {
                       const program = getProgramById(courseOffering.program);
                       const maxSemesters = program?.typicalDuration || 8;
                       return Array.from({ length: maxSemesters + 1 }, (_, i) => (
-                        <option key={i} value={i}>{i === 0 ? 'No semester (0)' : `Semester ${i}`}</option>
+                        <option key={i} value={i}>{i === 0 ? 'Pre-semester (0)' : semesterLabel(i)}</option>
                       ));
                     })()}
                   </select>
@@ -1091,7 +1092,7 @@ const CoursePage = () => {
                 </select>
                 <select value={offeringSemester} onChange={(e) => setOfferingSemester(e.target.value)} aria-label="Semester">
                   <option value="">All semesters</option>
-                  {offeringSemesterOptions.map((n) => <option key={n} value={n}>Semester {n}</option>)}
+                  {offeringSemesterOptions.map((n) => <option key={n} value={n}>{semesterLabel(n)}</option>)}
                 </select>
                 <input type="search" value={offeringQuery} onChange={(e) => setOfferingQuery(e.target.value)} placeholder="Search course code or name" aria-label="Search course offerings" />
                 <span className="offering-count">{filteredOfferings.length === visibleCourseOfferings.length ? `${visibleCourseOfferings.length} offerings` : `${filteredOfferings.length} of ${visibleCourseOfferings.length} offerings`}</span>

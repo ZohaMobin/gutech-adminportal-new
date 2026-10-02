@@ -8,6 +8,7 @@ import { formatSectionOptionLabel } from "../../utils/sectionTeachers";
 import { downloadCsv } from "../../utils/csv";
 import { readSelection, saveSelection } from "./savedSelection";
 import "./StudentMarksPage.css";
+import { semesterLabel } from "../../utils/semester";
 
 const getPerformanceClass = (percentage) => {
   if (percentage === null || percentage === undefined || Number.isNaN(percentage)) return "missing";
@@ -478,7 +479,7 @@ const StudentMarksPage = () => {
             <option value="">Select semester</option>
             {semesters.map((sem) => (
               <option key={sem} value={sem}>
-                Semester {sem}
+                {semesterLabel(sem)}
               </option>
             ))}
           </select>
