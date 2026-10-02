@@ -81,6 +81,8 @@ test("the offering form explains semester and academic term, and after saving it
   expect(container.textContent).not.toMatch(/Use Semester 0/);
   axios.post.mockResolvedValue({ data: { _id: "o1" } });
   const form = container.querySelector(".offering-form");
+  expect(form.textContent).toMatch(/Pre-semester \(0\)/);
+  expect(form.textContent).not.toMatch(/No semester/);
   const create = () => container.querySelector('button[form="offering-form"]');
   expect(create().disabled).toBe(true);
   expect(container.querySelector(".cr-sum").textContent).toMatch(/Not chosen yet/);
@@ -89,7 +91,7 @@ test("the offering form explains semester and academic term, and after saving it
   await choose(form.querySelector('[name="program"]'), "p1");
   await click(form.querySelector('.of-term'));
   expect(form.querySelector('.of-term').getAttribute("aria-checked")).toBe("true");
-  expect(container.querySelector(".cr-sum").textContent).toMatch(/CS101 Programming.*BS Computer Science · No semester.*Fall 2026/);
+  expect(container.querySelector(".cr-sum").textContent).toMatch(/CS101 Programming.*BS Computer Science · Pre-semester.*Fall 2026/);
   expect(container.querySelectorAll(".cr-sum li.is-done").length).toBe(3);
   expect(create().disabled).toBe(false);
   await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });

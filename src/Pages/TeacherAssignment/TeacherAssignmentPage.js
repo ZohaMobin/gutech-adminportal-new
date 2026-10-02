@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FiX, FiPlus, FiEdit2, FiSearch, FiUser, FiTrash2 } from 'react-icons/fi';
 import Loading, { BusyLabel, Refreshing } from '../../Components/Loading/Loading';
 import { messageOf } from '../../utils/apiMessage';
+import { semesterLabel } from '../../utils/semester';
 import { showToast, TOAST_TYPES } from '../../Components/Toast/Toast';
 import './TeacherAssignmentPage.css';
 
@@ -269,7 +270,7 @@ const TeacherAssignmentPage = () => {
         <label><span>Semester</span>
           <select value={semester} onChange={(e) => setSemester(e.target.value)}>
             <option value="">All semesters</option>
-            {semesterOptions.map((s) => <option key={s} value={s}>Semester {s}</option>)}
+            {semesterOptions.map((s) => <option key={s} value={s}>{semesterLabel(s)}</option>)}
           </select>
         </label>
         <label className="ta-search"><span>Search</span>

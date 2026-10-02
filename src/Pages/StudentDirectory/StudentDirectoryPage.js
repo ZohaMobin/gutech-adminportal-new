@@ -7,6 +7,7 @@ import './StudentDirectoryPage.css';
 import { FiSearch, FiFilter, FiX } from 'react-icons/fi'; // Import icons
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
 import NoResultsFound from '../../Components/NoResultsFound';
+import { semesterLabel } from "../../utils/semester";
 
 const StudentDirectoryPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -218,7 +219,7 @@ const StudentDirectoryPage = () => {
             >
               <option value="">All Semesters</option>
               {semesters.map(sem => (
-                <option key={sem} value={sem}>Semester {sem}</option>
+                <option key={sem} value={sem}>{semesterLabel(sem)}</option>
               ))}
             </select>
           </div>
