@@ -7,13 +7,15 @@ import axios from "axios";
 import "../Programs/ProgramsPage.css";
 import "./AccountApprovalsPage.css";
 import { APPROVALS_CHANGED_EVENT } from "../../hooks/usePendingApprovals";
+import useSuperAdmin from "../../hooks/useSuperAdmin";
+import SuperAdminOnly from "../../Components/SuperAdminOnly/SuperAdminOnly";
 
 const TABS = [
   { id: "pending", label: "Pending" },
   { id: "rejected", label: "Rejected" },
 ];
 
-const AccountApprovalsPage = () => {
+const AccountApprovals = () => {
   const [tab, setTab] = useState("pending");
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -173,6 +175,14 @@ const AccountApprovalsPage = () => {
       )}
     </div>
   );
+};
+
+// Letting someone in is the super admin's decision. Anyone else gets an explanation, and no request is made.
+const AccountApprovalsPage = () => {
+  const { isSuperAdmin, ready } = useSuperAdmin();
+  if (!ready && !isSuperAdmin) return <div className="aa-page page-shell"><Loading variant="list" rows={3} label="Loading" /></div>;
+  if (!isSuperAdmin) return <SuperAdminOnly title="Account Approvals" what="approve or reject accounts" />;
+  return <AccountApprovals />;
 };
 
 export default AccountApprovalsPage;
