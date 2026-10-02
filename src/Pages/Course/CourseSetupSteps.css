@@ -1,33 +1,34 @@
-.cstep { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; align-items: stretch; margin: 0 0 1.25rem; }
-.cstep ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
-.cstep-btn { position: relative; width: 100%; height: 100%; display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.8rem 0.9rem; text-align: left; font: inherit; color: inherit; background: #fff; border: 1px solid #e8eaee; border-radius: 0.75rem; cursor: pointer; }
-.cstep-btn:hover { border-color: #d3d7de; background: #fafbfc; }
-.cstep-btn.is-here { background: #fdf3f3; border-color: #efc9ca; }
-.cstep li + li .cstep-btn::before { content: "→"; position: absolute; left: -0.82rem; top: 1.05rem; width: 0.9rem; text-align: center; color: #9ca3af; font-size: 0.9rem; }
-.cstep-num { flex: none; display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #eef0f4; color: #4b5563; font-size: 0.8rem; font-weight: 700; }
+/* The three-step guide: one card, three sections. */
+.cstep { margin: 0 0 1.25rem; background: #fff; border: 1px solid #e8eaee; border-radius: 0.9rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); overflow: hidden; }
+.cstep ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cstep li + li { border-left: 1px solid #eef0f3; }
+.cstep-btn { position: relative; width: 100%; height: 100%; display: flex; align-items: flex-start; gap: 0.8rem; padding: 1rem 1.15rem 1.1rem; text-align: left; font: inherit; color: inherit; background: transparent; border: 0; cursor: pointer; transition: background 0.15s ease; }
+.cstep-btn:hover { background: #fafbfc; }
+.cstep-btn::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: transparent; transition: background 0.15s ease; }
+.cstep-btn.is-here { background: #fffafa; }
+.cstep-btn.is-here::after { background: var(--primary-color); }
+.cstep-num { flex: none; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #eef0f4; color: #4b5563; font-size: 0.82rem; font-weight: 700; margin-top: 0.05rem; transition: background 0.15s ease, color 0.15s ease; }
 .cstep-btn.is-here .cstep-num { background: var(--primary-color); color: #fff; }
-.cstep-text { display: grid; gap: 0.15rem; min-width: 0; flex: 1; }
-.cstep-text strong { font-size: 0.92rem; font-weight: 600; color: #1f2937; }
-.cstep-text small { font-size: 0.8rem; color: #6b7280; line-height: 1.4; }
-.cstep-count { flex: none; padding: 0 0.5rem; border-radius: 999px; background: #eef0f4; color: #4b5563; font-size: 0.75rem; font-weight: 700; line-height: 1.4rem; font-variant-numeric: tabular-nums; }
-.cstep-all { display: grid; align-content: center; gap: 0.15rem; padding: 0.8rem 1rem; text-align: left; font: inherit; font-size: 0.92rem; font-weight: 600; color: #1f2937; background: #fff; border: 1px dashed #cfd4dc; border-radius: 0.75rem; cursor: pointer; }
-.cstep-all small { font-size: 0.78rem; font-weight: 400; color: #6b7280; max-width: 11rem; line-height: 1.35; }
-.cstep-all:hover { border-color: #aeb4be; background: #fafbfc; }
-.cstep-all.is-here { border-style: solid; border-color: #efc9ca; background: #fdf3f3; color: var(--primary-color); }
-.cstep-btn:focus-visible, .cstep-all:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.cstep-text { display: grid; gap: 0.2rem; min-width: 0; flex: 1; }
+.cstep-text strong { font-size: 0.95rem; font-weight: 600; color: #111827; }
+.cstep-text small { font-size: 0.8rem; color: #6b7280; line-height: 1.45; }
+.cstep-caption { justify-self: start; margin-top: 0.35rem; padding: 0.1rem 0.55rem; border-radius: 999px; background: #f1f3f6; color: #4b5563; font-size: 0.72rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cstep-btn.is-here .cstep-caption { background: #f8e4e5; color: var(--primary-color); }
+.cstep-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -3px; }
 
 /* What the current step is for, and what to do next. */
-.cintro { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0 0 1rem; padding: 0.8rem 1rem; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 0.75rem; font-size: 0.88rem; line-height: 1.5; color: #374151; }
+.cintro { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0 0 1rem; padding: 0.75rem 1rem 0.75rem 2.6rem; position: relative; background: #f5f8fd; border: 1px solid #e0e8f5; border-radius: 0.75rem; font-size: 0.875rem; line-height: 1.55; color: #374151; }
+.cintro::before { content: "i"; position: absolute; left: 0.85rem; top: 0.85rem; width: 1.15rem; height: 1.15rem; border-radius: 50%; background: #5b7fb8; color: #fff; font-size: 0.72rem; font-weight: 700; font-style: italic; font-family: Georgia, serif; line-height: 1.15rem; text-align: center; }
 .cintro p { margin: 0; flex: 1 1 24rem; }
 .cintro.is-done { background: #eef8f1; border-color: #cbe8d4; color: #17693a; }
-.cintro-btn { flex: none; padding: 0.5rem 0.9rem; border: 0; border-radius: 0.5rem; background: var(--primary-color); color: #fff; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.cintro.is-done::before { content: "✓"; background: #2f9e5c; font-style: normal; font-family: inherit; }
+.cintro-btn { flex: none; padding: 0.5rem 1rem; border: 0; border-radius: 0.6rem; background: var(--primary-color); color: #fff; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; box-shadow: 0 1px 2px rgba(153, 29, 32, 0.25); }
 .cintro-btn:hover { background: var(--primary-dark); }
-.cintro-link { flex: none; border: 0; background: none; padding: 0; font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--primary-color); cursor: pointer; text-decoration: underline; }
-.field-hint { display: block; margin-top: 0.25rem; font-size: 0.78rem; font-weight: 400; color: #6b7280; line-height: 1.4; }
+.cintro-link { flex: none; border: 0; background: none; padding: 0; font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--primary-color); cursor: pointer; }
+.cintro-link:hover { text-decoration: underline; }
+.field-hint { display: block; margin-top: 0.3rem; font-size: 0.78rem; font-weight: 400; color: #6b7280; line-height: 1.4; }
 
 @media (max-width: 900px) {
-  .cstep { grid-template-columns: 1fr; }
   .cstep ol { grid-template-columns: 1fr; }
-  .cstep li + li .cstep-btn::before { content: "↓"; left: 1.15rem; top: -0.9rem; }
-  .cstep-all small { max-width: none; }
+  .cstep li + li { border-left: 0; border-top: 1px solid #eef0f3; }
 }
