@@ -1,6 +1,7 @@
 // Sidebar.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSuperAdmin from '../../hooks/useSuperAdmin';
 import './sidebar.css';
 
 const NAV_SECTIONS = [
@@ -37,6 +38,17 @@ const NAV_SECTIONS = [
   },
 ];
 
+// Only the super admin sees this section: who can sign in, and letting new staff in.
+const ACCESS_SECTION = {
+  id: 'access',
+  label: 'People & access',
+  items: [
+    { id: 'teachers', label: 'Teachers', icon: '🧑‍🏫' },
+    { id: 'administrators', label: 'Administrators', icon: '🛡️' },
+    { id: 'account-approvals', label: 'Account Approvals', icon: '🔑' },
+  ],
+};
+
 const SETUP_STORAGE_KEY = 'adminSidebarSetupOpen';
 
 const readSetupOpen = () => {
@@ -51,6 +63,8 @@ const Sidebar = ({ isOpen, activePage, onNavClick }) => {
   const navigate = useNavigate();
   const user = JSON.parse(sessionStorage.getItem('adminUser'));
   const [setupOpen, setSetupOpen] = useState(readSetupOpen);
+  const { isSuperAdmin } = useSuperAdmin();
+  const sections = isSuperAdmin ? [...NAV_SECTIONS, ACCESS_SECTION] : NAV_SECTIONS;
 
   // Route paths are case-insensitive here (the courses route is "/Course").
   const isActive = (id) => (activePage || '').toLowerCase() === id;
@@ -94,7 +108,7 @@ const Sidebar = ({ isOpen, activePage, onNavClick }) => {
 
       {/* Navigation Links */}
       <nav className="sidebar-nav">
-        {NAV_SECTIONS.map((section) => {
+        {sections.map((section) => {
           // Keep the section open while one of its pages is showing.
           const containsActive = section.items.some((item) => isActive(item.id));
           const expanded = !section.collapsible || setupOpen || containsActive;
