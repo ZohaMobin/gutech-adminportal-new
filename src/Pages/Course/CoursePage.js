@@ -9,6 +9,7 @@ import Loading, { BusyLabel, Refreshing, Spinner } from '../../Components/Loadin
 import NoResultsFound from '../../Components/NoResultsFound';
 import OfferingEditModal from './OfferingEditModal';
 import CourseSetupSteps from './CourseSetupSteps';
+import './CourseRefresh.css';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import { ConfirmModal } from '../Administrators/AdminModals';
 
@@ -498,10 +499,10 @@ const CoursePage = () => {
           <thead>
             <tr>
               <th>Course</th>
-              <th>Department</th>
-              <th>Program</th>
-              <th>Semester</th>
-              <th>Academic Year</th>
+              {!groupByOptions.department && <th>Department</th>}
+              {!groupByOptions.program && <th>Program</th>}
+              {!groupByOptions.semester && <th>Semester</th>}
+              <th>Term</th>
               <th>Status</th>
               <th aria-label="Actions"></th>
             </tr>
@@ -509,10 +510,10 @@ const CoursePage = () => {
           <tbody>
             {offerings.map(offering => (
               <tr key={offering._id}>
-                <td>{offering.courseId?.code} - {offering.courseId?.name}</td>
-                <td>{typeof offering.department === 'object' ? offering.department.name : offering.department}</td>
-                <td>{typeof offering.program === 'object' ? offering.program.name : offering.program}</td>
-                <td>{offering.semester}</td>
+                <td><span className="of-code">{offering.courseId?.code}</span> <span className="of-name">{offering.courseId?.name}</span></td>
+                {!groupByOptions.department && <td>{typeof offering.department === 'object' ? offering.department.name : offering.department}</td>}
+                {!groupByOptions.program && <td>{typeof offering.program === 'object' ? offering.program.name : offering.program}</td>}
+                {!groupByOptions.semester && <td>{offering.semester}</td>}
                 <td>
                   {offering.academicYearId && typeof offering.academicYearId === 'object'
                     ? offering.academicYearId.displayName || `${offering.academicYearId.semesterType} ${offering.academicYearId.year}`
@@ -520,7 +521,7 @@ const CoursePage = () => {
                     ? `${offering.semesterType} ${offering.year}`
                     : 'N/A'}
                 </td>
-                <td>{offering.isActive ? 'Active' : 'Inactive'}</td>
+                <td><span className={`of-pill ${offering.isActive ? 'on' : 'off'}`}>{offering.isActive ? 'Active' : 'Inactive'}</span></td>
                 <td className="offering-action-cell">
                   <button type="button" className="edit-btn" onClick={() => setEditingOffering(offering)} title="Edit offering" aria-label={`Edit ${offering.courseId?.code || ''} offering`}>
                     <FiEdit2 />
@@ -628,12 +629,28 @@ const CoursePage = () => {
     />
   );
 
+  // Where things stand, in a few words under each step: how many courses exist, and how many are offered in the current term.
+  const currentTerm = academicYears.find((ay) => ay.isCurrent);
+  const offeredInCurrentTerm = currentTerm ? courseOfferings.filter((o) => String(o.academicYearId?._id ?? o.academicYearId) === String(currentTerm._id)).length : null;
+  const stepCaptions = {
+    create: `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}`,
+    offerings: currentTerm ? `${offeredInCurrentTerm} offered in ${currentTerm.displayName || `${currentTerm.semesterType} ${currentTerm.year}`}` : `${courseOfferings.length} ${courseOfferings.length === 1 ? 'offering' : 'offerings'}`,
+  };
+
   return (
     <div className="course-container page-shell">
-      <PageHeader title="Courses" subtitle="Set up a course in three steps: create it, offer it for a term, then assign a teacher." />
+      <PageHeader
+        title="Courses"
+        subtitle="Set up a course in three steps: create it, offer it for a term, then assign a teacher."
+        actions={
+          <button type="button" className={`pk-btn course-all-btn ${activeTab === 'manage' ? 'is-on' : ''}`} aria-pressed={activeTab === 'manage'} onClick={() => { setEditingCourse(null); setActiveTab('manage'); }}>
+            All courses
+          </button>
+        }
+      />
       <CourseSetupSteps
         active={activeTab}
-        counts={{ create: courses.length, offerings: courseOfferings.length }}
+        captions={stepCaptions}
         onSelect={(tab) => {
           setActiveTab(tab);
           if (tab === 'create') setEditingCourse(null);
@@ -659,79 +676,45 @@ const CoursePage = () => {
               <button type="button" className="cintro-link" onClick={() => setActiveTab('manage')}>Check existing courses</button>
             </div>
           )}
-          <div className="course-form">
-            <h2>{editingCourse ? 'Edit Course' : 'Create New Course'}</h2>
+          <div className="course-form cf">
+            <div className="cf-head">
+              <h2>{editingCourse ? 'Edit course' : 'Create a new course'}</h2>
+              <p>{editingCourse ? `Changing ${editingCourse.code}. Save when you are done.` : 'Fields marked * are required.'}</p>
+            </div>
             <form onSubmit={handleSubmit}>
-          <div>
-            <label>Course Code:</label>
-            <input
-              type="text"
-              name="code"
-              value={course.code}
-              onChange={handleChange}
-              placeholder="PF101"
-              required
-            />
-          </div>
-          <div>
-            <label>Course Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={course.name}
-              onChange={handleChange}
-              placeholder="Programming Fundamentals"
-              required
-            />
-          </div>
-          <div>
-            <label>Description:</label>
-            <textarea
-              name="description"
-              value={course.description}
-              onChange={handleChange}
-              placeholder="Introductory course covering programming concepts, problem-solving, and algorithms."
-              required
-            />
-          </div>
-          <div>
-            <label>Credit Hours:</label>
-            <input
-              type="number"
-              name="creditHours"
-              value={course.creditHours}
-              onChange={handleChange}
-              placeholder="3"
-              required
-            />
-          </div>
-              <div className="checkbox-field">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={course.isActive}
-                    onChange={handleChange}
-                  />
-                  Active
-                </label>
+              <div className="cf-grid">
+                <div className="cf-field">
+                  <label htmlFor="cf-code">Course code *</label>
+                  <input id="cf-code" type="text" name="code" value={course.code} onChange={handleChange} placeholder="PF101" required />
+                  <small className="field-hint">Short and unique, for example CS201.</small>
+                </div>
+                <div className="cf-field">
+                  <label htmlFor="cf-credits">Credit hours *</label>
+                  <input id="cf-credits" type="number" name="creditHours" value={course.creditHours} onChange={handleChange} placeholder="3" required />
+                </div>
+                <div className="cf-field cf-wide">
+                  <label htmlFor="cf-name">Course name *</label>
+                  <input id="cf-name" type="text" name="name" value={course.name} onChange={handleChange} placeholder="Programming Fundamentals" required />
+                </div>
+                <div className="cf-field cf-wide">
+                  <label htmlFor="cf-description">Description *</label>
+                  <textarea id="cf-description" name="description" value={course.description} onChange={handleChange} placeholder="Introductory course covering programming concepts, problem-solving, and algorithms." required />
+                </div>
               </div>
+              <label className="cf-switch">
+                <input type="checkbox" name="isActive" checked={course.isActive} onChange={handleChange} />
+                <span className="cf-track" aria-hidden="true" />
+                <span className="cf-switch-text"><strong>Active</strong><small>Inactive courses can't be offered to students.</small></span>
+              </label>
               <div className="form-actions">
                 {editingCourse && (
-                  <button 
-                    type="button" 
-                    className="pk-btn"
-                    onClick={() => {
-                      setEditingCourse(null);
-                      setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
-                    }}
-                  >
+                  <button type="button" className="pk-btn" onClick={() => { setEditingCourse(null); setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true }); }}>
                     Cancel
                   </button>
                 )}
-          <button className="pk-btn pk-btn-primary" type="submit" disabled={saving}>
-                  <BusyLabel busy={saving} busyText="Saving…" idle={editingCourse ? "Update Course" : "Create Course"} />
-          </button>
+                <button className="pk-btn pk-btn-primary" type="submit" disabled={saving}>
+                  <BusyLabel busy={saving} busyText="Saving…" idle={editingCourse ? "Update course" : "Create course"} />
+                </button>
               </div>
         </form>
           </div>
@@ -896,8 +879,12 @@ const CoursePage = () => {
           )}
         <div className="offerings-section">
           <form className="offering-form" onSubmit={handleOfferingSubmit}>
-            <div>
-              <label>Course:</label>
+            <div className="of-form-head">
+              <h2>Offer a course for a term</h2>
+              <p>Fields marked * are required. Pick the course, then where and when it is taught.</p>
+            </div>
+            <div className="of-course-field">
+              <label>Course *</label>
               <select
                 name="courseId"
                 value={courseOffering.courseId}
@@ -913,7 +900,7 @@ const CoursePage = () => {
               </select>
             </div>
             <div>
-              <label>Department:</label>
+              <label>Department *</label>
               <select
                 name="department"
                 value={courseOffering.department}
@@ -928,7 +915,7 @@ const CoursePage = () => {
               </select>
             </div>
             <div>
-              <label>Program:</label>
+              <label>Program *</label>
               <select
                 name="program"
                 value={courseOffering.program}
@@ -943,7 +930,7 @@ const CoursePage = () => {
               </select>
             </div>
             <div>
-              <label>Semester:</label>
+              <label>Semester *</label>
               <select
                 name="semester"
                 value={courseOffering.semester}

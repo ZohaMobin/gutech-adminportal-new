@@ -48,11 +48,12 @@ afterEach(() => { act(() => root.unmount()); container.remove(); sessionStorage.
 
 test("the page shows the three steps in order, says what each is for, and counts what exists", () => {
   const steps = [...container.querySelectorAll(".cstep ol button")].map((b) => b.textContent.trim());
-  expect(steps[0]).toMatch(/^1Create the course.*Skip this if it already exists.*1$/);
-  expect(steps[1]).toMatch(/^2Offer it for a term.*academic term it will be taught in/);
+  expect(steps[0]).toMatch(/^1Create the course.*Skip this if it already exists.*1 course$/);
+  expect(steps[1]).toMatch(/^2Offer it for a term.*academic term it will be taught in.*offered in Fall 2026$/);
   expect(steps[2]).toMatch(/^3Assign a teacher/);
   expect(container.querySelector('[aria-current="step"]').textContent).toContain("Create the course");
   expect(container.textContent).toMatch(/Check existing courses/);
+  expect(container.querySelector(".page-head-actions button").textContent).toBe("All courses");
 });
 
 test("after creating a course, one button takes you to the offering form with that course already chosen", async () => {
