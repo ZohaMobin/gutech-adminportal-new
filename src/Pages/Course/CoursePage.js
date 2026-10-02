@@ -642,6 +642,63 @@ const CoursePage = () => {
     };
   })();
 
+  // Step 1's side panel: what already exists, checked as the code or name is typed, so nothing is added twice.
+  const typedCode = course.code.trim().toLowerCase();
+  const typedName = course.name.trim().toLowerCase();
+  const exactCourse = !editingCourse && typedCode ? courses.find((c) => c.code.toLowerCase() === typedCode) : null;
+  const similarCourses = (typedCode || typedName.length >= 3)
+    ? courses.filter((c) => c._id !== editingCourse?._id && c._id !== exactCourse?._id
+        && ((typedCode && c.code.toLowerCase().includes(typedCode)) || (typedName.length >= 3 && c.name.toLowerCase().includes(typedName)))).slice(0, 5)
+    : [];
+  const createPanel = (
+    <aside className="cr-panel" aria-label="Courses already in the system">
+      <div className="cr-panel-head"><h3>Already in the system</h3><span className="cr-count">{courses.length}</span></div>
+      {exactCourse && (
+        <div className="cr-alert" role="status">
+          <strong>{exactCourse.code} already exists</strong>
+          <span>{exactCourse.name}</span>
+          <button type="button" className="cintro-btn" onClick={() => { setCourseOffering((current) => ({ ...current, courseId: exactCourse._id })); setActiveTab('offerings'); }}>Offer {exactCourse.code} for a term →</button>
+        </div>
+      )}
+      {similarCourses.length > 0 && (
+        <ul className="cr-list">
+          {similarCourses.map((c) => (
+            <li key={c._id}><strong>{c.code}</strong><span>{c.name}</span>{!c.isActive && <em>Inactive</em>}</li>
+          ))}
+        </ul>
+      )}
+      {!exactCourse && similarCourses.length === 0 && <p className="cr-empty">Type a code or name and any similar course already here shows up, so you don't add one twice.</p>}
+      <button type="button" className="cintro-link" onClick={() => setActiveTab('manage')}>Browse all courses</button>
+    </aside>
+  );
+
+  // Step 2's side panel: the offering as it will be created, the create button, and where this course is already offered.
+  const draftDepartment = departments.find((d) => d._id === courseOffering.department);
+  const courseOfferingsOfDraft = offerDraft.course ? courseOfferings.filter((o) => String(o.courseId?._id ?? o.courseId) === offerDraft.course._id) : [];
+  const alreadyOffered = offerDraft.complete && courseOfferingsOfDraft.some((o) => String(o.academicYearId?._id ?? o.academicYearId) === courseOffering.academicYearId && String(o.program?._id ?? o.program) === courseOffering.program && Number(o.semester) === Number(courseOffering.semester));
+  const offerPanel = (
+    <aside className="cr-panel cr-sticky" aria-label="Offering summary">
+      <div className="cr-panel-head"><h3>Summary</h3></div>
+      <ul className="cr-sum">
+        <li className={offerDraft.course ? 'is-done' : ''}><i aria-hidden="true" /><span>Course</span><strong>{offerDraft.course ? `${offerDraft.course.code} ${offerDraft.course.name}` : 'Not chosen yet'}</strong></li>
+        <li className={draftDepartment && offerDraft.program ? 'is-done' : ''}><i aria-hidden="true" /><span>Belongs to</span><strong>{draftDepartment && offerDraft.program ? `${offerDraft.program.name} · ${Number(courseOffering.semester) === 0 ? 'No semester' : `Semester ${courseOffering.semester}`}` : 'Not chosen yet'}</strong></li>
+        <li className={offerDraft.termLabel ? 'is-done' : ''}><i aria-hidden="true" /><span>Term</span><strong>{offerDraft.termLabel || 'Not chosen yet'}</strong></li>
+      </ul>
+      {alreadyOffered && <p className="of-warn">This exact offering already exists: {offerDraft.termLabel}, {offerDraft.program.name}, {Number(courseOffering.semester) === 0 ? 'no semester' : `Semester ${courseOffering.semester}`}.</p>}
+      <button className="pk-btn pk-btn-primary cr-submit" type="submit" form="offering-form" disabled={!offerDraft.complete}>Create offering</button>
+      {courseOfferingsOfDraft.length > 0 && (
+        <div className="cr-already">
+          <h4>{offerDraft.course.code} is already offered</h4>
+          <ul>
+            {courseOfferingsOfDraft.slice(0, 6).map((o) => (
+              <li key={o._id}>{getAcademicYearLabel(o)} · {typeof o.program === 'object' ? o.program?.name : 'Program'} · {Number(o.semester) === 0 ? 'No semester' : `Semester ${o.semester}`}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </aside>
+  );
+
   // Where things stand, in a few words under each step: how many courses exist, and how many are offered in the current term.
   const currentTerm = academicYears.find((ay) => ay.isCurrent);
   const offeredInCurrentTerm = currentTerm ? courseOfferings.filter((o) => String(o.academicYearId?._id ?? o.academicYearId) === String(currentTerm._id)).length : null;
@@ -683,12 +740,8 @@ const CoursePage = () => {
                 setActiveTab('offerings');
               }}>Offer {justCreated.code} for a term →</button>
             </div>
-          ) : !editingCourse && (
-            <div className="cintro">
-              <p>Add each course once. Not sure whether it already exists? Check <strong>All courses</strong> first, and if it does, go straight to step 2.</p>
-              <button type="button" className="cintro-link" onClick={() => setActiveTab('manage')}>Check existing courses</button>
-            </div>
-          )}
+          ) : null}
+          <div className="cr-split">
           <div className="course-form cf">
             <div className="cf-head">
               <h2>{editingCourse ? 'Edit course' : 'Create a new course'}</h2>
@@ -731,13 +784,15 @@ const CoursePage = () => {
               </div>
         </form>
           </div>
+          {createPanel}
+          </div>
         </>
       )}
 
       {activeTab === 'manage' && (
         <>
           <div className="cintro">
-            <p>Every course in the system. Edit or delete one here, or find a course before you offer it. A course that doesn't exist yet needs creating first.</p>
+            <p>Every course in the system. Edit, switch off or delete one here.</p>
             <button type="button" className="cintro-link" onClick={() => { setEditingCourse(null); setActiveTab('create'); }}>Create a new course</button>
           </div>
           
@@ -885,13 +940,10 @@ const CoursePage = () => {
               <p><strong>{justOffered.course}</strong> is now offered{justOffered.term ? ` in ${justOffered.term}` : ""}. Next, give each of its sections a teacher.</p>
               <button type="button" className="cintro-btn" onClick={() => { setJustOffered(null); setActiveTab('assignments'); }}>Assign a teacher →</button>
             </div>
-          ) : (
-            <div className="cintro">
-              <p>An offering says which <strong>program</strong> and <strong>semester</strong> a course belongs to, and which <strong>academic term</strong> it is taught in. Pick the course first, then where and when. The course must exist already, so create it in step 1 if it doesn't.</p>
-            </div>
-          )}
+          ) : null}
         <div className="offerings-section">
-          <form className="offering-form" onSubmit={handleOfferingSubmit}>
+          <div className="cr-split">
+          <form className="offering-form" id="offering-form" onSubmit={handleOfferingSubmit}>
             <div className="of-form-head">
               <h2>Offer a course for a term</h2>
               <p>Fields marked * are required.</p>
@@ -948,7 +1000,6 @@ const CoursePage = () => {
                       ));
                     })()}
                   </select>
-                  <small className="field-hint">Which semester of the program the course sits in. Use Semester 0 if it isn't tied to one.</small>
                 </div>
               </div>
             </section>
@@ -980,15 +1031,9 @@ const CoursePage = () => {
               )}
             </section>
 
-            <footer className="of-foot">
-              <p className="of-summary" aria-live="polite">
-                {offerDraft.complete
-                  ? <><strong>{offerDraft.course.code}</strong> will be taught in <strong>{offerDraft.termLabel}</strong> for <strong>{offerDraft.program.name}</strong>{Number(courseOffering.semester) === 0 ? ', not tied to a semester.' : `, Semester ${courseOffering.semester}.`}</>
-                  : 'Choose a course, where it belongs and a term to see a summary here.'}
-              </p>
-              <button className="pk-btn pk-btn-primary" type="submit" disabled={!offerDraft.complete}>Create offering</button>
-            </footer>
           </form>
+          {offerPanel}
+          </div>
 
           <div className="offerings-list">
             <div className="offerings-header">
@@ -1096,7 +1141,7 @@ const CoursePage = () => {
       {activeTab === 'assignments' && (
         <>
           <div className="cintro">
-            <p>The courses offered for the current term are listed below. Choose one, add its sections if it has none (for example A26-F), and choose who teaches each. Don't see your course? Offer it for the term in step 2 first.</p>
+            <p>Choose a course, add its sections (for example A26-F), and pick a teacher for each. Course missing? Offer it for the term first.</p>
             <button type="button" className="cintro-link" onClick={() => setActiveTab('offerings')}>Go to step 2</button>
           </div>
           <TeacherAssignmentPage />
