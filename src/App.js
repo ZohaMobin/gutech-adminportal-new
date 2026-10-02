@@ -20,6 +20,7 @@ import PrerequisitesPage from './Pages/Prerequisites/PrerequisitesPage';
 import ResultApprovalsPage from './Pages/ResultApprovals/ResultApprovalsPage';
 import AccountApprovalsPage from "./Pages/AccountApprovals/AccountApprovalsPage";
 import AdministratorsPage from "./Pages/Administrators/AdministratorsPage";
+import TeachersPage from "./Pages/Teachers/TeachersPage";
 import ChangePasswordPage from "./Pages/ChangePassword/ChangePasswordPage";
 import { AuthProvider } from "./Components/AuthContext";
 import PrivateRoute from "./Components/PrivateRoute";
@@ -50,6 +51,7 @@ function App() {
                 <Route path="result-approvals" element={<ResultApprovalsPage />} />
                 <Route path="account-approvals" element={<AccountApprovalsPage />} />
                 <Route path="administrators" element={<AdministratorsPage />} />
+                <Route path="teachers" element={<TeachersPage />} />
                 <Route path="change-password" element={<ChangePasswordPage />} />
               </Route>
             </Route>
