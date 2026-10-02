@@ -100,3 +100,30 @@ test("helpers: filter by tab and search, count, and say how many sections", () =
   expect(sectionsText(1)).toBe("1 section");
   expect(sectionsText(0)).toBe("No sections");
 });
+
+test("Edit opens the teacher's details, saves only what changed, and warns that a new email signs them out", async () => {
+  await mount();
+  axios.patch.mockResolvedValue({ data: {} });
+  await click(buttonIn(rowOf("Ayesha Khan"), "Edit"));
+  expect(dialogButton("Save changes").disabled).toBe(true);
+  const set = (name, value) => act(async () => {
+    const input = dialog().querySelector(`[name="${name}"]`);
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await set("employeeId", "E-99");
+  expect(dialog().textContent).not.toMatch(/signed out everywhere/);
+  await set("email", "ayesha.k@gu.edu");
+  expect(dialog().textContent).toMatch(/signed out everywhere and must sign in again with the new email/);
+  await click(dialogButton("Save changes"));
+  expect(axios.patch).toHaveBeenCalledWith(expect.stringContaining("/api/users/teachers/t1"), { email: "ayesha.k@gu.edu", employeeId: "E-99" }, expect.anything());
+  expect(showToast).toHaveBeenCalledWith("Ayesha Khan was updated", "success");
+});
+
+test("an invalid email keeps Save disabled", async () => {
+  await mount();
+  await click(buttonIn(rowOf("Ayesha Khan"), "Edit"));
+  const input = dialog().querySelector('[name="email"]');
+  await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, "nope"); input.dispatchEvent(new Event("input", { bubbles: true })); });
+  expect(dialogButton("Save changes").disabled).toBe(true);
+});
