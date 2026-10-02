@@ -1,4 +1,4 @@
-import Loading from "../../Components/Loading/Loading";
+import Loading, { BusyLabel } from "../../Components/Loading/Loading";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { messageOf } from "../../utils/apiMessage";
 import { ConfirmModal, Modal } from "../Administrators/AdminModals";
@@ -62,6 +62,53 @@ const DeleteModal = ({ teacher, headers, busy, error, onConfirm, onRevoke, onClo
 };
 
 // The Teachers tab of Manage access. The page around it (header, tabs, super-admin check) is ManageAccessPage.
+// Correct a teacher's name, sign-in email or employee ID. Only what changed is sent.
+const TeacherFormModal = ({ teacher, saving, error, onSubmit, onClose }) => {
+  const [form, setForm] = useState({ name: teacher.name || "", email: teacher.email || "", employeeId: teacher.employeeId || "" });
+  const first = useRef(null);
+  useEffect(() => first.current?.focus(), []);
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const valid = form.name.trim() && form.employeeId.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const changes = {};
+  if (form.name.trim() !== teacher.name) changes.name = form.name.trim();
+  if (form.email.trim() !== teacher.email) changes.email = form.email.trim();
+  if (form.employeeId.trim() !== (teacher.employeeId || "")) changes.employeeId = form.employeeId.trim();
+  const dirty = Object.keys(changes).length > 0;
+
+  return (
+    <Modal
+      title="Edit teacher"
+      onClose={onClose}
+      busy={saving}
+      footer={
+        <>
+          <button type="button" className="am-btn" onClick={onClose} disabled={saving}>Cancel</button>
+          <button type="submit" form="teacher-form" className="am-btn am-btn-primary" disabled={saving || !valid || !dirty}>
+            <BusyLabel busy={saving} busyText="Saving…" idle="Save changes" />
+          </button>
+        </>
+      }
+    >
+      <form id="teacher-form" onSubmit={(e) => { e.preventDefault(); if (valid && dirty) onSubmit(changes); }}>
+        <label className="am-field">
+          <span>Full name</span>
+          <input ref={first} name="name" value={form.name} onChange={change} disabled={saving} autoComplete="off" />
+        </label>
+        <label className="am-field">
+          <span>Email <em>(what they sign in with)</em></span>
+          <input name="email" type="email" value={form.email} onChange={change} disabled={saving} autoComplete="off" />
+        </label>
+        {changes.email && <p className="tm-note">They will be signed out everywhere and must sign in again with the new email.</p>}
+        <label className="am-field">
+          <span>Employee ID</span>
+          <input name="employeeId" value={form.employeeId} onChange={change} disabled={saving} autoComplete="off" />
+        </label>
+        {error && <div className="am-error" role="alert">{error}</div>}
+      </form>
+    </Modal>
+  );
+};
+
 const TeachersPanel = () => {
   const token = sessionStorage.getItem("adminToken");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -164,6 +211,7 @@ const TeachersPanel = () => {
                   </span>
                 </div>
                 <div className="am-actions">
+                  <button className="am-btn am-btn-small" onClick={() => setModal({ type: "edit", teacher })}>Edit</button>
                   {revoked ? (
                     <button className="am-btn am-btn-small" onClick={() => setModal({ type: "restore", teacher })}>Restore access</button>
                   ) : (
@@ -185,6 +233,15 @@ const TeachersPanel = () => {
         </ul>
       )}
 
+      {modal?.type === "edit" && (
+        <TeacherFormModal
+          teacher={t}
+          saving={busy}
+          error={modalError}
+          onSubmit={(changes) => act(() => axios.patch(`${API}/api/users/teachers/${t._id}`, changes, { headers }), `${changes.name || t.name} was updated`)}
+          onClose={closeModal}
+        />
+      )}
       {modal?.type === "revoke" && (
         <ConfirmModal
           title="Revoke access"
