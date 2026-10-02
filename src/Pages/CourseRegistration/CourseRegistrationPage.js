@@ -1,4 +1,5 @@
 import PageHeader from "../../Components/PageHeader/PageHeader";
+import StudentFlow from "../../Components/StudentFlow/StudentFlow";
 import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
@@ -249,9 +250,11 @@ const CourseRegistrationPage = () => {
     <div className="enr-page page-shell">
       <PageHeader
         title="Enroll Students"
-        subtitle="Add a class list to a course for the current term, and keep track of every upload."
+        subtitle="Put students into a course for the current term by uploading its class list. The students must already have accounts, so import any new students first."
         actions={termLabel && <span className="enr-term" title="Students are enrolled in the current academic term"><i aria-hidden="true" />Term: <strong>{termLabel}</strong></span>}
       />
+
+      <StudentFlow current="enroll" />
 
       <div className="pk-tabs" role="tablist" aria-label="Enroll students">
         <button type="button" role="tab" id="enr-tab-enroll" aria-selected={view === "enroll"} className={`pk-tab ${view === "enroll" ? "is-on" : ""}`} onClick={() => setView("enroll")}>New enrollment</button>

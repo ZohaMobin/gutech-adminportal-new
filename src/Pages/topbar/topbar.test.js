@@ -29,11 +29,18 @@ test("the super admin sees the approvals bell with the waiting count", async () 
   expect(container.querySelector(".notification-badge").textContent).toBe("2");
 });
 
-test("an ordinary administrator sees no bell, no Account Approvals menu item, and the count is never requested", async () => {
+test("the super admin's menu has one Manage access entry with the waiting count, not separate approvals and administrators entries", async () => {
+  await mount({ isSuperAdmin: true });
+  await act(async () => { container.querySelector(".user-avatar").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+  const items = [...container.querySelectorAll(".profile-menu-item")].map((b) => b.textContent.trim());
+  expect(items).toEqual(["Manage access2", "Change password", "Logout"]);
+});
+
+test("an ordinary administrator sees no bell, no Manage access menu item, and the count is never requested", async () => {
   await mount({ isSuperAdmin: false });
   expect(container.querySelector(".notification-icon")).toBeNull();
   await act(async () => { container.querySelector(".user-avatar").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
   expect(container.textContent).toMatch(/Change password/);
-  expect(container.textContent).not.toMatch(/Account Approvals/);
+  expect(container.textContent).not.toMatch(/Manage access/);
   expect(axios.get.mock.calls.some(([url]) => url.includes("/api/account-approvals"))).toBe(false);
 });

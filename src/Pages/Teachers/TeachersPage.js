@@ -1,7 +1,4 @@
-import PageHeader from "../../Components/PageHeader/PageHeader";
 import Loading from "../../Components/Loading/Loading";
-import SuperAdminOnly from "../../Components/SuperAdminOnly/SuperAdminOnly";
-import useSuperAdmin from "../../hooks/useSuperAdmin";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { messageOf } from "../../utils/apiMessage";
 import { ConfirmModal, Modal } from "../Administrators/AdminModals";
@@ -64,7 +61,8 @@ const DeleteModal = ({ teacher, headers, busy, error, onConfirm, onRevoke, onClo
   );
 };
 
-const Teachers = () => {
+// The Teachers tab of Manage access. The page around it (header, tabs, super-admin check) is ManageAccessPage.
+const TeachersPanel = () => {
   const token = sessionStorage.getItem("adminToken");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -120,8 +118,8 @@ const Teachers = () => {
   const t = modal?.teacher;
 
   return (
-    <div className="am-page tm-page page-shell">
-      <PageHeader title="Teachers" subtitle="Control who can sign in as a teacher. Revoking access keeps their sections, attendance and marks, and can be undone." />
+    <div className="am-page tm-page">
+      <p className="am-panel-intro">Control who can sign in as a teacher. Revoking access keeps their sections, attendance and marks, and can be undone.</p>
 
       <div className="am-toolbar">
         <input className="am-search" type="search" placeholder="Search by name, email, employee ID or department" aria-label="Search teachers" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -241,12 +239,4 @@ const Teachers = () => {
   );
 };
 
-// Revoking or deleting a teacher's access is the super admin's call. Anyone else gets an explanation and no request.
-const TeachersPage = () => {
-  const { isSuperAdmin, ready } = useSuperAdmin();
-  if (!ready && !isSuperAdmin) return <div className="am-page page-shell"><Loading variant="list" rows={4} label="Loading" /></div>;
-  if (!isSuperAdmin) return <SuperAdminOnly title="Teachers" what="manage teacher access" />;
-  return <Teachers />;
-};
-
-export default TeachersPage;
+export default TeachersPanel;

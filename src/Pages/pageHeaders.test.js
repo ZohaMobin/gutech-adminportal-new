@@ -5,7 +5,6 @@ import axios from "axios";
 import DepartmentsPage from "./Departments/DepartmentsPage";
 import ProgramsPage from "./Programs/ProgramsPage";
 import AcademicYearsPage from "./AcademicYears/AcademicYearsPage";
-import AccountApprovalsPage from "./AccountApprovals/AccountApprovalsPage";
 import ImportStudentsPage from "./ImportStudents/ImportStudentsPage";
 import StudentDirectoryPage from "./StudentDirectory/StudentDirectoryPage";
 import ClassSchedulePage from "./Class Schedule/Class Schedule";
@@ -30,7 +29,6 @@ const pages = [
   ["Departments", DepartmentsPage, "+ Add Department"],
   ["Programs", ProgramsPage, "+ Add Program"],
   ["Academic Years", AcademicYearsPage, "+ Add Academic Year"],
-  ["Account Approvals", AccountApprovalsPage, null],
   ["Import Students", ImportStudentsPage, null],
   ["Student Directory", StudentDirectoryPage, null],
   ["Class Schedule", ClassSchedulePage, null],

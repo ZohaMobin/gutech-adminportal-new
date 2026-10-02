@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import "./ImportStudentsPage.css";
 import NoResultsFound from "../../Components/NoResultsFound";
 import ImportHistory from "./ImportHistory";
+import StudentFlow from "../../Components/StudentFlow/StudentFlow";
 
 const ImportStudentsPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -222,7 +223,9 @@ const ImportStudentsPage = () => {
 
   return (
     <div className="import-students-container page-shell">
-      <PageHeader title="Import Students" subtitle="Import many students at once from an Excel file. Download the template to see the format it needs." />
+      <PageHeader title="Import Students" subtitle="Create student accounts in the LMS from an Excel file. Do this once per student, before enrolling them in courses." />
+
+      <StudentFlow current="import" />
 
       <div className="import-section">
         <div className="file-upload">

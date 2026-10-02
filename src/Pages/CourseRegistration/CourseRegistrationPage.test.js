@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import CourseRegistrationPage from "./CourseRegistrationPage";
 
 jest.mock("axios");
+jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
 jest.mock("xlsx", () => ({
   read: jest.fn(() => ({ SheetNames: ["S"], Sheets: { S: {} } })),
   writeFile: jest.fn(),

@@ -1,0 +1,18 @@
+.sf { margin: 0 0 1.25rem; }
+.sf ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.sf li { position: relative; display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 0.9rem; background: #fff; border: 1px solid #e8eaee; border-radius: 0.75rem; min-width: 0; }
+.sf li.is-here { background: #fdf3f3; border-color: #efc9ca; }
+.sf li + li::before { content: "→"; position: absolute; left: -0.82rem; top: 50%; transform: translateY(-50%); width: 0.9rem; text-align: center; color: #9ca3af; font-size: 0.9rem; background: transparent; }
+.sf-num { flex: none; display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #eef0f4; color: #4b5563; font-size: 0.8rem; font-weight: 700; }
+.sf li.is-here .sf-num { background: var(--primary-color); color: #fff; }
+.sf-text { display: grid; gap: 0.1rem; min-width: 0; flex: 1; }
+.sf-text strong { font-size: 0.9rem; font-weight: 600; color: #1f2937; }
+.sf-text small { font-size: 0.8rem; color: #6b7280; line-height: 1.35; }
+.sf-here { flex: none; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--primary-color); }
+.sf-go { flex: none; border: 0; background: none; padding: 0.2rem 0.1rem; font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--primary-color); cursor: pointer; white-space: nowrap; }
+.sf-go:hover { text-decoration: underline; }
+.sf-go:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 760px) {
+  .sf ol { grid-template-columns: 1fr; }
+  .sf li + li::before { content: "↓"; left: 1.2rem; top: -0.85rem; transform: none; }
+}
