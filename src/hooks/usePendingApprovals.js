@@ -5,14 +5,14 @@ import axios from "axios";
 export const APPROVALS_CHANGED_EVENT = "approvals-changed";
 const REFRESH_MS = 60000;
 
-// Number of staff accounts waiting for approval. Returns 0 on any failure so the
-// navigation never shows a misleading count.
-const usePendingApprovals = () => {
+// Number of staff accounts waiting for approval. Only the super admin can ask (and review them), so everyone else
+// gets 0 without a request. Returns 0 on any failure so the navigation never shows a misleading count.
+const usePendingApprovals = (enabled = true) => {
   const [count, setCount] = useState(0);
 
   const refresh = useCallback(async () => {
     const token = sessionStorage.getItem("adminToken");
-    if (!token) return setCount(0);
+    if (!enabled || !token) return setCount(0);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/account-approvals?status=pending`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -21,7 +21,7 @@ const usePendingApprovals = () => {
     } catch {
       setCount(0);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     refresh();
