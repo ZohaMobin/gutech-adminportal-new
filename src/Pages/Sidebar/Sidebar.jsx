@@ -1,7 +1,6 @@
 // Sidebar.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useSuperAdmin from '../../hooks/useSuperAdmin';
 import './sidebar.css';
 
 const NAV_SECTIONS = [
@@ -19,9 +18,9 @@ const NAV_SECTIONS = [
     id: 'students',
     label: 'Students',
     items: [
-      { id: 'course-registration', label: 'Enroll Students', icon: '📝' },
-      { id: 'import-students', label: 'Import Students', icon: '📥' },
-      { id: 'student-directory', label: 'Student Directory', icon: '👥' },
+      { id: 'course-registration', label: 'Enroll Students', icon: '📝', hint: 'Put students who already have accounts into courses for the current term' },
+      { id: 'import-students', label: 'Import Students', icon: '📥', hint: 'Create student accounts in the LMS from an Excel file' },
+      { id: 'student-directory', label: 'Student Directory', icon: '👥', hint: 'Look up and edit existing students' },
     ],
   },
   {
@@ -38,17 +37,6 @@ const NAV_SECTIONS = [
   },
 ];
 
-// Only the super admin sees this section: who can sign in, and letting new staff in.
-const ACCESS_SECTION = {
-  id: 'access',
-  label: 'People & access',
-  items: [
-    { id: 'teachers', label: 'Teachers', icon: '🧑‍🏫' },
-    { id: 'administrators', label: 'Administrators', icon: '🛡️' },
-    { id: 'account-approvals', label: 'Account Approvals', icon: '🔑' },
-  ],
-};
-
 const SETUP_STORAGE_KEY = 'adminSidebarSetupOpen';
 
 const readSetupOpen = () => {
@@ -63,8 +51,6 @@ const Sidebar = ({ isOpen, activePage, onNavClick }) => {
   const navigate = useNavigate();
   const user = JSON.parse(sessionStorage.getItem('adminUser'));
   const [setupOpen, setSetupOpen] = useState(readSetupOpen);
-  const { isSuperAdmin } = useSuperAdmin();
-  const sections = isSuperAdmin ? [...NAV_SECTIONS, ACCESS_SECTION] : NAV_SECTIONS;
 
   // Route paths are case-insensitive here (the courses route is "/Course").
   const isActive = (id) => (activePage || '').toLowerCase() === id;
@@ -84,6 +70,7 @@ const Sidebar = ({ isOpen, activePage, onNavClick }) => {
     <a
       key={item.id}
       href="#"
+      title={item.hint}
       className={`sidebar-nav-item ${isActive(item.id) ? 'active' : ''}`}
       onClick={(e) => {
         e.preventDefault();
@@ -108,7 +95,7 @@ const Sidebar = ({ isOpen, activePage, onNavClick }) => {
 
       {/* Navigation Links */}
       <nav className="sidebar-nav">
-        {sections.map((section) => {
+        {NAV_SECTIONS.map((section) => {
           // Keep the section open while one of its pages is showing.
           const containsActive = section.items.some((item) => isActive(item.id));
           const expanded = !section.collapsible || setupOpen || containsActive;

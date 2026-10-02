@@ -1,4 +1,3 @@
-import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
@@ -11,7 +10,7 @@ const API = process.env.REACT_APP_BACKEND_URL;
 // Managing administrators is the super admin's job. Removing someone means deactivating them:
 // they are signed out everywhere and cannot log in, but the account (which grades and approvals
 // point back to) is kept, and they can be reactivated.
-const AdministratorsPage = () => {
+const AdministratorsPanel = () => {
   const token = sessionStorage.getItem("adminToken");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -111,7 +110,7 @@ const AdministratorsPage = () => {
   // ---------- states ----------
   if (loading && !me) {
     return (
-      <div className="am-page page-shell">
+      <div className="am-page">
         <div className="am-skeleton" />
         <div className="am-skeleton" />
         <div className="am-skeleton" />
@@ -121,7 +120,7 @@ const AdministratorsPage = () => {
 
   if (loadError) {
     return (
-      <div className="am-page page-shell">
+      <div className="am-page">
         <div className="am-empty">
           <h2>Could not load administrators</h2>
           <p>{loadError}</p>
@@ -133,8 +132,7 @@ const AdministratorsPage = () => {
 
   if (!me?.isSuperAdmin) {
     return (
-      <div className="am-page page-shell">
-        <PageHeader title="Administrators" />
+      <div className="am-page">
         <div className="am-empty">
           <div className="am-empty-icon" aria-hidden="true">🔒</div>
           <h2>Only the super admin can manage administrators</h2>
@@ -145,13 +143,9 @@ const AdministratorsPage = () => {
   }
 
   return (
-    <div className="am-page page-shell">
+    <div className="am-page">
 
-      <PageHeader
-        title="Administrators"
-        subtitle="People who can manage everything in this portal. Only you, as super admin, can add or change them."
-        actions={<button className="am-btn am-btn-primary" onClick={() => setModal({ type: "add" })}>+ Add administrator</button>}
-      />
+      <p className="am-panel-intro">People who can manage everything in this portal. Only you, as super admin, can add or change them.</p>
 
       <div className="am-toolbar">
         <input
@@ -162,6 +156,7 @@ const AdministratorsPage = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button className="am-btn am-btn-primary am-toolbar-action" onClick={() => setModal({ type: "add" })}>+ Add administrator</button>
         <div className="am-tabs" role="tablist">
           <button role="tab" aria-selected={tab === "active"} className={`am-tab ${tab === "active" ? "is-active" : ""}`} onClick={() => setTab("active")}>
             Active <span className="am-count">{counts.active}</span>
@@ -295,4 +290,4 @@ const AdministratorsPage = () => {
   );
 };
 
-export default AdministratorsPage;
+export default AdministratorsPanel;

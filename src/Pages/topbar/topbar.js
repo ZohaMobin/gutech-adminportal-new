@@ -50,7 +50,7 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
               type="button"
               className="header-nav-item notification-icon"
               title={pendingApprovals ? `${pendingApprovals} account(s) awaiting approval` : 'No pending approvals'}
-              onClick={() => navigate('/account-approvals')}
+              onClick={() => navigate('/access?tab=requests')}
             >
               <span>🔔</span>
               {pendingApprovals > 0 && <span className="notification-badge">{pendingApprovals > 9 ? '9+' : pendingApprovals}</span>}
@@ -76,19 +76,10 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
                     <button
                       type="button"
                       className="profile-menu-item"
-                      onClick={() => { setIsProfileMenuOpen(false); navigate('/account-approvals'); }}
+                      onClick={() => { setIsProfileMenuOpen(false); navigate('/access'); }}
                     >
-                      Account Approvals
+                      Manage access
                       {pendingApprovals > 0 && <span className="menu-count">{pendingApprovals}</span>}
-                    </button>
-                  )}
-                  {isSuperAdmin && (
-                    <button
-                      type="button"
-                      className="profile-menu-item"
-                      onClick={() => { setIsProfileMenuOpen(false); navigate('/administrators'); }}
-                    >
-                      Administrators
                     </button>
                   )}
                   <button

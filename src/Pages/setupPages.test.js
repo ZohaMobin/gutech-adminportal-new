@@ -28,13 +28,6 @@ const mount = async (Page, data) => {
   await act(async () => { root.render(<Page />); });
   await wait(20);
 };
-const mountPage = async (Page) => {
-  container = document.createElement("div");
-  document.body.appendChild(container);
-  root = createRoot(container);
-  await act(async () => { root.render(<Page />); });
-  await wait(20);
-};
 const click = (el) => act(async () => { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
 const byLabel = (label) => container.querySelector(`[aria-label="${label}"]`);
 const dialog = () => document.querySelector('[role="dialog"]');
@@ -103,28 +96,12 @@ describe("Academic Years", () => {
   });
 });
 
-// The page asks the server who is signed in first (/api/users/me), then loads the accounts.
-const answerWith = (me, list) => axios.get.mockImplementation(async (url) => ({ data: url.includes("/api/users/me") ? me : list }));
-
-describe("Account Approvals", () => {
+describe("Account Approvals (the Sign-up requests tab)", () => {
   beforeEach(() => { sessionStorage.setItem("adminToken", "t"); });
   afterEach(() => { sessionStorage.clear(); });
 
-  test("an ordinary administrator sees why they cannot use it, and the approvals list is never requested", async () => {
-    answerWith({ isSuperAdmin: false }, accounts);
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
-    await act(async () => { root.render(<AccountApprovalsPage />); });
-    await wait(20);
-    expect(container.textContent).toMatch(/Only the super admin can approve or reject accounts/);
-    expect(container.querySelector("table")).toBeNull();
-    expect(axios.get.mock.calls.some(([url]) => url.includes("/api/account-approvals"))).toBe(false);
-  });
-
   test("Reject takes an optional reason in a dialog and sends it", async () => {
-    answerWith({ isSuperAdmin: true }, accounts);
-    await mountPage(AccountApprovalsPage);
+    await mount(AccountApprovalsPage, accounts);
     axios.post.mockResolvedValue({ data: {} });
     await click(byLabel("Reject Ayesha"));
     const box = dialog().querySelector("textarea");
@@ -138,8 +115,7 @@ describe("Account Approvals", () => {
   });
 
   test("Approve asks first and sends no reason", async () => {
-    answerWith({ isSuperAdmin: true }, accounts);
-    await mountPage(AccountApprovalsPage);
+    await mount(AccountApprovalsPage, accounts);
     axios.post.mockResolvedValue({ data: {} });
     await click(byLabel("Approve Ayesha"));
     expect(dialog().textContent).toMatch(/Approve Ayesha as teacher\?/);

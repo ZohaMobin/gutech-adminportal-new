@@ -2,7 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
 import axios from "axios";
-import TeachersPage from "./TeachersPage";
+import TeachersPanel from "./TeachersPage";
 import { visibleTeachers, countByStatus, sectionsText } from "./teacherListUtils";
 
 jest.mock("axios");
@@ -24,28 +24,21 @@ const dialogButton = (text) => [...dialog().querySelectorAll("button")].find((b)
 const rowOf = (name) => [...container.querySelectorAll(".am-row")].find((r) => r.textContent.includes(name));
 const buttonIn = (el, text) => [...el.querySelectorAll("button")].find((b) => b.textContent.trim() === text);
 
-const mount = async ({ superAdmin = true, deletable = { canDelete: true, summary: "" } } = {}) => {
+const mount = async ({ deletable = { canDelete: true, summary: "" } } = {}) => {
   sessionStorage.setItem("adminToken", "t");
   axios.get.mockImplementation(async (url) => {
-    if (url.includes("/api/users/me")) return { data: { isSuperAdmin: superAdmin } };
     if (url.endsWith("/deletable")) return { data: deletable };
     return { data: teachers };
   });
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  await act(async () => { root.render(<TeachersPage />); });
+  await act(async () => { root.render(<TeachersPanel />); });
   await wait(20);
 };
 afterEach(() => { act(() => root.unmount()); container.remove(); document.body.innerHTML = ""; sessionStorage.clear(); jest.clearAllMocks(); });
 
-test("an ordinary administrator sees an explanation and the teacher list is never requested", async () => {
-  await mount({ superAdmin: false });
-  expect(container.textContent).toMatch(/Only the super admin can manage teacher access/);
-  expect(axios.get.mock.calls.some(([url]) => url.endsWith("/api/users/teachers"))).toBe(false);
-});
-
-test("the super admin sees active teachers with their sections, and the revoked ones under their own tab", async () => {
+test("it lists active teachers with their sections, and the revoked ones under their own tab", async () => {
   await mount();
   expect(rowOf("Ayesha Khan").textContent).toContain("3 sections");
   expect(rowOf("Bilal Raza").textContent).toContain("No sections");
