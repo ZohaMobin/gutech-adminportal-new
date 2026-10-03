@@ -539,3 +539,8 @@
 .am-check em { font-style: normal; color: #888; }
 .oem-summary { margin: 0 0 16px; padding: 10px 12px; background: #f8f9fb; border: 1px solid #e6e8ec; border-radius: 8px; font-size: 14px; color: #333; }
 .oem-summary span { color: #6b7280; }
+
+/* Inside Manage access: the panels share one intro line and toolbar. */
+.am-panel-intro { margin: 0 0 14px; color: #6b7280; font-size: 14px; line-height: 1.5; }
+.am-toolbar-action { margin-left: auto; }
+.am-toolbar-tabs { justify-content: flex-start; }

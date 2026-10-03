@@ -1,15 +1,18 @@
 import Loading, { BusyLabel } from '../../Components/Loading/Loading';
 import PageHeader from "../../Components/PageHeader/PageHeader";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import "./ImportStudentsPage.css";
 import NoResultsFound from "../../Components/NoResultsFound";
+import ImportHistory from "./ImportHistory";
+import StudentFlow from "../../Components/StudentFlow/StudentFlow";
 
 const ImportStudentsPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
+  const authHeaders = useCallback(() => ({ Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` }), []);
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState([]);
@@ -17,6 +20,7 @@ const ImportStudentsPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [importErrors, setImportErrors] = useState([]);
+  const [historyKey, setHistoryKey] = useState(0);   // bumped after an import so the history shows it at once
 
   useEffect(() => {
     // Check if user is authenticated
@@ -164,7 +168,7 @@ const ImportStudentsPage = () => {
           // Make a single API call for bulk creation
           const response = await axios.post(
             `${apiUrl}/api/students/bulk`,
-            { students: studentData },
+            { students: studentData, fileName: file.name, rowsInFile: students.length },
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -191,6 +195,7 @@ const ImportStudentsPage = () => {
 
           setFile(null);
           setPreview([]);
+          setHistoryKey((key) => key + 1);
         } catch (err) {
           if (err.response?.status === 401) {
             setError("Session expired. Please login again.");
@@ -218,7 +223,9 @@ const ImportStudentsPage = () => {
 
   return (
     <div className="import-students-container page-shell">
-      <PageHeader title="Import Students" subtitle="Import many students at once from an Excel file. Download the template to see the format it needs." />
+      <PageHeader title="Import Students" subtitle="Create student accounts in the LMS from an Excel file. Do this once per student, before enrolling them in courses." />
+
+      <StudentFlow current="import" />
 
       <div className="import-section">
         <div className="file-upload">
@@ -312,6 +319,8 @@ const ImportStudentsPage = () => {
           <BusyLabel busy={loading} busyText="Importing…" idle="Import Students" />
         </button>
       </div>
+
+      <ImportHistory apiUrl={apiUrl} headers={authHeaders} refreshKey={historyKey} />
     </div>
   );
 };

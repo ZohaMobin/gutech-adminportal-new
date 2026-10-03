@@ -1,0 +1,171 @@
+/* Courses, visual refresh. Loaded after CoursePage.css so it wins without editing the older rules. Everything is scoped to
+   .course-container. Shared look: 14px cards on a #e8eaee hairline, 10px controls 40px tall, the red accent for focus and
+   primary actions, soft pills for status. */
+.course-container { --cr-line: #e8eaee; --cr-ink: #111827; --cr-muted: #6b7280; --cr-card: 0 1px 2px rgba(16, 24, 40, 0.04); }
+
+/* "All courses" in the page header */
+.course-container .course-all-btn { display: inline-flex; align-items: center; gap: 0.4rem; height: 2.4rem; padding: 0 1rem; border: 1px solid #d5d8de; border-radius: 0.65rem; background: #fff; color: #374151; font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+.course-container .course-all-btn:hover { background: #f6f7f9; }
+.course-container .course-all-btn.is-on { border-color: #efc9ca; background: #fdf3f3; color: var(--primary-color); }
+.course-container .course-all-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+
+/* ---------- Step 1: the create / edit form ---------- */
+.course-container .course-form.cf { padding: 0; border: 1px solid var(--cr-line); border-radius: 0.9rem; background: #fff; box-shadow: var(--cr-card); overflow: hidden; }
+.cf-head { padding: 1.15rem 1.5rem 1rem; border-bottom: 1px solid #eef0f3; background: #fcfcfd; }
+.cf-head h2 { margin: 0; font-size: 1.05rem; font-weight: 600; color: var(--cr-ink); }
+.cf-head p { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--cr-muted); }
+.course-container .course-form.cf form { padding: 1.25rem 1.5rem 1.4rem; }
+.cf-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1rem 1.25rem; }
+.course-container .cf .cf-field { margin: 0; min-width: 0; }
+.cf-wide { grid-column: 1 / -1; }
+.course-container .cf .cf-field label { display: block; margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 600; color: #374151; }
+.course-container .cf .cf-field :is(input, textarea) { width: 100%; box-sizing: border-box; border: 1px solid #d5d8de; border-radius: 0.65rem; background: #fff; font: inherit; font-size: 0.92rem; color: var(--cr-ink); }
+.course-container .cf .cf-field input { height: 2.6rem; padding: 0 0.85rem; }
+.course-container .cf .cf-field textarea { min-height: 6rem; padding: 0.65rem 0.85rem; resize: vertical; line-height: 1.5; }
+.course-container .cf .cf-field ::placeholder { color: #9aa1ad; }
+.course-container .cf .cf-field :is(input, textarea):focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12); }
+
+/* Active switch */
+.course-container .cf-switch { display: flex; align-items: center; gap: 0.8rem; margin: 1.25rem 0 0; padding: 0.8rem 0.95rem; border: 1px solid var(--cr-line); border-radius: 0.75rem; background: #fafbfc; cursor: pointer; }
+.cf-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cf-track { position: relative; flex: none; width: 2.4rem; height: 1.4rem; border-radius: 999px; background: #cfd4dc; transition: background 0.15s ease; }
+.cf-track::after { content: ""; position: absolute; top: 0.15rem; left: 0.15rem; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.15s ease; }
+.cf-switch input:checked + .cf-track { background: #2f9e5c; }
+.cf-switch input:checked + .cf-track::after { transform: translateX(1rem); }
+.cf-switch input:focus-visible + .cf-track { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.cf-switch-text { display: grid; gap: 0.1rem; }
+.cf-switch-text strong { font-size: 0.88rem; font-weight: 600; color: var(--cr-ink); }
+.cf-switch-text small { font-size: 0.78rem; color: var(--cr-muted); }
+.course-container .cf .form-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin: 1.25rem 0 0; padding-top: 1.1rem; border-top: 1px solid #eef0f3; }
+.course-container .cf .form-actions .pk-btn { height: 2.5rem; padding: 0 1.25rem; border-radius: 0.65rem; font-weight: 600; }
+
+/* ---------- Step 2: the offering form ----------
+   A form in three labelled parts (what, where, when) with a plain-language summary, so it reads as "describe an offering"
+   and not as a row of filters. Same card as the create form. */
+.course-container .offering-form { display: block; padding: 0; border: 1px solid var(--cr-line); border-radius: 0.9rem; background: #fff; box-shadow: var(--cr-card); overflow: hidden; }
+.course-container .offering-form .of-form-head { margin: 0; padding: 1.15rem 1.5rem 1rem; border-bottom: 1px solid #eef0f3; background: #fcfcfd; }
+.of-form-head h2 { margin: 0; font-size: 1.05rem; font-weight: 600; color: var(--cr-ink); }
+.of-form-head p { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--cr-muted); }
+.of-block { padding: 1.15rem 1.5rem 1.2rem; border-bottom: 1px solid #eef0f3; }
+.of-block-title { margin: 0 0 0.2rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; }
+.of-block-hint { margin: 0 0 0.85rem; font-size: 0.84rem; color: var(--cr-muted); line-height: 1.5; }
+.of-block .of-field { margin: 0; min-width: 0; }
+.of-block .of-block-title + .of-field { margin-top: 0.7rem; }
+.of-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 1.25rem; align-items: start; }
+.course-container .offering-form label { display: block; margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 600; color: #374151; }
+.course-container .offering-form select { width: 100%; box-sizing: border-box; height: 2.6rem; padding: 0 0.8rem; border: 1px solid #d5d8de; border-radius: 0.65rem; background-color: #fff; font: inherit; font-size: 0.92rem; color: var(--cr-ink); }
+.course-container .offering-form select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12); }
+.of-picked { margin: 0.5rem 0 0; padding: 0.45rem 0.7rem; border-radius: 0.55rem; background: #f6f8fb; border: 1px solid #e3e8f0; font-size: 0.84rem; color: #374151; }
+.of-picked strong { color: var(--cr-ink); }
+
+/* Terms as choices: there are only a few, and choosing one is a decision, not a filter. */
+.of-terms { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.course-container .of-term { display: inline-flex; align-items: center; gap: 0.5rem; height: 2.5rem; padding: 0 1.1rem; border: 1px solid #d5d8de; border-radius: 0.65rem; background: #fff; color: #374151; font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease; }
+.course-container .of-term:hover { border-color: #aeb4be; background: #fafbfc; }
+.course-container .of-term.is-on { border-color: var(--primary-color); background: #fdf3f3; color: var(--primary-color); box-shadow: 0 0 0 1px var(--primary-color) inset; }
+.course-container .of-term:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.of-term em { padding: 0.05rem 0.45rem; border-radius: 999px; background: #e7f6ec; color: #17693a; font-size: 0.68rem; font-weight: 700; font-style: normal; letter-spacing: 0.03em; text-transform: uppercase; }
+.of-warn { margin: 0; padding: 0.6rem 0.8rem; border-radius: 0.6rem; background: #fff7e6; color: #7a4a05; font-size: 0.85rem; }
+
+/* ---------- Form on the left, context on the right (steps 1 and 2) ---------- */
+.cr-split { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(17rem, 1fr); gap: 1.25rem; align-items: start; }
+.cr-panel { display: grid; gap: 0.9rem; padding: 1.1rem 1.2rem 1.2rem; background: #fff; border: 1px solid var(--cr-line); border-radius: 0.9rem; box-shadow: var(--cr-card); min-width: 0; }
+.cr-sticky { position: sticky; top: 1rem; }
+.cr-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.cr-panel-head h3 { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; }
+.cr-count { padding: 0.05rem 0.55rem; border-radius: 999px; background: #eef0f4; color: #4b5563; font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cr-empty { margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--cr-muted); }
+.cr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.1rem; }
+.cr-list li { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.5rem 0.1rem; border-bottom: 1px solid #f0f1f4; font-size: 0.86rem; color: #374151; min-width: 0; }
+.cr-list li:last-child { border-bottom: 0; }
+.cr-list strong { flex: none; min-width: 4rem; color: var(--cr-ink); }
+.cr-list span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cr-list em { flex: none; padding: 0.05rem 0.45rem; border-radius: 999px; background: #f1f2f5; color: #6b7280; font-size: 0.7rem; font-style: normal; font-weight: 600; }
+.cr-alert { display: grid; gap: 0.2rem; padding: 0.75rem 0.85rem; border-radius: 0.65rem; background: #fff7e6; border: 1px solid #f3d9a4; color: #7a4a05; font-size: 0.86rem; line-height: 1.45; }
+.cr-alert strong { color: #5f3a04; }
+.cr-alert .cintro-btn { justify-self: start; margin-top: 0.4rem; }
+.cr-panel > .cintro-link { justify-self: start; }
+
+/* The offering summary: a checklist that ticks as each part is chosen. */
+.cr-sum { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.cr-sum li { display: grid; grid-template-columns: 1.1rem 1fr; column-gap: 0.65rem; padding: 0.6rem 0; border-bottom: 1px solid #f0f1f4; }
+.cr-sum li:last-child { border-bottom: 0; }
+.cr-sum i { grid-row: 1 / span 2; align-self: start; margin-top: 0.15rem; width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid #cfd4dc; box-sizing: border-box; }
+.cr-sum li.is-done i { border-color: #2f9e5c; background: #2f9e5c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2l2.4 2.4 4.6-5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 0.75rem no-repeat; }
+.cr-sum span { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8a919c; }
+.cr-sum strong { font-size: 0.9rem; font-weight: 600; color: var(--cr-ink); overflow-wrap: anywhere; }
+.cr-sum li:not(.is-done) strong { color: #9aa1ad; font-weight: 500; }
+.course-container .cr-submit { width: 100%; height: 2.6rem; border-radius: 0.65rem; font-weight: 600; }
+.course-container .cr-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+.cr-already { padding-top: 0.9rem; border-top: 1px solid #eef0f3; }
+.cr-already h4 { margin: 0 0 0.45rem; font-size: 0.82rem; font-weight: 600; color: #374151; }
+.cr-already ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; font-size: 0.82rem; color: var(--cr-muted); line-height: 1.4; }
+.cr-panel .of-warn { margin: 0; }
+
+/* ---------- Course offerings: one compact card (title and search, term and filters, grouped rows) ---------- */
+.ol { margin: 1.75rem 0 0; background: #fff; border: 1px solid var(--cr-line); border-radius: 0.9rem; box-shadow: var(--cr-card); }
+.ol-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; padding: 0.85rem 1.1rem; border-bottom: 1px solid #eef0f3; }
+.ol-titlebar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.ol-titlebar .ol-terms { margin-left: 0.4rem; }
+.ol-titlebar h3 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--cr-ink); }
+.ol-count { padding: 0.05rem 0.55rem; border-radius: 999px; background: #eef0f4; color: #4b5563; font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ol-tools { display: flex; align-items: center; gap: 0.5rem; }
+.course-container .ol-search { width: 15rem; height: 2.2rem; padding: 0 0.8rem 0 2.1rem; border: 1px solid #d5d8de; border-radius: 0.6rem; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa1ad' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") 0.65rem center / 1rem no-repeat; font: inherit; font-size: 0.85rem; box-sizing: border-box; }
+.course-container .ol-search:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12); }
+.ol-more { position: relative; }
+.course-container .ol-more-btn { width: 2.2rem; height: 2.2rem; border: 1px solid #d5d8de; border-radius: 0.6rem; background: #fff; color: #4b5563; font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.course-container .ol-more-btn:hover { background: #f6f7f9; }
+.ol-more-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.ol-more-list { position: absolute; right: 0; top: calc(100% + 0.35rem); z-index: 20; min-width: max-content; padding: 0.3rem; background: #fff; border: 1px solid var(--cr-line); border-radius: 0.65rem; box-shadow: 0 8px 24px rgba(16, 24, 40, 0.14); }
+.ol-more-list button { display: block; width: 100%; white-space: nowrap; padding: 0.55rem 0.7rem; border: 0; border-radius: 0.45rem; background: none; text-align: left; font: inherit; font-size: 0.85rem; cursor: pointer; }
+.ol-more-list button:hover:not(:disabled) { background: #f6f7f9; }
+.ol-more-list button.is-danger { color: #b42318; }
+.ol-more-list button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ol-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; flex-wrap: wrap; padding: 0.65rem 1.1rem; background: #fcfcfd; border-bottom: 1px solid #eef0f3; }
+.ol-terms { display: inline-flex; gap: 0.25rem; padding: 0.2rem; border-radius: 0.65rem; background: #eef0f4; }
+.course-container .ol-term { display: inline-flex; align-items: center; gap: 0.4rem; height: 1.85rem; padding: 0 0.8rem; border: 0; border-radius: 0.5rem; background: transparent; color: #4b5563; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.course-container .ol-term.is-on { background: #fff; color: var(--primary-color); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12); }
+.ol-term em { padding: 0 0.4rem; border-radius: 999px; background: #e7f6ec; color: #17693a; font-size: 0.64rem; font-style: normal; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.1rem; }
+.ol-term:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
+.ol-filters { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+.course-container .ol-filters select { width: auto; flex: 0 0 auto; margin: 0; height: 2rem; min-width: 8.5rem; max-width: 14rem; padding: 0 0.6rem; border: 1px solid #d5d8de; border-radius: 0.55rem; background-color: #fff; font: inherit; font-size: 0.82rem; color: #374151; }
+.course-container .ol-filters select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12); }
+
+.ol-empty { margin: 0; padding: 1.75rem 1.1rem; text-align: center; font-size: 0.9rem; color: var(--cr-muted); }
+/* The term as a plan: a block per program, a column per semester, each course one line with its credit hours. */
+.sp-list { display: grid; gap: 1.5rem; padding: 1rem 1.1rem 1.25rem; }
+.sp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin: 0 0 0.7rem; }
+.sp-head h4 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--cr-ink); }
+.sp-head h4 span { margin-left: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--cr-muted); }
+.sp-head small { font-size: 0.8rem; font-weight: 600; color: #4b5563; font-variant-numeric: tabular-nums; }
+.sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.75rem; align-items: start; }
+.sp-col { background: #fff; border: 1px solid var(--cr-line); border-radius: 0.75rem; overflow: hidden; }
+.sp-col-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.8rem; background: #f8f9fb; border-bottom: 1px solid #eef0f3; }
+.sp-col-head strong { font-size: 0.84rem; font-weight: 700; color: var(--cr-ink); }
+.sp-col-head span { font-size: 0.74rem; font-weight: 600; color: #6b7280; font-variant-numeric: tabular-nums; }
+.sp-col ul { list-style: none; margin: 0; padding: 0.2rem 0; }
+.sp-col li + li { border-top: 1px solid #f3f4f7; }
+.course-container .sp-course { display: grid; grid-template-columns: 3.7rem minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; width: 100%; padding: 0.42rem 0.8rem; border: 0; background: none; text-align: left; font: inherit; font-size: 0.84rem; line-height: 1.35; color: #374151; cursor: pointer; }
+.course-container .sp-course:hover { background: #fafbfc; }
+.course-container .sp-course:hover .sp-code { color: var(--primary-color); }
+.sp-course:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
+.sp-code { font-weight: 700; color: var(--cr-ink); letter-spacing: 0.01em; }
+.sp-name { min-width: 0; overflow-wrap: anywhere; }
+.sp-cr { min-width: 1.5rem; padding: 0 0.35rem; border-radius: 0.4rem; background: #f1f3f6; color: #374151; font-size: 0.74rem; font-weight: 700; line-height: 1.35rem; text-align: center; font-variant-numeric: tabular-nums; }
+.sp-course.is-off .sp-code, .sp-course.is-off .sp-name { color: #a3a9b3; }
+.sp-course.is-off .sp-cr { background: transparent; border: 1px dashed #d5d8de; color: #a3a9b3; }
+
+/* ---------- All courses ---------- */
+.course-container .manage-courses-section { border: 1px solid var(--cr-line); border-radius: 0.9rem; background: #fff; box-shadow: var(--cr-card); }
+.course-container .edit-btn, .course-container .delete-btn, .course-container .toggle-btn { width: 2rem; height: 2rem; display: inline-grid; place-items: center; border-radius: 0.5rem; border: 0; background: transparent; cursor: pointer; }
+.course-container .edit-btn:hover:not(:disabled) { background: #eef4ff; }
+.course-container .delete-btn:hover:not(:disabled) { background: #fef2f2; }
+.course-container .toggle-btn:hover:not(:disabled) { background: #f1f2f5; }
+
+@media (max-width: 760px) {
+  .cf-grid { grid-template-columns: 1fr; }
+  .of-grid { grid-template-columns: 1fr; }
+  .of-block, .course-container .offering-form .of-form-head, .of-foot, .cf-head { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .course-container .course-form.cf form { padding-left: 1.25rem; padding-right: 1.25rem; }
+}

@@ -244,9 +244,10 @@ test("the 'how this works' guide can be hidden, and stays hidden next time", asy
   expect(container.textContent).not.toContain("How this works");
 });
 
-test("a course that is not placed in any semester is not called 'Semester 0'", async () => {
+test("Semester 0 is shown as the Pre-semester, never as 'Semester 0' or 'not placed'", async () => {
   await setup(version({ courses: [...version().courses, course("T101", 0)] }));
   const heads = [...container.querySelectorAll(".pre-semester-head")].map((h) => h.textContent);
-  expect(heads[0]).toBe("Not placed in a semester1 course · 1 to do");
+  expect(heads[0]).toBe("Pre-semester1 course · 1 to do");
+  expect(container.textContent).not.toContain("Not placed in a semester");
   expect(container.textContent).not.toContain("Semester 0");
 });

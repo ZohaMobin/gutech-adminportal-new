@@ -96,7 +96,10 @@ describe("Academic Years", () => {
   });
 });
 
-describe("Account Approvals", () => {
+describe("Account Approvals (the Sign-up requests tab)", () => {
+  beforeEach(() => { sessionStorage.setItem("adminToken", "t"); });
+  afterEach(() => { sessionStorage.clear(); });
+
   test("Reject takes an optional reason in a dialog and sends it", async () => {
     await mount(AccountApprovalsPage, accounts);
     axios.post.mockResolvedValue({ data: {} });

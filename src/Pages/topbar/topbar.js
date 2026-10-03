@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../Components/AuthContext';
 import usePendingApprovals from '../../hooks/usePendingApprovals';
+import useSuperAdmin from '../../hooks/useSuperAdmin';
 import './topbar.css';
 
 const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
@@ -11,23 +11,8 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
   const { logout } = useAuth();
   
   const user = JSON.parse(sessionStorage.getItem('adminUser'));
-  const pendingApprovals = usePendingApprovals();
-  const [isSuperAdmin, setIsSuperAdmin] = useState(user?.isSuperAdmin === true);
-
-  // Learn the current role from the server, so a session that started before someone was made
-  // super admin (or lost it) is correct without logging in again.
-  useEffect(() => {
-    const token = sessionStorage.getItem('adminToken');
-    if (!token) return;
-    axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(({ data }) => {
-        setIsSuperAdmin(data.isSuperAdmin === true);
-        const stored = JSON.parse(sessionStorage.getItem('adminUser') || 'null');
-        if (stored) sessionStorage.setItem('adminUser', JSON.stringify({ ...stored, isSuperAdmin: data.isSuperAdmin === true }));
-      })
-      .catch(() => {});
-  }, []);
+  const { isSuperAdmin } = useSuperAdmin();
+  const pendingApprovals = usePendingApprovals(isSuperAdmin);
   const initials = (user?.name || 'Admin').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 
   const toggleProfileMenu = () => {
@@ -60,21 +45,23 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
         <nav className="header-nav">
           <button type="button" className="header-nav-item">Help</button>
           <button type="button" className="header-nav-item">Support</button>
-          <button
-            type="button"
-            className="header-nav-item notification-icon"
-            title={pendingApprovals ? `${pendingApprovals} account(s) awaiting approval` : 'No pending approvals'}
-            onClick={() => navigate('/account-approvals')}
-          >
-            <span>🔔</span>
-            {pendingApprovals > 0 && <span className="notification-badge">{pendingApprovals > 9 ? '9+' : pendingApprovals}</span>}
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className="header-nav-item notification-icon"
+              title={pendingApprovals ? `${pendingApprovals} account(s) awaiting approval` : 'No pending approvals'}
+              onClick={() => navigate('/access?tab=requests')}
+            >
+              <span>🔔</span>
+              {pendingApprovals > 0 && <span className="notification-badge">{pendingApprovals > 9 ? '9+' : pendingApprovals}</span>}
+            </button>
+          )}
           
           {/* User profile */}
           <div className="user-profile">
             <div className="user-avatar" onClick={toggleProfileMenu}>
               <span>{initials}</span>
-              {pendingApprovals > 0 && <span className="avatar-dot" aria-hidden="true" />}
+              {isSuperAdmin && pendingApprovals > 0 && <span className="avatar-dot" aria-hidden="true" />}
             </div>
             
             {/* Profile dropdown menu */}
@@ -85,21 +72,14 @@ const Topbar = ({ toggleSidebar, isSidebarOpen }) => {
                   <span className="profile-email">{user?.email}</span>
                   {isSuperAdmin && <span className="profile-role">Super admin</span>}
                 </div>
-                  <button
-                    type="button"
-                    className="profile-menu-item"
-                    onClick={() => { setIsProfileMenuOpen(false); navigate('/account-approvals'); }}
-                  >
-                    Account Approvals
-                    {pendingApprovals > 0 && <span className="menu-count">{pendingApprovals}</span>}
-                  </button>
                   {isSuperAdmin && (
                     <button
                       type="button"
                       className="profile-menu-item"
-                      onClick={() => { setIsProfileMenuOpen(false); navigate('/administrators'); }}
+                      onClick={() => { setIsProfileMenuOpen(false); navigate('/access'); }}
                     >
-                      Administrators
+                      Manage access
+                      {pendingApprovals > 0 && <span className="menu-count">{pendingApprovals}</span>}
                     </button>
                   )}
                   <button

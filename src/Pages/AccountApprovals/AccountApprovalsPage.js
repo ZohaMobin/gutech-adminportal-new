@@ -1,5 +1,4 @@
 import Loading from "../../Components/Loading/Loading";
-import PageHeader from "../../Components/PageHeader/PageHeader";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { ConfirmModal } from "../Administrators/AdminModals";
 import React, { useState, useEffect, useCallback } from "react";
@@ -13,7 +12,8 @@ const TABS = [
   { id: "rejected", label: "Rejected" },
 ];
 
-const AccountApprovalsPage = () => {
+// The Sign-up requests tab of Manage access: staff who registered themselves and wait to be let in.
+const AccountApprovalsPanel = () => {
   const [tab, setTab] = useState("pending");
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,23 +74,23 @@ const AccountApprovalsPage = () => {
   const isRejectedTab = tab === "rejected";
 
   return (
-    <div className="aa-page page-shell">
-      <PageHeader title="Account Approvals" />
+    <div className="aa-page">
+      <p className="am-panel-intro">Staff who registered themselves on the teacher portal. Approve them to let them sign in, or reject with an optional reason.</p>
 
-      <div className="pk-tabs" role="tablist">
+      <div className="am-toolbar am-toolbar-tabs"><div className="am-tabs" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             role="tab"
             aria-selected={tab === t.id}
-            className={`pk-tab ${tab === t.id ? "is-on" : ""}`}
+            className={`am-tab ${tab === t.id ? "is-active" : ""}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}
           </button>
         ))}
-      </div>
+      </div></div>
 
       {error && <div className="error-message" role="alert">{error}</div>}
 
@@ -175,4 +175,4 @@ const AccountApprovalsPage = () => {
   );
 };
 
-export default AccountApprovalsPage;
+export default AccountApprovalsPanel;

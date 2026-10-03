@@ -1,0 +1,5 @@
+/* Teachers reuses the Administrators rows, toolbar and dialogs (AdministratorsPage.css); only what differs is here. */
+.tm-warn { color: #9a5b06; }
+.tm-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: #fff7e6; color: #7a4a05; font-size: 13.5px; line-height: 1.45; }
+.tm-revoke { color: #b42318; border-color: #f1c4c0; }
+.tm-revoke:hover:not(:disabled) { background: #fef2f2; }

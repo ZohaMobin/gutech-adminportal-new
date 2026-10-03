@@ -18,8 +18,7 @@ import ProgramsPage from "./Pages/Programs/ProgramsPage";
 import AcademicYearsPage from "./Pages/AcademicYears/AcademicYearsPage";
 import PrerequisitesPage from './Pages/Prerequisites/PrerequisitesPage';
 import ResultApprovalsPage from './Pages/ResultApprovals/ResultApprovalsPage';
-import AccountApprovalsPage from "./Pages/AccountApprovals/AccountApprovalsPage";
-import AdministratorsPage from "./Pages/Administrators/AdministratorsPage";
+import ManageAccessPage from "./Pages/ManageAccess/ManageAccessPage";
 import ChangePasswordPage from "./Pages/ChangePassword/ChangePasswordPage";
 import { AuthProvider } from "./Components/AuthContext";
 import PrivateRoute from "./Components/PrivateRoute";
@@ -48,8 +47,11 @@ function App() {
                 <Route path="academic-years" element={<AcademicYearsPage />} />
                 <Route path="prerequisites" element={<PrerequisitesPage />} />
                 <Route path="result-approvals" element={<ResultApprovalsPage />} />
-                <Route path="account-approvals" element={<AccountApprovalsPage />} />
-                <Route path="administrators" element={<AdministratorsPage />} />
+                <Route path="access" element={<ManageAccessPage />} />
+                {/* Where these used to live. Kept so old links and bookmarks still land in the right tab. */}
+                <Route path="account-approvals" element={<Navigate to="/access?tab=requests" replace />} />
+                <Route path="administrators" element={<Navigate to="/access?tab=administrators" replace />} />
+                <Route path="teachers" element={<Navigate to="/access?tab=teachers" replace />} />
                 <Route path="change-password" element={<ChangePasswordPage />} />
               </Route>
             </Route>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "./CoursePage.css";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
@@ -8,6 +8,9 @@ import { FiSearch, FiX, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight } from "r
 import Loading, { BusyLabel, Refreshing, Spinner } from '../../Components/Loading/Loading';
 import NoResultsFound from '../../Components/NoResultsFound';
 import OfferingEditModal from './OfferingEditModal';
+import CourseSetupSteps from './CourseSetupSteps';
+import { semesterLabel } from '../../utils/semester';
+import './CourseRefresh.css';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import { ConfirmModal } from '../Administrators/AdminModals';
 
@@ -45,24 +48,19 @@ const CoursePage = () => {
   const [busyCourseId, setBusyCourseId] = useState(null);    // the course whose status is being changed or that is being deleted
   const [deactivating, setDeactivating] = useState(false);   // "Deactivate Year Offerings"
   const [activeTab, setActiveTab] = useState('create'); // 'create', 'offerings', 'assignments', 'manage'
-  const [groupByOptions, setGroupByOptions] = useState({
-    department: true,
-    program: true,
-    semester: true
-  });
-  // Filters for the offerings list and for the course list: everything is shown until a filter is chosen.
-  const [offeringDepartment, setOfferingDepartment] = useState("");
+  // Filters for the offerings board and for the course list: everything is shown until a filter is chosen.
   const [offeringProgram, setOfferingProgram] = useState("");
-  const [offeringSemester, setOfferingSemester] = useState("");
   const [offeringQuery, setOfferingQuery] = useState("");
   const [courseDepartment, setCourseDepartment] = useState("");
   const [coursePage, setCoursePage] = useState(0);
-  const [showCreateHelp, setShowCreateHelp] = useState(true);
-  const [showOfferingsHelp, setShowOfferingsHelp] = useState(true);
+  // What was just done, so the next step can pick up from it: { code, name, id } after creating a course, { course, term } after offering one.
+  const [moreOpen, setMoreOpen] = useState(false);          // the "⋯" menu on the offerings list
+  const moreRef = useRef(null);
+  const [justCreated, setJustCreated] = useState(null);
+  const [justOffered, setJustOffered] = useState(null);
   const [editingOffering, setEditingOffering] = useState(null);
   const [savingOffering, setSavingOffering] = useState(false);
   const [offeringEditError, setOfferingEditError] = useState('');
-  const [showManageHelp, setShowManageHelp] = useState(true);
   // One confirmation at a time: { kind: "delete" | "restore" | "deactivate-offerings", ... } (never window.confirm).
   const [confirm, setConfirm] = useState(null);
   const [confirming, setConfirming] = useState(false);
@@ -79,6 +77,15 @@ const CoursePage = () => {
     // Each fetch reports its own failure, so this always settles.
     Promise.all([fetchCourses(), fetchCourseOfferings(), fetchAcademicYears()]).finally(() => setFirstLoad(false));
   }, []);
+
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const close = (e) => { if (!moreRef.current?.contains(e.target)) setMoreOpen(false); };
+    const esc = (e) => { if (e.key === 'Escape') setMoreOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, [moreOpen]);
 
   const fetchAcademicYears = async () => {
     try {
@@ -265,7 +272,7 @@ const CoursePage = () => {
         setMessage({ text: "Course updated successfully!", type: "success" });
       } else {
         // Create new course
-        await axios.post(
+        const created = await axios.post(
         `${apiUrl}/api/courses`,
         course,
         {
@@ -274,7 +281,8 @@ const CoursePage = () => {
           }
         }
       );
-      setMessage({ text: "Course created successfully!", type: "success" });
+      setMessage({ text: "", type: "" });
+      setJustCreated({ id: created?.data?._id, code: course.code, name: course.name });
       }
 
       setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
@@ -310,6 +318,12 @@ const CoursePage = () => {
         }
       );
       setCourseOfferings([...courseOfferings, response.data]);
+      const offeredCourse = courses.find((c) => c._id === courseOffering.courseId);
+      const offeredTerm = academicYears.find((ay) => ay._id === courseOffering.academicYearId);
+      setJustOffered({
+        course: offeredCourse ? `${offeredCourse.code} ${offeredCourse.name}` : "The course",
+        term: offeredTerm ? (offeredTerm.displayName || `${offeredTerm.semesterType} ${offeredTerm.year}`) : "",
+      });
       setCourseOffering({
         courseId: "",
         department: "",
@@ -323,13 +337,6 @@ const CoursePage = () => {
       console.error('Error creating course offering:', error);
       showToast(error.response?.data?.message || 'Error creating course offering', TOAST_TYPES.ERROR);
     }
-  };
-
-  const handleGroupByChange = (option) => {
-    setGroupByOptions(prev => ({
-      ...prev,
-      [option]: !prev[option]
-    }));
   };
 
   const getAcademicYearLabel = (offering) => {
@@ -404,59 +411,45 @@ const CoursePage = () => {
 
   const idOfRef = (value) => String(value?._id ?? value ?? '');
   const filteredOfferings = visibleCourseOfferings.filter((offering) => {
-    if (offeringDepartment && idOfRef(offering.department) !== offeringDepartment) return false;
     if (offeringProgram && idOfRef(offering.program) !== offeringProgram) return false;
-    if (offeringSemester !== '' && Number(offering.semester) !== Number(offeringSemester)) return false;
     const needle = offeringQuery.trim().toLowerCase();
     return !needle || `${offering.courseId?.code || ''} ${offering.courseId?.name || ''}`.toLowerCase().includes(needle);
   });
-  const offeringDepartmentOptions = [...new Map(visibleCourseOfferings.filter((o) => o.department?._id).map((o) => [o.department._id, o.department.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  const offeringProgramOptions = [...new Map(visibleCourseOfferings.filter((o) => o.program?._id && (!offeringDepartment || idOfRef(o.department) === offeringDepartment)).map((o) => [o.program._id, o.program.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  const offeringSemesterOptions = [...new Set(visibleCourseOfferings.map((o) => Number(o.semester)))].sort((a, b) => a - b);
+  const offeringProgramOptions = [...new Map(visibleCourseOfferings.filter((o) => o.program?._id).map((o) => [o.program._id, o.program.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
 
-  // Group course offerings by selected criteria
-  const groupOfferings = () => {
-    const offeringsToGroup = filteredOfferings;
-
-    // If no grouping options are selected, return a single group
-    if (!Object.values(groupByOptions).some(value => value)) {
-      return { "All Offerings": offeringsToGroup };
+  // The term's offerings as a plan: one block per program, one column per semester (Pre-semester first), each listing
+  // its courses with credit hours and a credit total. Inactive offerings stay visible but muted and don't count.
+  const offeringPlan = () => {
+    const programsById = new Map();
+    for (const offering of filteredOfferings) {
+      const programId = idOfRef(offering.program) || 'none';
+      if (!programsById.has(programId)) {
+        programsById.set(programId, {
+          id: programId,
+          name: (typeof offering.program === 'object' ? offering.program?.name : null) || 'Program not set',
+          department: (typeof offering.department === 'object' ? offering.department?.name : null) || '',
+          semesters: new Map(),
+        });
+      }
+      const plan = programsById.get(programId);
+      const semester = Number(offering.semester) || 0;
+      if (!plan.semesters.has(semester)) plan.semesters.set(semester, []);
+      plan.semesters.get(semester).push(offering);
     }
-
-    const grouped = {};
-    
-    offeringsToGroup.forEach(offering => {
-      // Create a composite key based on selected grouping options
-      const keyParts = [];
-      
-      if (groupByOptions.department) {
-        const deptName = typeof offering.department === 'object' 
-          ? offering.department.name 
-          : (offering.department || 'Unassigned Department');
-        keyParts.push(deptName);
-      }
-      
-      if (groupByOptions.program) {
-        const progName = typeof offering.program === 'object' 
-          ? offering.program.name 
-          : (offering.program || 'Unassigned Program');
-        keyParts.push(progName);
-      }
-      
-      if (groupByOptions.semester) {
-        keyParts.push(`Semester ${offering.semester}`);
-      }
-      
-      const key = keyParts.join(' - ');
-      
-      if (!grouped[key]) {
-        grouped[key] = [];
-      }
-      
-      grouped[key].push(offering);
-    });
-    
-    return grouped;
+    const creditsOf = (list) => list.filter((o) => o.isActive).reduce((sum, o) => sum + (Number(o.courseId?.creditHours) || 0), 0);
+    return [...programsById.values()]
+      .sort((x, y) => x.name.localeCompare(y.name))
+      .map((plan) => {
+        const semesters = [...plan.semesters.entries()]
+          .sort(([x], [y]) => x - y)
+          .map(([semester, list]) => ({
+            semester,
+            courses: [...list].sort((x, y) => String(x.courseId?.code || '').localeCompare(String(y.courseId?.code || ''), undefined, { numeric: true })),
+            credits: creditsOf(list),
+          }));
+        const all = semesters.flatMap((sem) => sem.courses);
+        return { ...plan, semesters, courseCount: all.length, credits: creditsOf(all) };
+      });
   };
 
   // Render a table for a specific group of offerings
@@ -482,49 +475,44 @@ const CoursePage = () => {
     }
   };
 
-  const renderOfferingsTable = (groupName, offerings) => {
-    return (
-      <details className="offerings-group" key={groupName} open={filteredOfferings.length <= 40}>
-        <summary className="group-title"><span>{groupName}</span><span className="group-count">{offerings.length} course{offerings.length === 1 ? '' : 's'}</span></summary>
-        <div className="group-scroll"><table className="pk-table">
-          <thead>
-            <tr>
-              <th>Course</th>
-              <th>Department</th>
-              <th>Program</th>
-              <th>Semester</th>
-              <th>Academic Year</th>
-              <th>Status</th>
-              <th aria-label="Actions"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {offerings.map(offering => (
-              <tr key={offering._id}>
-                <td>{offering.courseId?.code} - {offering.courseId?.name}</td>
-                <td>{typeof offering.department === 'object' ? offering.department.name : offering.department}</td>
-                <td>{typeof offering.program === 'object' ? offering.program.name : offering.program}</td>
-                <td>{offering.semester}</td>
-                <td>
-                  {offering.academicYearId && typeof offering.academicYearId === 'object'
-                    ? offering.academicYearId.displayName || `${offering.academicYearId.semesterType} ${offering.academicYearId.year}`
-                    : offering.semesterType && offering.year
-                    ? `${offering.semesterType} ${offering.year}`
-                    : 'N/A'}
-                </td>
-                <td>{offering.isActive ? 'Active' : 'Inactive'}</td>
-                <td className="offering-action-cell">
-                  <button type="button" className="edit-btn" onClick={() => setEditingOffering(offering)} title="Edit offering" aria-label={`Edit ${offering.courseId?.code || ''} offering`}>
-                    <FiEdit2 />
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const renderSemesterPlan = (plan, showProgramHeading) => (
+    <section className="sp" key={plan.id} aria-label={plan.name}>
+      {showProgramHeading && (
+        <header className="sp-head">
+          <h4>{plan.name}{plan.department && <span>{plan.department}</span>}</h4>
+          <small>{plural(plan.courseCount, 'course')} · {plural(plan.credits, 'credit')}</small>
+        </header>
+      )}
+      <div className="sp-grid">
+        {plan.semesters.map(({ semester, courses: list, credits }) => (
+          <article className="sp-col" key={semester} aria-label={semesterLabel(semester)}>
+            <header className="sp-col-head">
+              <strong>{semesterLabel(semester)}</strong>
+              <span>{plural(credits, 'credit')}</span>
+            </header>
+            <ul>
+              {list.map((offering) => (
+                <li key={offering._id}>
+                  <button
+                    type="button"
+                    className={`sp-course ${offering.isActive ? '' : 'is-off'}`}
+                    onClick={() => setEditingOffering(offering)}
+                    title={offering.isActive ? 'Edit this offering' : 'Inactive. Edit this offering'}
+                    aria-label={`${offering.courseId?.code || ''} ${offering.courseId?.name || ''}, ${offering.courseId?.creditHours ?? 0} credits${offering.isActive ? '' : ', inactive'}. Edit`}
+                  >
+                    <span className="sp-code">{offering.courseId?.code}</span>
+                    <span className="sp-name">{offering.courseId?.name}</span>
+                    <span className="sp-cr">{offering.courseId?.creditHours ?? '–'}</span>
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table></div>
-      </details>
-    );
-  };
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -620,136 +608,172 @@ const CoursePage = () => {
     />
   );
 
+  // The offering being filled in, for the summary line and to know when the form is complete.
+  const offerDraft = (() => {
+    const draftCourse = courses.find((c) => c._id === courseOffering.courseId);
+    const draftProgram = programs.find((p) => p._id === courseOffering.program);
+    const draftTerm = academicYears.find((ay) => ay._id === courseOffering.academicYearId);
+    return {
+      course: draftCourse,
+      program: draftProgram,
+      termLabel: draftTerm ? (draftTerm.displayName || `${draftTerm.semesterType} ${draftTerm.year}`) : '',
+      complete: Boolean(draftCourse && courseOffering.department && draftProgram && draftTerm),
+    };
+  })();
+
+  // Step 1's side panel: what already exists, checked as the code or name is typed, so nothing is added twice.
+  const typedCode = course.code.trim().toLowerCase();
+  const typedName = course.name.trim().toLowerCase();
+  const exactCourse = !editingCourse && typedCode ? courses.find((c) => c.code.toLowerCase() === typedCode) : null;
+  const similarCourses = (typedCode || typedName.length >= 3)
+    ? courses.filter((c) => c._id !== editingCourse?._id && c._id !== exactCourse?._id
+        && ((typedCode && c.code.toLowerCase().includes(typedCode)) || (typedName.length >= 3 && c.name.toLowerCase().includes(typedName)))).slice(0, 5)
+    : [];
+  const createPanel = (
+    <aside className="cr-panel" aria-label="Courses already in the system">
+      <div className="cr-panel-head"><h3>Already in the system</h3><span className="cr-count">{courses.length}</span></div>
+      {exactCourse && (
+        <div className="cr-alert" role="status">
+          <strong>{exactCourse.code} already exists</strong>
+          <span>{exactCourse.name}</span>
+          <button type="button" className="cintro-btn" onClick={() => { setCourseOffering((current) => ({ ...current, courseId: exactCourse._id })); setActiveTab('offerings'); }}>Offer {exactCourse.code} for a term →</button>
+        </div>
+      )}
+      {similarCourses.length > 0 && (
+        <ul className="cr-list">
+          {similarCourses.map((c) => (
+            <li key={c._id}><strong>{c.code}</strong><span>{c.name}</span>{!c.isActive && <em>Inactive</em>}</li>
+          ))}
+        </ul>
+      )}
+      {!exactCourse && similarCourses.length === 0 && <p className="cr-empty">Type a code or name and any similar course already here shows up, so you don't add one twice.</p>}
+      <button type="button" className="cintro-link" onClick={() => setActiveTab('manage')}>Browse all courses</button>
+    </aside>
+  );
+
+  // Step 2's side panel: the offering as it will be created, the create button, and where this course is already offered.
+  const draftDepartment = departments.find((d) => d._id === courseOffering.department);
+  const courseOfferingsOfDraft = offerDraft.course ? courseOfferings.filter((o) => String(o.courseId?._id ?? o.courseId) === offerDraft.course._id) : [];
+  const alreadyOffered = offerDraft.complete && courseOfferingsOfDraft.some((o) => String(o.academicYearId?._id ?? o.academicYearId) === courseOffering.academicYearId && String(o.program?._id ?? o.program) === courseOffering.program && Number(o.semester) === Number(courseOffering.semester));
+  const offerPanel = (
+    <aside className="cr-panel cr-sticky" aria-label="Offering summary">
+      <div className="cr-panel-head"><h3>Summary</h3></div>
+      <ul className="cr-sum">
+        <li className={offerDraft.course ? 'is-done' : ''}><i aria-hidden="true" /><span>Course</span><strong>{offerDraft.course ? `${offerDraft.course.code} ${offerDraft.course.name}` : 'Not chosen yet'}</strong></li>
+        <li className={draftDepartment && offerDraft.program ? 'is-done' : ''}><i aria-hidden="true" /><span>Belongs to</span><strong>{draftDepartment && offerDraft.program ? `${offerDraft.program.name} · ${semesterLabel(courseOffering.semester)}` : 'Not chosen yet'}</strong></li>
+        <li className={offerDraft.termLabel ? 'is-done' : ''}><i aria-hidden="true" /><span>Term</span><strong>{offerDraft.termLabel || 'Not chosen yet'}</strong></li>
+      </ul>
+      {alreadyOffered && <p className="of-warn">This exact offering already exists: {offerDraft.termLabel}, {offerDraft.program.name}, {semesterLabel(courseOffering.semester)}.</p>}
+      <button className="pk-btn pk-btn-primary cr-submit" type="submit" form="offering-form" disabled={!offerDraft.complete}>Create offering</button>
+      {courseOfferingsOfDraft.length > 0 && (
+        <div className="cr-already">
+          <h4>{offerDraft.course.code} is already offered</h4>
+          <ul>
+            {courseOfferingsOfDraft.slice(0, 6).map((o) => (
+              <li key={o._id}>{getAcademicYearLabel(o)} · {typeof o.program === 'object' ? o.program?.name : 'Program'} · {semesterLabel(o.semester)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </aside>
+  );
+
+  // Where things stand, in a few words under each step: how many courses exist, and how many are offered in the current term.
+  const currentTerm = academicYears.find((ay) => ay.isCurrent);
+  const offeredInCurrentTerm = currentTerm ? courseOfferings.filter((o) => String(o.academicYearId?._id ?? o.academicYearId) === String(currentTerm._id)).length : null;
+  const stepCaptions = {
+    create: `${courses.length} ${courses.length === 1 ? 'course' : 'courses'}`,
+    offerings: currentTerm ? `${offeredInCurrentTerm} offered in ${currentTerm.displayName || `${currentTerm.semesterType} ${currentTerm.year}`}` : `${courseOfferings.length} ${courseOfferings.length === 1 ? 'offering' : 'offerings'}`,
+  };
+
   return (
     <div className="course-container page-shell">
-      <PageHeader title="Courses" subtitle="Create courses, offer them to programs and semesters, and assign teachers." />
-      <div className="pk-tabs" role="tablist">
-        <button 
-          role="tab" aria-selected={activeTab === 'create'} className={`pk-tab ${activeTab === 'create' ? 'is-on' : ''}`}
-          onClick={() => {
-            setActiveTab('create');
-            setEditingCourse(null);
-          }}
-        >
-          Create Course
-        </button>
-        <button 
-          role="tab" aria-selected={activeTab === 'manage'} className={`pk-tab ${activeTab === 'manage' ? 'is-on' : ''}`} 
-          onClick={() => setActiveTab('manage')}
-        >
-          Manage Courses
-        </button>
-        <button 
-          role="tab" aria-selected={activeTab === 'offerings'} className={`pk-tab ${activeTab === 'offerings' ? 'is-on' : ''}`}
-          onClick={() => setActiveTab('offerings')}
-        >
-          Course Offerings
-        </button>
-        <button 
-          role="tab" aria-selected={activeTab === 'assignments'} className={`pk-tab ${activeTab === 'assignments' ? 'is-on' : ''}`}
-          onClick={() => setActiveTab('assignments')}
-        >
-          Teacher Assignments
-        </button>
-      </div>
+      <PageHeader
+        title="Courses"
+        subtitle="Set up a course in three steps: create it, offer it for a term, then assign a teacher."
+        actions={
+          <button type="button" className={`pk-btn course-all-btn ${activeTab === 'manage' ? 'is-on' : ''}`} aria-pressed={activeTab === 'manage'} onClick={() => { setEditingCourse(null); setActiveTab('manage'); }}>
+            All courses
+          </button>
+        }
+      />
+      <CourseSetupSteps
+        active={activeTab}
+        captions={stepCaptions}
+        onSelect={(tab) => {
+          setActiveTab(tab);
+          if (tab === 'create') setEditingCourse(null);
+        }}
+      />
 
       {message.text && <p className={`message ${message.type}`}>{message.text}</p>}
 
       {activeTab === 'create' && (
         <>
-          {showCreateHelp && (
-            <div className="course-important-note">
-              <p>Create Course: Add new courses to the system. After creating, register it as a course offering, then assign to students, then teachers.</p>
-              <button className="course-close-note-btn" onClick={() => setShowCreateHelp(false)}>×</button>
+          {justCreated ? (
+            <div className="cintro is-done" role="status">
+              <p><strong>{justCreated.code} {justCreated.name}</strong> was created. Next, offer it for a term so it can be taught.</p>
+              <button type="button" className="cintro-btn" onClick={() => {
+                if (justCreated.id) setCourseOffering((current) => ({ ...current, courseId: justCreated.id }));
+                setJustCreated(null);
+                setActiveTab('offerings');
+              }}>Offer {justCreated.code} for a term →</button>
             </div>
-          )}
-          <div className="course-form">
-            <h2>{editingCourse ? 'Edit Course' : 'Create New Course'}</h2>
+          ) : null}
+          <div className="cr-split">
+          <div className="course-form cf">
+            <div className="cf-head">
+              <h2>{editingCourse ? 'Edit course' : 'Create a new course'}</h2>
+              <p>{editingCourse ? `Changing ${editingCourse.code}. Save when you are done.` : 'Fields marked * are required.'}</p>
+            </div>
             <form onSubmit={handleSubmit}>
-          <div>
-            <label>Course Code:</label>
-            <input
-              type="text"
-              name="code"
-              value={course.code}
-              onChange={handleChange}
-              placeholder="PF101"
-              required
-            />
-          </div>
-          <div>
-            <label>Course Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={course.name}
-              onChange={handleChange}
-              placeholder="Programming Fundamentals"
-              required
-            />
-          </div>
-          <div>
-            <label>Description:</label>
-            <textarea
-              name="description"
-              value={course.description}
-              onChange={handleChange}
-              placeholder="Introductory course covering programming concepts, problem-solving, and algorithms."
-              required
-            />
-          </div>
-          <div>
-            <label>Credit Hours:</label>
-            <input
-              type="number"
-              name="creditHours"
-              value={course.creditHours}
-              onChange={handleChange}
-              placeholder="3"
-              required
-            />
-          </div>
-              <div className="checkbox-field">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={course.isActive}
-                    onChange={handleChange}
-                  />
-                  Active
-                </label>
+              <div className="cf-grid">
+                <div className="cf-field">
+                  <label htmlFor="cf-code">Course code *</label>
+                  <input id="cf-code" type="text" name="code" value={course.code} onChange={handleChange} placeholder="PF101" required />
+                  <small className="field-hint">Short and unique, for example CS201.</small>
+                </div>
+                <div className="cf-field">
+                  <label htmlFor="cf-credits">Credit hours *</label>
+                  <input id="cf-credits" type="number" name="creditHours" value={course.creditHours} onChange={handleChange} placeholder="3" required />
+                </div>
+                <div className="cf-field cf-wide">
+                  <label htmlFor="cf-name">Course name *</label>
+                  <input id="cf-name" type="text" name="name" value={course.name} onChange={handleChange} placeholder="Programming Fundamentals" required />
+                </div>
+                <div className="cf-field cf-wide">
+                  <label htmlFor="cf-description">Description *</label>
+                  <textarea id="cf-description" name="description" value={course.description} onChange={handleChange} placeholder="Introductory course covering programming concepts, problem-solving, and algorithms." required />
+                </div>
               </div>
+              <label className="cf-switch">
+                <input type="checkbox" name="isActive" checked={course.isActive} onChange={handleChange} />
+                <span className="cf-track" aria-hidden="true" />
+                <span className="cf-switch-text"><strong>Active</strong><small>Inactive courses can't be offered to students.</small></span>
+              </label>
               <div className="form-actions">
                 {editingCourse && (
-                  <button 
-                    type="button" 
-                    className="pk-btn"
-                    onClick={() => {
-                      setEditingCourse(null);
-                      setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true });
-                    }}
-                  >
+                  <button type="button" className="pk-btn" onClick={() => { setEditingCourse(null); setCourse({ code: "", name: "", description: "", creditHours: "", isActive: true }); }}>
                     Cancel
                   </button>
                 )}
-          <button className="pk-btn pk-btn-primary" type="submit" disabled={saving}>
-                  <BusyLabel busy={saving} busyText="Saving…" idle={editingCourse ? "Update Course" : "Create Course"} />
-          </button>
+                <button className="pk-btn pk-btn-primary" type="submit" disabled={saving}>
+                  <BusyLabel busy={saving} busyText="Saving…" idle={editingCourse ? "Update course" : "Create course"} />
+                </button>
               </div>
         </form>
+          </div>
+          {createPanel}
           </div>
         </>
       )}
 
       {activeTab === 'manage' && (
         <>
-          {showManageHelp && (
-            <div className="course-important-note">
-              <p>Manage Courses: View, edit, or delete existing courses. Use filters to find specific courses.</p>
-              <button className="course-close-note-btn" onClick={() => setShowManageHelp(false)}>×</button>
-            </div>
-          )}
+          <div className="cintro">
+            <p>Every course in the system. Edit, switch off or delete one here.</p>
+            <button type="button" className="cintro-link" onClick={() => { setEditingCourse(null); setActiveTab('create'); }}>Create a new course</button>
+          </div>
           
           <div className="manage-courses-section">
             <div className="filters-container">
@@ -890,206 +914,191 @@ const CoursePage = () => {
               onClose={closeOfferingEditor}
             />
           )}
-          {showOfferingsHelp && (
-            <div className="course-important-note">
-              <p>Course Offerings: Schedule courses for specific semesters. Select department and program to create offerings.</p>
-              <button className="course-close-note-btn" onClick={() => setShowOfferingsHelp(false)}>×</button>
+          {justOffered ? (
+            <div className="cintro is-done" role="status">
+              <p><strong>{justOffered.course}</strong> is now offered{justOffered.term ? ` in ${justOffered.term}` : ""}. Next, give each of its sections a teacher.</p>
+              <button type="button" className="cintro-btn" onClick={() => { setJustOffered(null); setActiveTab('assignments'); }}>Assign a teacher →</button>
             </div>
-          )}
+          ) : null}
         <div className="offerings-section">
-          <form className="offering-form" onSubmit={handleOfferingSubmit}>
-            <div>
-              <label>Course:</label>
-              <select
-                name="courseId"
-                value={courseOffering.courseId}
-                onChange={handleOfferingChange}
-                required
-              >
-                <option value="">Select a Course</option>
-                {courses.map(course => (
-                  <option key={course._id} value={course._id}>
-                    {course.code} - {course.name}
-                  </option>
-                ))}
-              </select>
+          <div className="cr-split">
+          <form className="offering-form" id="offering-form" onSubmit={handleOfferingSubmit}>
+            <div className="of-form-head">
+              <h2>Offer a course for a term</h2>
+              <p>Fields marked * are required.</p>
             </div>
-            <div>
-              <label>Department:</label>
-              <select
-                name="department"
-                value={courseOffering.department}
-                onChange={handleOfferingChange}
-                required
-                disabled={deptProgLoading}
-              >
-                <option value="">Select Department</option>
-                {departments.map(dept => (
-                  <option key={dept._id} value={dept._id}>{dept.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>Program:</label>
-              <select
-                name="program"
-                value={courseOffering.program}
-                onChange={handleOfferingChange}
-                required
-                disabled={deptProgLoading}
-              >
-                <option value="">Select Program</option>
-                {programs.map(prog => (
-                  <option key={prog._id} value={prog._id}>{prog.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>Semester:</label>
-              <select
-                name="semester"
-                value={courseOffering.semester}
-                onChange={handleOfferingChange}
-                required
-              >
-                {(() => {
-                  const program = getProgramById(courseOffering.program);
-                  const maxSemesters = program?.typicalDuration || 8;
-                  return Array.from({ length: maxSemesters + 1 }, (_, i) => (
-                    <option key={i} value={i}>Semester {i}</option>
-                  ));
-                })()}
-              </select>
-            </div>
-            <div>
-              <label>Academic Year *</label>
-              <select
-                name="academicYearId"
-                value={courseOffering.academicYearId}
-                onChange={handleOfferingChange}
-                required
-              >
-                <option value="">Select Academic Year</option>
-                {academicYears.map(ay => (
-                  <option key={ay._id} value={ay._id}>
-                    {ay.displayName || `${ay.semesterType} ${ay.year}`} {ay.isCurrent ? '(Current)' : ''}
-                  </option>
-                ))}
-              </select>
-              {academicYears.length === 0 && (
-                <small style={{ color: '#dc3545', display: 'block', marginTop: '4px' }}>
-                  No academic years available. Please create one in Academic Years page.
-                </small>
-              )}
-            </div>
-            <button className="pk-btn pk-btn-primary" type="submit">Create Course Offering</button>
-          </form>
 
-          <div className="offerings-list">
-            <div className="offerings-header">
-              <h3>Current Course Offerings</h3>
-              <div className="offerings-header-actions">
-                <button
-                  type="button"
-                  className="deactivate-offerings-btn"
-                  onClick={handleDeactivateAcademicYearOfferings}
-                  disabled={deactivating || visibleCourseOfferings.filter((offering) => offering.isActive).length === 0}
-                >
-                  <BusyLabel busy={deactivating} busyText="Deactivating…" idle="Deactivate Year Offerings" />
-                </button>
-                <div className="group-by-controls">
-                  <label>Group by:</label>
-                  <div className="group-by-checkboxes">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={groupByOptions.department}
-                        onChange={() => handleGroupByChange('department')}
-                      />
-                      Department
-                    </label>
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={groupByOptions.program}
-                        onChange={() => handleGroupByChange('program')}
-                      />
-                      Program
-                    </label>
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={groupByOptions.semester}
-                        onChange={() => handleGroupByChange('semester')}
-                      />
-                      Semester
-                    </label>
-                  </div>
+            <section className="of-block">
+              <h3 className="of-block-title">Course</h3>
+              <div className="of-field">
+                <label htmlFor="of-course">Which course? *</label>
+                <select id="of-course" name="courseId" value={courseOffering.courseId} onChange={handleOfferingChange} required>
+                  <option value="">Select a course</option>
+                  {courses.map(course => (
+                    <option key={course._id} value={course._id}>{course.code} - {course.name}</option>
+                  ))}
+                </select>
+                {offerDraft.course ? (
+                  <p className="of-picked"><strong>{offerDraft.course.code}</strong> {offerDraft.course.name} · {offerDraft.course.creditHours} credit hour{Number(offerDraft.course.creditHours) === 1 ? '' : 's'}</p>
+                ) : (
+                  <small className="field-hint">Can't find it? It needs creating first, in step 1.</small>
+                )}
+              </div>
+            </section>
+
+            <section className="of-block">
+              <h3 className="of-block-title">Where it belongs</h3>
+              <p className="of-block-hint">The department and program that teach it, and the semester of that program it sits in.</p>
+              <div className="of-grid">
+                <div className="of-field">
+                  <label htmlFor="of-department">Department *</label>
+                  <select id="of-department" name="department" value={courseOffering.department} onChange={handleOfferingChange} required disabled={deptProgLoading}>
+                    <option value="">Select department</option>
+                    {departments.map(dept => (
+                      <option key={dept._id} value={dept._id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="of-field">
+                  <label htmlFor="of-program">Program *</label>
+                  <select id="of-program" name="program" value={courseOffering.program} onChange={handleOfferingChange} required disabled={deptProgLoading}>
+                    <option value="">Select program</option>
+                    {programs.map(prog => (
+                      <option key={prog._id} value={prog._id}>{prog.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="of-field">
+                  <label htmlFor="of-semester">Semester *</label>
+                  <select id="of-semester" name="semester" value={courseOffering.semester} onChange={handleOfferingChange} required>
+                    {(() => {
+                      const program = getProgramById(courseOffering.program);
+                      const maxSemesters = program?.typicalDuration || 8;
+                      return Array.from({ length: maxSemesters + 1 }, (_, i) => (
+                        <option key={i} value={i}>{i === 0 ? 'Pre-semester (0)' : semesterLabel(i)}</option>
+                      ));
+                    })()}
+                  </select>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {visibleCourseOfferings.length > 0 && (
-              <div className="offering-filters" role="group" aria-label="Filter course offerings">
-                <select value={offeringDepartment} onChange={(e) => { setOfferingDepartment(e.target.value); setOfferingProgram(''); }} aria-label="Department">
-                  <option value="">All departments</option>
-                  {offeringDepartmentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-                </select>
-                <select value={offeringProgram} onChange={(e) => setOfferingProgram(e.target.value)} aria-label="Program">
-                  <option value="">All programs</option>
-                  {offeringProgramOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-                </select>
-                <select value={offeringSemester} onChange={(e) => setOfferingSemester(e.target.value)} aria-label="Semester">
-                  <option value="">All semesters</option>
-                  {offeringSemesterOptions.map((n) => <option key={n} value={n}>Semester {n}</option>)}
-                </select>
-                <input type="search" value={offeringQuery} onChange={(e) => setOfferingQuery(e.target.value)} placeholder="Search course code or name" aria-label="Search course offerings" />
-                <span className="offering-count">{filteredOfferings.length === visibleCourseOfferings.length ? `${visibleCourseOfferings.length} offerings` : `${filteredOfferings.length} of ${visibleCourseOfferings.length} offerings`}</span>
-              </div>
-            )}
+            <section className="of-block">
+              <h3 className="of-block-title" id="of-term-title">Academic term *</h3>
+              <p className="of-block-hint">When it will be taught. A term that isn't listed is added under Academic Years.</p>
+              {academicYears.length === 0 ? (
+                <p className="of-warn">No academic terms available yet. Add one in the Academic Years page first.</p>
+              ) : (
+                <div className="of-terms" role="radiogroup" aria-labelledby="of-term-title">
+                  {academicYears.map(ay => {
+                    const on = courseOffering.academicYearId === ay._id;
+                    return (
+                      <button
+                        key={ay._id}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        className={`of-term ${on ? 'is-on' : ''}`}
+                        onClick={() => handleOfferingChange({ target: { name: 'academicYearId', value: ay._id } })}
+                      >
+                        {ay.displayName || `${ay.semesterType} ${ay.year}`}
+                        {ay.isCurrent && <em>Current</em>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
 
-            {academicYearTabs.length > 0 && (
-              <div className="academic-year-tabs">
-                {academicYearTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    className={`academic-year-tab ${selectedOfferingAcademicYear === tab.key ? 'active' : ''}`}
-                    onClick={() => setSelectedOfferingAcademicYear(tab.key)}
-                  >
-                    {tab.label}
-                    {tab.isCurrent ? ' (Current)' : ''}
-                  </button>
-                ))}
+          </form>
+          {offerPanel}
+          </div>
+
+          <section className="ol" aria-labelledby="ol-title">
+            <header className="ol-head">
+              <div className="ol-titlebar">
+                <h3 id="ol-title">Offered this term</h3>
+                <span className="ol-count">{filteredOfferings.length === visibleCourseOfferings.length ? `${visibleCourseOfferings.length}` : `${filteredOfferings.length} of ${visibleCourseOfferings.length}`}</span>
+              {academicYearTabs.length > 0 && (
+                  <div className="ol-terms" role="tablist" aria-label="Academic term">
+                    {academicYearTabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedOfferingAcademicYear === tab.key}
+                        className={`ol-term ${selectedOfferingAcademicYear === tab.key ? 'is-on' : ''}`}
+                        onClick={() => setSelectedOfferingAcademicYear(tab.key)}
+                      >
+                        {tab.label}
+                        {tab.isCurrent && <em>Current</em>}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-            
-              <div className="content-section">
-                {firstLoad ? (
-                  <Loading variant="table" rows={6} label="Loading course offerings" />
-                ) : visibleCourseOfferings.length === 0 || filteredOfferings.length === 0 ? (
-                  <NoResultsFound 
-                    title="No Course Offerings Found"
-                    message="No course offerings exist for the selected academic year yet."
-                    icon="filter"
-                  />
-                ) : (
-                  <Refreshing active={refreshing}>
-                    <div className="offerings-container">
-                      {Object.entries(groupOfferings()).map(([groupName, offerings]) =>
-                        renderOfferingsTable(groupName, offerings)
-                      )}
+              <div className="ol-tools">
+                {visibleCourseOfferings.length > 0 && (
+                  <input type="search" className="ol-search" value={offeringQuery} onChange={(e) => setOfferingQuery(e.target.value)} placeholder="Search code or name" aria-label="Search course offerings" />
+                )}
+                <div className="ol-more" ref={moreRef}>
+                  <button type="button" className="ol-more-btn" aria-haspopup="menu" aria-expanded={moreOpen} aria-label="More actions for this term's offerings" onClick={() => setMoreOpen((open) => !open)}>⋯</button>
+                  {moreOpen && (
+                    <div className="ol-more-list" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="is-danger"
+                        onClick={() => { setMoreOpen(false); handleDeactivateAcademicYearOfferings(); }}
+                        disabled={deactivating || visibleCourseOfferings.filter((offering) => offering.isActive).length === 0}
+                      >
+                        <BusyLabel busy={deactivating} busyText="Deactivating…" idle="Deactivate every offering in this term…" />
+                      </button>
                     </div>
-                  </Refreshing>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            {offeringProgramOptions.length > 1 && (
+              <div className="ol-bar">
+                <div className="ol-filters">
+                  <select value={offeringProgram} onChange={(e) => setOfferingProgram(e.target.value)} aria-label="Program">
+                    <option value="">All programs</option>
+                    {offeringProgramOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                  </select>
+                </div>
+              </div>
             )}
-          </div>
+
+            <div className="ol-body">
+              {firstLoad ? (
+                <Loading variant="table" rows={6} label="Loading course offerings" />
+              ) : visibleCourseOfferings.length === 0 ? (
+                <p className="ol-empty">Nothing is offered {academicYearTabs.length ? 'in this term' : 'yet'}. Use the form above to offer the first course.</p>
+              ) : filteredOfferings.length === 0 ? (
+                <p className="ol-empty">No course matches that.</p>
+              ) : (
+                <Refreshing active={refreshing}>
+                  <div className="sp-list">
+                    {(() => { const plans = offeringPlan(); return plans.map((plan) => renderSemesterPlan(plan, plans.length > 1 || !offeringProgram)); })()}
+                  </div>
+                </Refreshing>
+              )}
+            </div>
+          </section>
         </div>
-          </div>
         </>
       )}
 
       {activeTab === 'assignments' && (
+        <>
+          <div className="cintro">
+            <p>Choose a course, add its sections (for example A26-F), and pick a teacher for each. Course missing? Offer it for the term first.</p>
+            <button type="button" className="cintro-link" onClick={() => setActiveTab('offerings')}>Go to step 2</button>
+          </div>
           <TeacherAssignmentPage />
+        </>
       )}
       {confirmDialog}
     </div>

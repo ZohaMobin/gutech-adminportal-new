@@ -15,7 +15,7 @@ let finish;   // resolves the in-flight PATCH / DELETE
 
 const wait = (ms = 0) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
 const clickEl = async (el) => { await act(async () => { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); await wait(); };
-const tab = (text) => [...container.querySelectorAll("button.pk-tab")].find((b) => b.textContent.trim() === text);
+const tab = (text) => [...container.querySelectorAll(".cstep button, .page-head-actions button")].find((b) => b.textContent.trim().startsWith(text));
 const row = (code) => [...container.querySelectorAll(".courses-table tbody tr")].find((r) => r.textContent.includes(code));
 
 beforeEach(async () => {
@@ -36,7 +36,7 @@ beforeEach(async () => {
   root = createRoot(container);
   await act(async () => { root.render(<CoursePage />); });
   await wait(20);
-  await clickEl(tab("Manage Courses"));
+  await clickEl(tab("All courses"));
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); jest.clearAllMocks(); });
 

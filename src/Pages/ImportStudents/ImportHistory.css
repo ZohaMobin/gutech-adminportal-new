@@ -1,0 +1,17 @@
+/* Import history: reuses the enrolment history's look (EnrollmentHistory.css); only what differs is here. */
+.imh { margin-top: 1.5rem; }
+.imh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.imh .imh-search { width: 260px; max-width: 100%; height: 36px; padding: 0 12px; border: 1px solid #d5d8de; border-radius: 8px; font: inherit; font-size: 13.5px; }
+.imh .imh-search:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
+.imh-report-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.imh-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: #374151; cursor: pointer; }
+.imh-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--primary-color); }
+/* Five columns here, not the enrolment report's four. */
+.enh-table.imh-table table { min-width: 640px; }
+.enh-table.imh-table th:nth-child(1) { width: 15%; } .enh-table.imh-table th:nth-child(2) { width: 20%; }
+.enh-table.imh-table th:nth-child(3) { width: 25%; } .enh-table.imh-table th:nth-child(4) { width: 12%; }
+.imh-inline-error { margin: 10px 0 0; }
+@media (max-width: 760px) {
+  .imh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .imh .imh-search { width: 100%; }
+}

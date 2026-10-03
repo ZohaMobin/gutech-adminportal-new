@@ -579,7 +579,7 @@ details.offerings-group td { overflow-wrap: anywhere; }
 .course-form input::placeholder, .course-form textarea::placeholder { color: #9aa1ad; }
 .course-form :is(input, select, textarea):focus, .offering-form :is(input, select, textarea):focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12); }
 .course-form :is(input, select, textarea):disabled, .offering-form :is(input, select, textarea):disabled { background: #f6f7f9; color: #9aa1ad; }
-.offering-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.9rem 1rem; align-items: end; }
+.offering-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.9rem 1rem; align-items: start; }
 .offering-form div { margin-bottom: 0; }
 .offering-form > button { grid-column: 1 / -1; justify-self: start; }
 

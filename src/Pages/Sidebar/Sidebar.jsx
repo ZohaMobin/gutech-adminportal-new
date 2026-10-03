@@ -18,9 +18,9 @@ const NAV_SECTIONS = [
     id: 'students',
     label: 'Students',
     items: [
-      { id: 'course-registration', label: 'Enroll Students', icon: '📝' },
-      { id: 'import-students', label: 'Import Students', icon: '📥' },
-      { id: 'student-directory', label: 'Student Directory', icon: '👥' },
+      { id: 'import-students', label: 'Import Students', icon: '📥', hint: 'Create student accounts in the LMS from an Excel file' },
+      { id: 'course-registration', label: 'Enroll Students', icon: '📝', hint: 'Put students who already have accounts into courses for the current term' },
+      { id: 'student-directory', label: 'Student Directory', icon: '👥', hint: 'Look up and edit existing students' },
     ],
   },
   {
@@ -70,6 +70,7 @@ const Sidebar = ({ isOpen, activePage, onNavClick }) => {
     <a
       key={item.id}
       href="#"
+      title={item.hint}
       className={`sidebar-nav-item ${isActive(item.id) ? 'active' : ''}`}
       onClick={(e) => {
         e.preventDefault();

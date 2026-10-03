@@ -1,0 +1,23 @@
+.sao-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 2.5rem 1.5rem;
+  background: #fff;
+  border: 1px solid #e8eaee;
+  border-radius: 10px;
+}
+.sao-icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: #f4f5f7;
+  color: #6b7280;
+  margin-bottom: 0.4rem;
+}
+.sao-card h2 { margin: 0; font-size: 1.05rem; font-weight: 600; color: #1f2937; }
+.sao-card p { margin: 0; font-size: 0.9rem; color: #6b7280; }

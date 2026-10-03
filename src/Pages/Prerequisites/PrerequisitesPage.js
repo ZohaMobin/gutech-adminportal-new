@@ -2,6 +2,7 @@ import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./PrerequisitesPage.css";
+import { semesterLabel } from "../../utils/semester";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const Svg = ({ children, size = 16 }) => (
@@ -317,7 +318,7 @@ const PrerequisitesPage = () => {
 
           {groups.map(([semester, list]) => {
             const todo = list.filter((c) => !c.prerequisitesDeclared).length;
-            const heading = semester ? `Semester ${semester}` : "Not placed in a semester";
+            const heading = semesterLabel(semester);
             return (
               <section className="pre-semester" key={semester} aria-label={heading}>
                 <h2 className="pre-semester-head">
