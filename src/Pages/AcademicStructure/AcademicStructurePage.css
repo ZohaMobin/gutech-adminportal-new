@@ -1,0 +1,4 @@
+.as-page { min-width: 0; }
+/* Each panel opens with a line saying what the list is, and its Add button. */
+.as-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0 0 1rem; }
+.as-intro { margin: 0; flex: 1 1 18rem; font-size: 0.9rem; color: #6b7280; line-height: 1.5; }

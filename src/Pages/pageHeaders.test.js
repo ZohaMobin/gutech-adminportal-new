@@ -2,8 +2,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
 import axios from "axios";
-import DepartmentsPage from "./Departments/DepartmentsPage";
-import ProgramsPage from "./Programs/ProgramsPage";
 import AcademicYearsPage from "./AcademicYears/AcademicYearsPage";
 import ImportStudentsPage from "./ImportStudents/ImportStudentsPage";
 import StudentDirectoryPage from "./StudentDirectory/StudentDirectoryPage";
@@ -26,8 +24,6 @@ const mount = async (Page, { pending = false } = {}) => {
 afterEach(() => { act(() => root.unmount()); container.remove(); jest.clearAllMocks(); });
 
 const pages = [
-  ["Departments", DepartmentsPage, "+ Add Department"],
-  ["Programs", ProgramsPage, "+ Add Program"],
   ["Academic Years", AcademicYearsPage, "+ Add Academic Year"],
   ["Import Students", ImportStudentsPage, null],
   ["Student Directory", StudentDirectoryPage, null],

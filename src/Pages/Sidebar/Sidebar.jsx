@@ -29,8 +29,7 @@ const NAV_SECTIONS = [
     collapsible: true,
     items: [
       { id: 'course', label: 'Courses', icon: '📚' },
-      { id: 'departments', label: 'Departments', icon: '🏛️' },
-      { id: 'programs', label: 'Programs', icon: '🎓' },
+      { id: 'academic-structure', label: 'Departments & Programs', icon: '🏛️', hint: 'The departments and the degree programs they offer' },
       { id: 'academic-years', label: 'Academic Years', icon: '📆' },
       { id: 'prerequisites', label: 'Prerequisites', icon: '🔗' },
     ],
