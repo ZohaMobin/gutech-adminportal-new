@@ -1,5 +1,4 @@
 import Loading, { BusyLabel, Refreshing } from "../../Components/Loading/Loading";
-import PageHeader from "../../Components/PageHeader/PageHeader";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { ConfirmModal, Modal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
@@ -114,15 +113,15 @@ const DepartmentsPage = () => {
   };
 
   if (firstLoad) {
-    return <div className="departments-page page-shell"><PageHeader title="Departments" /><Loading variant="table" rows={6} label="Loading departments" /></div>;
+    return <div className="departments-page"><Loading variant="table" rows={6} label="Loading departments" /></div>;
   }
 
   return (
-    <div className="departments-page page-shell">
-      <PageHeader
-        title="Departments"
-        actions={<button className="pk-btn pk-btn-primary" onClick={() => setShowModal(true)}>+ Add Department</button>}
-      />
+    <div className="departments-page">
+      <div className="as-bar">
+        <p className="as-intro">The academic departments. Each program and student belongs to one.</p>
+        <button className="pk-btn pk-btn-primary" onClick={() => setShowModal(true)}>+ Add Department</button>
+      </div>
 
       {error && <div className="error-message" role="alert">{error}</div>}
 

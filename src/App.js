@@ -13,8 +13,7 @@ import CoursePage from "./Pages/Course/CoursePage.js";
 import CourseRegistrationPage from "./Pages/CourseRegistration/CourseRegistrationPage";
 import StudentMarksPage from "./Pages/StudentMarks/StudentMarksPage";
 import AttendancePage from "./Pages/Attendance/AttendancePage";
-import DepartmentsPage from "./Pages/Departments/DepartmentsPage";
-import ProgramsPage from "./Pages/Programs/ProgramsPage";
+import AcademicStructurePage from "./Pages/AcademicStructure/AcademicStructurePage";
 import AcademicYearsPage from "./Pages/AcademicYears/AcademicYearsPage";
 import PrerequisitesPage from './Pages/Prerequisites/PrerequisitesPage';
 import ResultApprovalsPage from './Pages/ResultApprovals/ResultApprovalsPage';
@@ -42,8 +41,10 @@ function App() {
                 <Route path="student-directory" element={<StudentDirectoryPage />} />
                 <Route path="marks" element={<StudentMarksPage />} />
                 <Route path="attendance" element={<AttendancePage />} />
-                <Route path="departments" element={<DepartmentsPage />} />
-                <Route path="programs" element={<ProgramsPage />} />
+                <Route path="academic-structure" element={<AcademicStructurePage />} />
+                {/* Where these used to be two pages. Kept so old links and bookmarks still land in the right tab. */}
+                <Route path="departments" element={<Navigate to="/academic-structure?tab=departments" replace />} />
+                <Route path="programs" element={<Navigate to="/academic-structure?tab=programs" replace />} />
                 <Route path="academic-years" element={<AcademicYearsPage />} />
                 <Route path="prerequisites" element={<PrerequisitesPage />} />
                 <Route path="result-approvals" element={<ResultApprovalsPage />} />

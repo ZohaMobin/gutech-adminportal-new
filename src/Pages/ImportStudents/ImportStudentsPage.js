@@ -97,8 +97,8 @@ const ImportStudentsPage = () => {
       { Field: "rollNumber", Description: "Unique roll number (e.g., 2024001)", Required: "Yes", Example: "2024001" },
       { Field: "name", Description: "Full name of the student", Required: "Yes", Example: "John Doe" },
       { Field: "email", Description: "Valid email address", Required: "Yes", Example: "john.doe@example.com" },
-      { Field: "department", Description: "Department name (exact match) OR MongoDB ObjectId. Get names from Departments page.", Required: "Yes", Example: "Computer Science" },
-      { Field: "program", Description: "Program name (exact match) OR MongoDB ObjectId. Get names from Programs page.", Required: "Yes", Example: "Bachelor of Science in Computer Science" },
+      { Field: "department", Description: "Department name (exact match) OR MongoDB ObjectId. Get names from the Departments & Programs page.", Required: "Yes", Example: "Computer Science" },
+      { Field: "program", Description: "Program name (exact match) OR MongoDB ObjectId. Get names from the Departments & Programs page.", Required: "Yes", Example: "Bachelor of Science in Computer Science" },
       { Field: "currentSemester", Description: "Current semester (0-8, default: 0)", Required: "No", Example: "0" },
       { Field: "CGPA", Description: "Cumulative GPA (0.0-4.0, default: 0)", Required: "No", Example: "3.5" },
     ];
