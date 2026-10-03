@@ -1,4 +1,4 @@
-import { CARD_COLORS, assignCardColors, deepen } from './scheduleColors';
+import { CARD_COLORS, assignCardColors, deepen, cardStyle } from './scheduleColors';
 
 describe('assignCardColors', () => {
   it('gives every course on a timetable its own colour', () => {
@@ -41,5 +41,13 @@ describe('assignCardColors', () => {
   });
   it('has no repeated colours in the palette', () => {
     expect(new Set(CARD_COLORS).size).toBe(CARD_COLORS.length);
+  });
+  it('builds a card style from a palette colour and falls back for anything else', () => {
+    const style = cardStyle(CARD_COLORS[0]);
+    expect(style.backgroundColor).toBe(CARD_COLORS[0]);
+    expect(style['--card-accent']).toMatch(/^hsl\(232, /);
+    expect(style['--card-ink']).toMatch(/^hsl\(232, /);
+    expect(cardStyle('#f8f9fa')).toEqual({ backgroundColor: '#f8f9fa' });
+    expect(deepen('#f8f9fa')).toBe('#f8f9fa');
   });
 });

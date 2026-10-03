@@ -1,25 +1,11 @@
-// Card colours for the timetable. Each course (or section) gets the next colour in this list, in order,
-// so the ones on screen never repeat until the list runs out. (Hashing the id picked colours at random,
-// and two courses on the same timetable often ended up the same.) The list alternates warm and cool
-// hues so neighbours in the order look clearly different, and every colour is light enough for dark text.
-export const CARD_COLORS = [
-  '#ffc9c9', // red
-  '#a5d8ff', // blue
-  '#ffec99', // yellow
-  '#d0bfff', // violet
-  '#b2f2bb', // green
-  '#ffd8a8', // orange
-  '#99e9f2', // cyan
-  '#fcc2d7', // pink
-  '#bac8ff', // indigo
-  '#d8f5a2', // lime
-  '#eebefa', // magenta
-  '#e6d3b3', // tan
-  '#96f2d7', // teal
-  '#ced4da', // grey
-  '#ffe3e3', // rose
-  '#c5e1a5', // olive
-];
+// Card colours for the timetable. Each course (or section) gets the next hue in this list, in order, so
+// the ones on screen never repeat until the list runs out. The hues alternate between warm and cool so
+// neighbours in the order look clearly different, and they share one saturation and lightness, so the whole
+// board reads as a single soft palette instead of a pile of unrelated pastels.
+const HUES = [232, 38, 152, 346, 196, 268, 18, 172, 304, 80, 214, 52];
+const CARD_SATURATION = 78;
+const CARD_LIGHTNESS = 93;
+export const CARD_COLORS = HUES.map((hue) => `hsl(${hue}, ${CARD_SATURATION}%, ${CARD_LIGHTNESS}%)`);
 
 // A lab's code is its theory course's code plus "L" (CS-301 and CS-301L).
 const labOf = (code) => {
@@ -27,23 +13,25 @@ const labOf = (code) => {
   return match ? match[1] : null;
 };
 
+const HSL = /^hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)$/;
+
 // The same hue a little deeper, so a lab reads as belonging to its theory course but is still its own card.
-export const deepen = (hex) => {
-  const n = parseInt(hex.slice(1), 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
-  let h = 0;
-  if (d) {
-    if (max === r) h = ((g - b) / d + 6) % 6;
-    else if (max === g) h = (b - r) / d + 2;
-    else h = (r - g) / d + 4;
-    h *= 60;
-  }
-  const l = (max + min) / 2;
-  const s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
-  return `hsl(${Math.round(h)}, ${Math.round(s * 0.85 * 100)}%, ${Math.round(Math.max(0, l - 0.1) * 100)}%)`;
+export const deepen = (color) => {
+  const m = HSL.exec(color);
+  if (!m) return color;
+  return `hsl(${m[1]}, ${Math.round(m[2] * 0.9)}%, ${Math.max(0, m[3] - 8)}%)`;
+};
+
+// The inline style for a card: its tint, plus the stronger accent (left edge) and ink (course code) taken
+// from the same hue. A colour that is not one of ours (the grey default) just becomes the background.
+export const cardStyle = (color) => {
+  const m = HSL.exec(color);
+  if (!m) return { backgroundColor: color };
+  return {
+    backgroundColor: color,
+    '--card-accent': `hsl(${m[1]}, 62%, 46%)`,
+    '--card-ink': `hsl(${m[1]}, 55%, 22%)`,
+  };
 };
 
 // items -> { key: colour }. An item is a key, or { key, code } when the key is not the course code (a
