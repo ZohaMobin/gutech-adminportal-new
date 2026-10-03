@@ -204,10 +204,10 @@ const TeachersPanel = () => {
                   <span>{teacher.department || "—"}</span>
                 </div>
                 <div className="am-meta am-meta-wide">
-                  <span className="am-meta-label">{revoked ? "Revoked" : "Teaching"}</span>
+                  <span className="am-meta-label">{revoked ? "Revoked" : "Teaching this term"}</span>
                   <span>
                     {revoked ? `${formatDate(teacher.deactivatedAt)}${teacher.deactivatedByName ? ` · by ${teacher.deactivatedByName}` : ""}` : sectionsText(teacher.sections)}
-                    {revoked && teacher.sections > 0 && <span className="tm-warn"> · still on {sectionsText(teacher.sections)}</span>}
+                    {revoked && teacher.sections > 0 && <span className="tm-warn"> · still on {sectionsText(teacher.sections)} this term</span>}
                   </span>
                 </div>
                 <div className="am-actions">
@@ -254,7 +254,7 @@ const TeachersPanel = () => {
           onConfirm={() => act(() => axios.post(`${API}/api/users/teachers/${t._id}/deactivate`, {}, { headers }), `${t.name}'s access was revoked`)}
           onClose={closeModal}
         >
-          {t.sections > 0 && <p className="tm-note">They are still assigned to {sectionsText(t.sections)}. Those stay as they are until you assign another teacher in Teacher Assignment.</p>}
+          {t.sections > 0 && <p className="tm-note">They are still assigned to {sectionsText(t.sections)} this term. Those stay as they are until you assign another teacher in Teacher Assignment.</p>}
         </ConfirmModal>
       )}
       {modal?.type === "restore" && (
