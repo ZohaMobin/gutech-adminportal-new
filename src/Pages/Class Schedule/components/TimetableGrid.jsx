@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatSectionTeachers } from '../../../utils/sectionTeachers';
 import { buildPeriods, periodIndexOf } from '../../../utils/timetablePeriods';
+import { cardStyle } from '../../../utils/scheduleColors';
 import './TimetableGrid.css';
 
 const TimetableGrid = ({
@@ -81,7 +82,7 @@ const TimetableGrid = ({
                           <div
                             key={schedule._id}
                             className="schedule-cell"
-                            style={{ backgroundColor: getSectionColor(schedule) }}
+                            style={cardStyle(getSectionColor(schedule))}
                           >
                             <div className="schedule-info">
                               <p className="course-name">
