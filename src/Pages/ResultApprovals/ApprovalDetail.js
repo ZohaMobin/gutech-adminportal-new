@@ -168,7 +168,7 @@ const ApprovalDetail = ({ sectionId, queue = [], onOpen, onBack, onChanged }) =>
             {state !== "PUBLISHED" && state !== "AMENDED" && (
               <div className="ra-head-actions">
                 {canDecide && <button type="button" className="ra-btn" onClick={() => { setError(""); setModal("return"); }} disabled={busy || !workflowOn}>Return to teacher</button>}
-                {state === "SUBMITTED" && <button type="button" className="ra-btn" onClick={doReview} disabled={busy || !workflowOn}>Start review</button>}
+                {state === "SUBMITTED" && <button type="button" className="ra-btn" onClick={doReview} disabled={busy || !workflowOn}>{busy ? "Starting…" : "Start review"}</button>}
                 {canDecide && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("approve"); }} disabled={blockedApprove}>Approve</button>}
                 {state === "APPROVED" && <button type="button" className="ra-btn ra-btn-primary" onClick={() => { setError(""); setModal("publish"); }} disabled={busy || !workflowOn}>Publish to students</button>}
               </div>
