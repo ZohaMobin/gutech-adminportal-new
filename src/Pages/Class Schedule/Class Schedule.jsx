@@ -8,6 +8,7 @@ import TimetableGrid from "./components/TimetableGrid";
 import ScheduleModal from "./components/ScheduleModal";
 import { showToast, showConflictToasts, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
+import { assignCardColors } from "../../utils/scheduleColors";
 import "./Class Schedule.css";
 
 function ClassSchedule() {
@@ -167,6 +168,7 @@ function ClassSchedule() {
           const courseDetails = courseDetailsMap[courseId];
           courseData.department = courseDetails.department;
           courseData.program = courseDetails.program;
+          if (!courseData.code) courseData.code = courseDetails.code;
 
           // Ensure course name is available
           if (!courseData.name) {
@@ -187,14 +189,8 @@ function ClassSchedule() {
 
       setSchedules(normalizedSchedules);
 
-      // Generate colors for sections if they don't already have one
-      const newSectionColors = { ...sectionColors };
-      normalizedSchedules.forEach((schedule) => {
-        const sectionId = schedule.sectionId._id;
-        if (!newSectionColors[sectionId]) {
-          newSectionColors[sectionId] = generateSectionColor(sectionId);
-        }
-      });
+      // One colour per section, handed out in order so no two sections on the timetable share one.
+      const newSectionColors = assignCardColors(normalizedSchedules.map((schedule) => ({ key: schedule.sectionId._id, code: schedule.courseId?.code })));
       setSectionColors(newSectionColors);
     } catch (error) {
       showToast("Failed to fetch schedules", TOAST_TYPES.ERROR);
@@ -202,21 +198,6 @@ function ClassSchedule() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Generate a consistent color for each section
-  const generateSectionColor = (sectionId) => {
-    // Simple hash function to convert sectionId to a number
-    let hash = 0;
-    for (let i = 0; i < sectionId.length; i++) {
-      hash = sectionId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    // Convert the hash to a hue value (0-360)
-    const hue = hash % 360;
-
-    // Use a light, pastel color (high saturation and lightness)
-    return `hsl(${hue}, 70%, 85%)`;
   };
 
   // Get section color for a schedule
@@ -549,6 +530,7 @@ function ClassSchedule() {
           const courseDetails = courseDetailsMap[courseId];
           courseData.department = courseDetails.department;
           courseData.program = courseDetails.program;
+          if (!courseData.code) courseData.code = courseDetails.code;
 
           // Ensure course name is available
           if (!courseData.name) {
@@ -566,14 +548,8 @@ function ClassSchedule() {
 
       setSchedules(normalizedSchedules);
 
-      // Generate colors for all sections
-      const newSectionColors = { ...sectionColors };
-      normalizedSchedules.forEach((schedule) => {
-        const sectionId = schedule.sectionId._id;
-        if (!newSectionColors[sectionId]) {
-          newSectionColors[sectionId] = generateSectionColor(sectionId);
-        }
-      });
+      // One colour per section, handed out in order so no two sections on the timetable share one.
+      const newSectionColors = assignCardColors(normalizedSchedules.map((schedule) => ({ key: schedule.sectionId._id, code: schedule.courseId?.code })));
       setSectionColors(newSectionColors);
     } catch (error) {
       showToast("Failed to fetch all schedules", TOAST_TYPES.ERROR);
