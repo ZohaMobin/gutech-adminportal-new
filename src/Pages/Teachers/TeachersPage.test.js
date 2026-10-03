@@ -45,7 +45,7 @@ test("it lists active teachers with their sections, and the revoked ones under t
   expect(container.textContent).not.toContain("Hina Shah");
   await click([...container.querySelectorAll('[role="tab"]')].find((b) => /Access revoked/.test(b.textContent)));
   expect(rowOf("Hina Shah").textContent).toContain("by Zoha Mobin");
-  expect(rowOf("Hina Shah").textContent).toContain("still on 1 section");
+  expect(rowOf("Hina Shah").textContent).toContain("still on 1 section this term");
 });
 
 test("revoking asks first, warns about assigned sections, then revokes and refreshes", async () => {
@@ -53,7 +53,7 @@ test("revoking asks first, warns about assigned sections, then revokes and refre
   axios.post.mockResolvedValue({ data: {} });
   await click(buttonIn(rowOf("Ayesha Khan"), "Revoke access…"));
   expect(dialog().textContent).toMatch(/signed out everywhere and will not be able to log in/);
-  expect(dialog().textContent).toMatch(/still assigned to 3 sections/);
+  expect(dialog().textContent).toMatch(/still assigned to 3 sections this term/);
   expect(axios.post).not.toHaveBeenCalled();
   await click(dialogButton("Revoke access"));
   expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/api/users/teachers/t1/deactivate"), {}, expect.anything());
