@@ -1,4 +1,4 @@
-import Loading, { BusyLabel } from '../../Components/Loading/Loading';
+import { BusyLabel } from '../../Components/Loading/Loading';
 import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
@@ -16,6 +16,7 @@ const ImportStudentsPage = () => {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState([]);
+  const [rowCount, setRowCount] = useState(0);        // how many valid rows the file holds, for the progress message
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -57,9 +58,11 @@ const ImportStudentsPage = () => {
           if (validData.length === 0) {
             setError("No valid data found in the Excel file. Please check the required fields.");
             setPreview([]);
+            setRowCount(0);
             return;
           }
 
+          setRowCount(validData.length);
           setPreview(validData.slice(0, 5)); // Show first 5 records as preview
         } catch (err) {
           setError("Invalid Excel file format");
@@ -195,6 +198,7 @@ const ImportStudentsPage = () => {
 
           setFile(null);
           setPreview([]);
+          setRowCount(0);
           setHistoryKey((key) => key + 1);
         } catch (err) {
           if (err.response?.status === 401) {
@@ -240,7 +244,18 @@ const ImportStudentsPage = () => {
           </button>
         </div>
 
-        {loading && <Loading variant="table" rows={3} label="Processing the file" />}
+        {loading && (
+          <div className="import-progress" role="status" aria-live="polite">
+            <div className="import-progress-head">
+              <span className="import-spinner" aria-hidden="true" />
+              <div>
+                <strong>Importing {rowCount ? `${rowCount} student${rowCount === 1 ? "" : "s"}` : "students"}…</strong>
+                <small>Creating their accounts in the LMS. This can take a minute for a large file, so please keep this page open.</small>
+              </div>
+            </div>
+            <div className="import-bar" aria-hidden="true"><i /></div>
+          </div>
+        )}
 
         {error && (
           <div className="error-message">
@@ -282,7 +297,7 @@ const ImportStudentsPage = () => {
         )}
 
         {preview.length > 0 && (
-          <div className="preview-section">
+          <div className={`preview-section ${loading ? "is-busy" : ""}`}>
             <h3>Preview (First 5 records)</h3>
             <div className="preview-table">
               <table>
