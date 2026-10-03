@@ -160,3 +160,39 @@ test("the summary warns only about an exact repeat (same program, semester and t
   await choose(form.querySelector('[name="semester"]'), "1");
   expect(container.querySelector(".cr-panel .of-warn").textContent).toMatch(/This exact offering already exists: Fall 2026, BS Computer Science, Semester 1/);
 });
+
+test("while an offering is being created the button is disabled and says so, and a second submit is ignored", async () => {
+  await click(stepBtn("2Offer it for a term"));
+  const form = container.querySelector(".offering-form");
+  await choose(form.querySelector('[name="courseId"]'), "c1");
+  await choose(form.querySelector('[name="department"]'), "d1");
+  await choose(form.querySelector('[name="program"]'), "p1");
+  await click(form.querySelector(".of-term"));
+  let finish;
+  axios.post.mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ data: { _id: "o1" } }); }));
+  const create = () => container.querySelector('button[form="offering-form"]');
+  await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+  expect(create().disabled).toBe(true);
+  expect(create().textContent).toMatch(/Creating…/);
+  expect(create().getAttribute("aria-busy")).toBe("true");
+  await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+  expect(axios.post).toHaveBeenCalledTimes(1);
+  await act(async () => { finish(); });
+  await wait(20);
+  expect(container.querySelector(".cintro.is-done")).not.toBeNull();
+});
+
+test("if creating the offering fails, the button comes back so it can be tried again", async () => {
+  await click(stepBtn("2Offer it for a term"));
+  const form = container.querySelector(".offering-form");
+  await choose(form.querySelector('[name="courseId"]'), "c1");
+  await choose(form.querySelector('[name="department"]'), "d1");
+  await choose(form.querySelector('[name="program"]'), "p1");
+  await click(form.querySelector(".of-term"));
+  axios.post.mockRejectedValue({ response: { data: { message: "Already offered" } } });
+  await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+  await wait(20);
+  const create = container.querySelector('button[form="offering-form"]');
+  expect(create.disabled).toBe(false);
+  expect(create.textContent).toBe("Create offering");
+});

@@ -276,3 +276,19 @@
 .import-errors ul { margin: 0.5rem 0 0; padding-left: 1.2rem; max-height: 14rem; overflow-y: auto; }
 .import-errors li { margin: 0.15rem 0; }
 .import-errors p { margin: 0.5rem 0 0; }
+
+/* While an import runs: a plain progress panel instead of grey placeholder bars. The import is one request, so the bar is
+   animated rather than a percentage; the preview below is dimmed and locked. */
+.import-progress { margin: 1rem 0; padding: 1rem 1.15rem; border: 1px solid #e0e8f5; border-radius: 10px; background: #f5f8fd; }
+.import-progress-head { display: flex; align-items: flex-start; gap: 0.85rem; }
+.import-progress-head strong { display: block; font-size: 0.98rem; font-weight: 600; color: #1f2937; }
+.import-progress-head small { display: block; margin-top: 0.15rem; font-size: 0.84rem; line-height: 1.5; color: #4b5563; }
+.import-spinner { flex: none; width: 1.35rem; height: 1.35rem; margin-top: 0.1rem; border: 3px solid rgba(153, 29, 32, 0.18); border-top-color: var(--primary-color, #991D20); border-radius: 50%; animation: spin 0.9s linear infinite; }
+.import-bar { position: relative; height: 6px; margin-top: 0.9rem; border-radius: 999px; background: #dfe6f2; overflow: hidden; }
+.import-bar i { position: absolute; top: 0; bottom: 0; width: 38%; border-radius: 999px; background: var(--primary-color, #991D20); animation: import-slide 1.3s ease-in-out infinite; }
+@keyframes import-slide { 0% { left: -40%; } 100% { left: 102%; } }
+.preview-section.is-busy { opacity: 0.45; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .import-spinner { animation-duration: 2.5s; }
+  .import-bar i { animation: none; left: 0; width: 100%; opacity: 0.35; }
+}

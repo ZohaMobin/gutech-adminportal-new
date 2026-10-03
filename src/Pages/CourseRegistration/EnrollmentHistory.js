@@ -99,7 +99,7 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
           <h2 id="enh-title">Enrollment history</h2>
           <p>Recent uploads: who added a class list, when, and what happened to each student.</p>
         </div>
-        <button type="button" className="enh-refresh" onClick={load}>Refresh</button>
+        <button type="button" className="enh-refresh" onClick={load} disabled={refreshing}>{refreshing ? "Refreshing…" : "Refresh"}</button>
       </header>
 
       {items && items.length > 0 && (

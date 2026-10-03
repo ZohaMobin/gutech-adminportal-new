@@ -417,9 +417,8 @@ function ClassSchedule() {
 
   const confirmDeleteSchedule = async () => {
     const scheduleId = scheduleToDelete._id;
-    setScheduleToDelete(null);
     try {
-      setLoading(true); // Show loader during API call
+      setLoading(true); // Show loader during API call; the dialog stays open, busy, until it is done
       await axios.delete(`${apiUrl}/api/section-schedules/${scheduleId}`, {
         headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
       });
@@ -438,6 +437,7 @@ function ClassSchedule() {
       console.error("Delete schedule error:", error);
     } finally {
       setLoading(false); // Hide loader after API call completes
+      setScheduleToDelete(null);
     }
   };
 
@@ -680,7 +680,9 @@ function ClassSchedule() {
           title="Delete class"
           body={`Delete ${scheduleToDelete.day ? `the ${scheduleToDelete.day} ${scheduleToDelete.timeSlot?.startTime || ""}-${scheduleToDelete.timeSlot?.endTime || ""} class` : "this class"} from the timetable? This cannot be undone.`}
           confirmLabel="Delete class"
+          busyText="Deleting…"
           danger
+          busy={loading}
           onConfirm={confirmDeleteSchedule}
           onClose={() => setScheduleToDelete(null)}
         />

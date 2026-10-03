@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./PrerequisitesPage.css";
 import { semesterLabel } from "../../utils/semester";
+import { BusyLabel } from "../../Components/Loading/Loading";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const Svg = ({ children, size = 16 }) => (
@@ -230,7 +231,7 @@ const PrerequisitesPage = () => {
 
         <div className="pre-form-buttons">
           <button className="pre-btn" onClick={() => setAdding(null)} disabled={busy}>Cancel</button>
-          <button className="pre-btn pre-btn-primary" onClick={saveRules} disabled={busy || count === 0}>{count > 1 ? `Save ${count} rules` : "Save rule"}</button>
+          <button className="pre-btn pre-btn-primary" onClick={saveRules} disabled={busy || count === 0}><BusyLabel busy={busy} busyText="Saving…" idle={count > 1 ? `Save ${count} rules` : "Save rule"} /></button>
         </div>
       </div>
     );
@@ -294,7 +295,7 @@ const PrerequisitesPage = () => {
               )}
             </div>
             {version.status === "draft"
-              ? <button className="pre-btn pre-btn-primary pre-btn-lg" onClick={publish} disabled={busy || !complete} title={complete ? "" : "Every course must have an answer first"}>Publish version</button>
+              ? <button className="pre-btn pre-btn-primary pre-btn-lg" onClick={publish} disabled={busy || !complete} title={complete ? "" : "Every course must have an answer first"}><BusyLabel busy={busy} busyText="Publishing…" idle="Publish version" /></button>
               : <span className="pre-published"><CheckIcon /> Published</span>}
           </section>
 
@@ -394,7 +395,7 @@ const PrerequisitesPage = () => {
                             <p className="pre-help">The rule stays on record. Students already enrolled under it are not affected.</p>
                             <div className="pre-form-buttons">
                               <button className="pre-btn" onClick={() => { setClosing(null); setCloseReason(""); }} disabled={busy}>Cancel</button>
-                              <button className="pre-btn pre-btn-primary" onClick={closeRule} disabled={busy || closeReason.trim().length < 3}>Remove rule</button>
+                              <button className="pre-btn pre-btn-primary" onClick={closeRule} disabled={busy || closeReason.trim().length < 3}><BusyLabel busy={busy} busyText="Removing…" idle="Remove rule" /></button>
                             </div>
                           </div>
                         </div>

@@ -72,3 +72,4 @@
   .enh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px 16px 12px; }
   .enh-tools { padding: 0 16px 12px; } .enh #enh-search { width: 100%; }
 }
+.enh-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
