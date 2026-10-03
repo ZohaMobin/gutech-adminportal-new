@@ -54,6 +54,7 @@ const CoursePage = () => {
   const [courseDepartment, setCourseDepartment] = useState("");
   const [coursePage, setCoursePage] = useState(0);
   // What was just done, so the next step can pick up from it: { code, name, id } after creating a course, { course, term } after offering one.
+  const [creatingOffering, setCreatingOffering] = useState(false);   // "Create offering" is saving
   const [moreOpen, setMoreOpen] = useState(false);          // the "⋯" menu on the offerings list
   const moreRef = useRef(null);
   const [justCreated, setJustCreated] = useState(null);
@@ -308,6 +309,8 @@ const CoursePage = () => {
 
   const handleOfferingSubmit = async (e) => {
     e.preventDefault();
+    if (creatingOffering) return;   // a second click or Enter while it is saving must not create it twice
+    setCreatingOffering(true);
     try {
       const token = sessionStorage.getItem('adminToken');
       const response = await axios.post(
@@ -336,6 +339,8 @@ const CoursePage = () => {
     } catch (error) {
       console.error('Error creating course offering:', error);
       showToast(error.response?.data?.message || 'Error creating course offering', TOAST_TYPES.ERROR);
+    } finally {
+      setCreatingOffering(false);
     }
   };
 
@@ -664,7 +669,7 @@ const CoursePage = () => {
         <li className={offerDraft.termLabel ? 'is-done' : ''}><i aria-hidden="true" /><span>Term</span><strong>{offerDraft.termLabel || 'Not chosen yet'}</strong></li>
       </ul>
       {alreadyOffered && <p className="of-warn">This exact offering already exists: {offerDraft.termLabel}, {offerDraft.program.name}, {semesterLabel(courseOffering.semester)}.</p>}
-      <button className="pk-btn pk-btn-primary cr-submit" type="submit" form="offering-form" disabled={!offerDraft.complete}>Create offering</button>
+      <button className="pk-btn pk-btn-primary cr-submit" type="submit" form="offering-form" disabled={!offerDraft.complete || creatingOffering} aria-busy={creatingOffering}><BusyLabel busy={creatingOffering} busyText="Creating…" idle="Create offering" /></button>
       {courseOfferingsOfDraft.length > 0 && (
         <div className="cr-already">
           <h4>{offerDraft.course.code} is already offered</h4>

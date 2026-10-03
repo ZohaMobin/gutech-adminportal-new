@@ -86,7 +86,7 @@ const ImportHistory = ({ apiUrl, headers, refreshKey }) => {
           <h2 id="imh-title">Import history</h2>
           <p>Every import is kept here: who ran it, when, which file, and what happened to each student.</p>
         </div>
-        <button type="button" className="enh-refresh" onClick={load}>Refresh</button>
+        <button type="button" className="enh-refresh" onClick={load} disabled={refreshing}>{refreshing ? "Refreshing…" : "Refresh"}</button>
       </header>
 
       {items && items.length > 0 && (
