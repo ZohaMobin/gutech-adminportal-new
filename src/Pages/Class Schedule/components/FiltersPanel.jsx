@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDepartmentsAndPrograms } from '../../../hooks/useDepartmentsAndPrograms';
+import { cardStyle } from '../../../utils/scheduleColors';
 import './FiltersPanel.css';
 
 // The filters and the "add a class" control, laid out as one toolbar above the timetable so the timetable gets the full
@@ -92,7 +93,7 @@ const FiltersPanel = ({
         <ul className="cs-legend" aria-label="Section colours">
           {legend.map(({ sectionId, color, section }) => (
             <li key={sectionId}>
-              <span className="cs-swatch" style={{ backgroundColor: color }} />
+              <span className="cs-swatch" style={cardStyle(color)} />
               {section.section} - {section.courseId?.name}
             </li>
           ))}
