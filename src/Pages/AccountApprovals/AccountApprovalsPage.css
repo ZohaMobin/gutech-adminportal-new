@@ -1,14 +1,58 @@
-/* The page width and header come from the shared PageHeader (Components/PageHeader); this file is only what is specific to
-   this page: the Pending / Rejected tabs and the attempt badge. */
+/* The rows, avatars, badges and buttons come from the Administrators styles (am-*); this file is what is specific to the
+   Sign-up requests tab: the attempt badge, and the History entries. */
 
+.aa-page { min-width: 0; }
 
+.am-badge-attempt { background: #fdecea; color: var(--primary-color); }
 
-.attempt-badge {
-  margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: #fdecea;
-  color: var(--primary-color);
-  font-size: 12px;
+.aa-ago { color: #888; }
+
+/* A History entry: a round mark for the decision, the person, and for a rejection the reason on its own line. */
+.aa-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
 }
 
+.aa-entry.is-approved .aa-mark { background: #e3f4e8; color: #1b7a3d; }
+.aa-entry.is-rejected .aa-mark { background: #fbe6e4; color: #b3261e; }
+
+.aa-pill.is-approved { background: #e3f4e8; color: #1b7a3d; }
+.aa-pill.is-rejected { background: #fbe6e4; color: #b3261e; }
+
+.aa-reason {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #faf6f5;
+  color: #444;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.aa-reason span {
+  margin-right: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.aa-reason.is-none { color: #888; font-style: italic; }
+
+.aa-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: #777;
+}

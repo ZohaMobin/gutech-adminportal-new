@@ -487,7 +487,9 @@
     align-items: stretch;
   }
 
+  /* In a column the 280px flex-basis would become a height. */
   .am-search {
+    flex: 0 0 auto;
     max-width: none;
   }
 }
