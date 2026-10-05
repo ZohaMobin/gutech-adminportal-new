@@ -107,10 +107,10 @@ describe("Account Approvals (the Sign-up requests tab)", () => {
     const box = dialog().querySelector("textarea");
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(box, "Not a staff member");
     await act(async () => box.dispatchEvent(new Event("input", { bubbles: true })));
-    await click(dialogButton("Reject"));
+    await click(dialogButton("Reject request"));
     expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/u1/reject"), { reason: "Not a staff member" }, expect.anything());
-    expect(showToast).toHaveBeenCalledWith("Ayesha rejected", "success");
-    expect(container.querySelector("tbody")).toBeNull();
+    expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/Ayesha.*rejected and removed/), "success");
+    expect(container.querySelector(".am-list")).toBeNull();
     expect(window.prompt).not.toHaveBeenCalled();
   });
 
@@ -118,7 +118,7 @@ describe("Account Approvals (the Sign-up requests tab)", () => {
     await mount(AccountApprovalsPage, accounts);
     axios.post.mockResolvedValue({ data: {} });
     await click(byLabel("Approve Ayesha"));
-    expect(dialog().textContent).toMatch(/Approve Ayesha as teacher\?/);
+    expect(dialog().textContent).toMatch(/Approve Ayesha as a teacher\?/);
     expect(dialog().querySelector("textarea")).toBeNull();
     await click(dialogButton("Approve"));
     expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/u1/approve"), {}, expect.anything());
