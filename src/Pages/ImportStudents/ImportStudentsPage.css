@@ -292,3 +292,57 @@
   .import-spinner { animation-duration: 2.5s; }
   .import-bar i { animation: none; left: 0; width: 100%; opacity: 0.35; }
 }
+
+/* After an import: the new students' passwords, ready to download */
+.import-passwords {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--primary-tint-line);
+  border-radius: 0.7rem;
+  background: var(--primary-tint);
+}
+
+.import-passwords > div { flex: 1; min-width: 0; }
+
+.import-passwords-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--primary-color);
+}
+
+.import-passwords strong { display: block; font-size: 0.92rem; color: #1f2937; }
+.import-passwords small { display: block; margin-top: 0.15rem; font-size: 0.82rem; color: #6b7280; }
+
+.import-passwords button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.3rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--primary-color);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-passwords button:hover:not(:disabled) { background: var(--primary-dark); }
+
+@media (max-width: 640px) {
+  .import-passwords { flex-wrap: wrap; }
+  .import-passwords button { width: 100%; }
+  .import-passwords button { justify-content: center; }
+}
