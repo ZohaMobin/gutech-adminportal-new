@@ -10,6 +10,7 @@ import ClassSchedule from "./Pages/Class Schedule/Class Schedule.jsx";
 import ImportStudentsPage from "./Pages/ImportStudents/ImportStudentsPage";
 import StudentDirectoryPage from "./Pages/StudentDirectory/StudentDirectoryPage";
 import StudentPasswordsPage from "./Pages/StudentPasswords/StudentPasswordsPage";
+import ManageEnrollmentPage from "./Pages/ManageEnrollment/ManageEnrollmentPage";
 import CoursePage from "./Pages/Course/CoursePage.js";
 import CourseRegistrationPage from "./Pages/CourseRegistration/CourseRegistrationPage";
 import StudentMarksPage from "./Pages/StudentMarks/StudentMarksPage";
@@ -38,6 +39,7 @@ function App() {
                 <Route path="class-schedule" element={<ClassSchedule />} />
                 <Route path="Course" element={<CoursePage />} />
                 <Route path="course-registration" element={<CourseRegistrationPage />} />
+                <Route path="manage-enrollment" element={<ManageEnrollmentPage />} />
                 <Route path="import-students" element={<ImportStudentsPage />} />
                 <Route path="student-directory" element={<StudentDirectoryPage />} />
                 <Route path="student-passwords" element={<StudentPasswordsPage />} />

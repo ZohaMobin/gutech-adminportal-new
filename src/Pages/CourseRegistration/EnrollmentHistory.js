@@ -1,7 +1,12 @@
-import Loading, { Refreshing } from '../../Components/Loading/Loading';
+import Loading, { BusyLabel, Refreshing } from '../../Components/Loading/Loading';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { messageOf } from "../../utils/apiMessage";
+import useSuperAdmin from "../../hooks/useSuperAdmin";
+import { Modal } from "../Administrators/AdminModals";
+import { getUndoPreview, undoUpload } from "../ManageEnrollment/enrollmentApi";
+import "../Administrators/AdministratorsPage.css";
 import "./EnrollmentHistory.css";
 
 const STATUS = {
@@ -20,10 +25,76 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // What an upload came to, in a few words: "35 enrolled · 2 already enrolled · 2 not enrolled".
 export const resultText = (item) => {
   if (item.status === "queued" || item.status === "running") return `${item.processed} of ${item.total} done so far`;
+  if (item.undoneAt) return `${item.undoneCount ?? item.registered} enrolled, then removed`;
   const parts = [`${item.registered} enrolled`];
   if (item.alreadyRegistered) parts.push(`${item.alreadyRegistered} already enrolled`);
   if (item.failed) parts.push(`${item.failed} not enrolled`);
   return parts.join(" · ");
+};
+
+// Undoing an upload (super admin): shows what will happen first, then removes every enrollment the upload made, as
+// "enrolled by mistake". Locked results are left alone. Recorded in the change log with the reason.
+const UndoUploadModal = ({ item, onDone, onClose }) => {
+  const [preview, setPreview] = useState(null);
+  const [error, setError] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    getUndoPreview(item.jobId).then((data) => live && setPreview(data)).catch((err) => live && setError(messageOf(err, "Could not check this upload.")));
+    return () => { live = false; };
+  }, [item.jobId]);
+  const confirm = async () => {
+    try {
+      setBusy(true);
+      setError("");
+      const result = await undoUpload(item.jobId, reason.trim());
+      showToast(result.message, TOAST_TYPES.SUCCESS);
+      onDone();
+    } catch (err) {
+      setError(messageOf(err, "The upload could not be undone."));
+      setBusy(false);
+    }
+  };
+  const course = item.course ? `${item.course.code} ${item.course.name}` : "this course";
+  return (
+    <Modal
+      title="Undo this upload"
+      onClose={onClose}
+      busy={busy}
+      footer={
+        <>
+          <button type="button" className="am-btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="button" className="am-btn am-btn-danger" onClick={confirm} disabled={busy || !preview || preview.removable === 0 || reason.trim().length < 3}>
+            <BusyLabel busy={busy} busyText="Undoing…" idle={preview ? `Remove ${plural(preview.removable, "enrollment")}` : "Undo upload"} />
+          </button>
+        </>
+      }
+    >
+      {!preview && !error ? <Loading variant="list" rows={2} label="Checking the upload" /> : preview && (
+        <>
+          <p className="am-confirm-text">
+            {preview.removable > 0
+              ? <>This removes the <strong>{plural(preview.removable, "student")}</strong> this upload enrolled in <strong>{course}</strong>, as enrolled by mistake.</>
+              : <>Nothing from this upload is still enrolled, so there's nothing to undo.</>}
+          </p>
+          <ul className="enh-undo-facts">
+            <li>{item.fileName || "The file"} · uploaded {when(item.createdAt)}{item.by?.name ? ` by ${item.by.name}` : ""}</li>
+            {preview.attendanceRecords + preview.marks > 0 && <li>{[preview.attendanceRecords && plural(preview.attendanceRecords, "attendance record"), preview.marks && plural(preview.marks, "mark")].filter(Boolean).join(" and ")} will be hidden with them.</li>}
+            {preview.locked > 0 && <li>{plural(preview.locked, "student")} with a locked result will stay enrolled.</li>}
+            <li>Students enrolled any other way are not affected. The change log keeps a record.</li>
+          </ul>
+          {preview.removable > 0 && (
+            <label className="am-field">
+              <span>Reason <em>(saved in the change log)</em></span>
+              <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Wrong section list uploaded" maxLength={500} />
+            </label>
+          )}
+        </>
+      )}
+      {error && <div className="am-error" role="alert">{error}</div>}
+    </Modal>
+  );
 };
 
 // The recent uploads, newest first: who uploaded which file for which course, when, and what came of it. Selecting one
@@ -36,6 +107,8 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
   const [filter, setFilter] = useState("all");      // all | attention | running
   const [query, setQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [undoing, setUndoing] = useState(null);       // the upload being undone
+  const { isSuperAdmin } = useSuperAdmin();
 
   const load = useCallback(async () => {
     try {
@@ -64,8 +137,8 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
     const list = items || [];
     return {
       uploads: list.length,
-      enrolled: list.reduce((n, i) => n + (i.registered || 0), 0),
-      attention: list.filter((i) => i.failed > 0 || i.status === "failed").length,
+      enrolled: list.reduce((n, i) => n + (i.undoneAt ? 0 : i.registered || 0), 0),   // an undone upload no longer counts
+      attention: list.filter((i) => !i.undoneAt && (i.failed > 0 || i.status === "failed")).length,
       running: list.filter((i) => i.status === "queued" || i.status === "running").length,
     };
   }, [items]);
@@ -147,7 +220,7 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
                     <small>{when(item.createdAt)}</small>
                   </span>
                   <span className="enh-result">
-                    <span className={`enh-pill ${status.tone}`}>{status.label}</span>
+                    {item.undoneAt ? <span className="enh-pill bad">Undone</span> : <span className={`enh-pill ${status.tone}`}>{status.label}</span>}
                     <small>{resultText(item)}</small>
                     {(item.status === "queued" || item.status === "running") && item.total > 0 && <span className="enh-bar"><i style={{ width: `${Math.round((item.processed / item.total) * 100)}%` }} /></span>}
                     {item.leftOut > 0 && <small className="enh-left">{plural(item.leftOut, "row")} of the file left out</small>}
@@ -176,6 +249,14 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
                         </div>
                       )}
                     {item.note && <p className="enh-error">{item.note}</p>}
+                    {item.undoneAt ? (
+                      <p className="enh-undone">Undone {when(item.undoneAt)}{item.undoneCount !== null ? ` · ${plural(item.undoneCount, "enrollment")} removed` : ""}. See Manage Enrollment → Change log for who and why.</p>
+                    ) : isSuperAdmin && ["done", "failed", "cancelled"].includes(item.status) && item.registered > 0 && (
+                      <div className="enh-undo-bar">
+                        <span>Enrolled the wrong students? Undo removes everyone this upload enrolled.</span>
+                        <button type="button" className="am-btn am-btn-small enh-undo-btn" onClick={() => setUndoing(item)}>Undo this upload…</button>
+                      </div>
+                    )}
                   </div>
                 )}
               </li>
@@ -184,6 +265,7 @@ const EnrollmentHistory = ({ apiUrl, headers, refreshKey }) => {
         </ul>
         </Refreshing>
       )}
+      {undoing && <UndoUploadModal item={undoing} onClose={() => setUndoing(null)} onDone={() => { setUndoing(null); setReports({}); load(); }} />}
     </section>
   );
 };

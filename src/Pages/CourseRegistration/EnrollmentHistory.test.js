@@ -73,3 +73,46 @@ test("the totals, the filters and the search narrow the list to what needs looki
   });
   expect(names()).toEqual(["live.xlsx"]);
 });
+
+const mountAs = async (items, isSuperAdmin) => {
+  sessionStorage.setItem("adminToken", "t");
+  axios.get.mockImplementation((url) => Promise.resolve({ data:
+    url.endsWith("/api/users/me") ? { isSuperAdmin }
+      : url.endsWith("/bulk-enroll") ? { items }
+      : url.endsWith("/undo") ? { removable: 35, locked: 1, attendanceRecords: 12, marks: 0 }
+      : { rows: [{ rollNumber: "R-1", section: "A", status: "registered" }] } }));
+  axios.post.mockResolvedValue({ data: { removed: 35, message: "35 enrollments from this upload were removed" } });
+  await act(async () => { root.render(<EnrollmentHistory apiUrl="http://x" headers={() => ({})} refreshKey={0} />); });
+  await wait(10);
+  await click(container.querySelector(".enh-row"));
+  await wait(10);
+  sessionStorage.clear();
+};
+const buttonText = (text) => [...document.querySelectorAll("button")].find((b) => b.textContent.trim().startsWith(text));
+
+test("only the super admin can undo an upload, and it asks for a reason first", async () => {
+  await mountAs([item()], true);
+  await click(buttonText("Undo this upload"));
+  await wait(10);
+  const dialog = document.querySelector('[role="dialog"]');
+  expect(dialog.textContent).toMatch(/removes the 35 students this upload enrolled in CS101 Programming/);
+  expect(dialog.textContent).toMatch(/1 student with a locked result will stay enrolled/);
+  const confirm = buttonText("Remove 35 enrollments");
+  expect(confirm.disabled).toBe(true);
+  const reason = dialog.querySelector("textarea");
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(reason, "Wrong section list");
+    reason.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await click(buttonText("Remove 35 enrollments"));
+  await wait(10);
+  expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/api/enrollment/uploads/j1/undo"), { reason: "Wrong section list" }, expect.anything());
+});
+
+test("an ordinary admin doesn't see Undo, and an undone upload says so and stops counting", async () => {
+  await mountAs([item(), item({ jobId: "j2", undoneAt: "2026-10-02T08:00:00Z", undoneCount: 35 })], false);
+  expect(buttonText("Undo this upload")).toBeUndefined();
+  expect(container.textContent).toMatch(/Undone/);
+  expect(container.textContent).toMatch(/35 enrolled, then removed/);
+  expect(container.querySelector(".enh-stats").textContent).toMatch(/Students enrolled35/);
+});

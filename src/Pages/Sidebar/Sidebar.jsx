@@ -20,6 +20,7 @@ const NAV_SECTIONS = [
     items: [
       { id: 'import-students', label: 'Import Students', icon: '📥', hint: 'Create student accounts in the LMS from an Excel file' },
       { id: 'course-registration', label: 'Enroll Students', icon: '📝', hint: 'Put students who already have accounts into courses for the current term' },
+      { id: 'manage-enrollment', label: 'Manage Enrollment', icon: '🔁', hint: "Add, drop or move one student's courses, and see every change made" },
       { id: 'student-directory', label: 'Student Directory', icon: '👥', hint: 'Look up and edit existing students' },
       { id: 'student-passwords', label: 'Student Passwords', icon: '🔑', hint: 'Give students their passwords and look one up when a student forgets' },
     ],
