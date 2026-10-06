@@ -743,28 +743,30 @@ const AttendancePage = () => {
 
                       return (
                         <div className="section-attendance-block">
-                          <div className="section-header">
-                            <div className="section-title">
-                              <h3>{sectionName}</h3>
-                              <p className="section-teacher">Teachers: {formatSectionTeachers(selectedSection)}</p>
-                            </div>
+                          {/* The active tab already names the section and teacher, so one compact row: search, key, export. */}
+                          <div className="att-toolbar">
+                            <input
+                              type="search"
+                              placeholder="Search name or roll number"
+                              value={sectionSearchQueries[selectedSectionId] || ""}
+                              onChange={(e) => handleSectionSearchChange(selectedSectionId, e.target.value)}
+                              className="att-search"
+                              aria-label={`Search students in ${sectionName}`}
+                            />
+                            {hasData && (
+                              <div className="attendance-legend att-legend" aria-label="Key">
+                                <span className="legend-item"><span className="legend-dot present"></span>Present (P)</span>
+                                <span className="legend-item"><span className="legend-dot absent"></span>Absent (A)</span>
+                                <span className="legend-item"><span className="legend-dot late"></span>Late (L)</span>
+                                <span className="legend-item"><span className="legend-dot leave"></span>Leave (LV)</span>
+                              </div>
+                            )}
                             {hasData && (
                               <button className="export-btn section-export-btn" onClick={() => exportSectionToCSV(selectedSectionId, sectionName)}>
-                                <Download size={18} />
+                                <Download size={16} />
                                 Export to Excel
                               </button>
                             )}
-                          </div>
-
-                          {/* Search for this section */}
-                          <div className="search-container">
-                            <input
-                              type="text"
-                              placeholder={`Search students in ${sectionName}...`}
-                              value={sectionSearchQueries[selectedSectionId] || ""}
-                              onChange={(e) => handleSectionSearchChange(selectedSectionId, e.target.value)}
-                              className="search-input"
-                            />
                           </div>
 
                           {/* Attendance Table for this section */}
@@ -819,27 +821,6 @@ const AttendancePage = () => {
                             </div>
                           )}
 
-                          {/* Legend for this section */}
-                          {hasData && (
-                            <div className="attendance-legend">
-                              <div className="legend-item">
-                                <span className="legend-dot present"></span>
-                                <span>Present (P)</span>
-                              </div>
-                              <div className="legend-item">
-                                <span className="legend-dot absent"></span>
-                                <span>Absent (A)</span>
-                              </div>
-                              <div className="legend-item">
-                                <span className="legend-dot late"></span>
-                                <span>Late (L)</span>
-                              </div>
-                              <div className="legend-item">
-                                <span className="legend-dot leave"></span>
-                                <span>Leave (LV)</span>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       );
                     })()
