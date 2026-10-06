@@ -9,6 +9,7 @@ import MainLayout from "./Pages/MainLayout/MainLayout";
 import ClassSchedule from "./Pages/Class Schedule/Class Schedule.jsx";
 import ImportStudentsPage from "./Pages/ImportStudents/ImportStudentsPage";
 import StudentDirectoryPage from "./Pages/StudentDirectory/StudentDirectoryPage";
+import StudentPasswordsPage from "./Pages/StudentPasswords/StudentPasswordsPage";
 import CoursePage from "./Pages/Course/CoursePage.js";
 import CourseRegistrationPage from "./Pages/CourseRegistration/CourseRegistrationPage";
 import StudentMarksPage from "./Pages/StudentMarks/StudentMarksPage";
@@ -39,6 +40,7 @@ function App() {
                 <Route path="course-registration" element={<CourseRegistrationPage />} />
                 <Route path="import-students" element={<ImportStudentsPage />} />
                 <Route path="student-directory" element={<StudentDirectoryPage />} />
+                <Route path="student-passwords" element={<StudentPasswordsPage />} />
                 <Route path="marks" element={<StudentMarksPage />} />
                 <Route path="attendance" element={<AttendancePage />} />
                 <Route path="academic-structure" element={<AcademicStructurePage />} />

@@ -5,6 +5,7 @@ import axios from "axios";
 import AcademicYearsPage from "./AcademicYears/AcademicYearsPage";
 import ImportStudentsPage from "./ImportStudents/ImportStudentsPage";
 import StudentDirectoryPage from "./StudentDirectory/StudentDirectoryPage";
+import StudentPasswordsPage from "./StudentPasswords/StudentPasswordsPage";
 import ClassSchedulePage from "./Class Schedule/Class Schedule";
 
 jest.mock("axios");
@@ -27,6 +28,7 @@ const pages = [
   ["Academic Years", AcademicYearsPage, "+ Add Academic Year"],
   ["Import Students", ImportStudentsPage, null],
   ["Student Directory", StudentDirectoryPage, null],
+  ["Student Passwords", StudentPasswordsPage, null],
   ["Class Schedule", ClassSchedulePage, null],
 ];
 

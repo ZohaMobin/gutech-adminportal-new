@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./ForgotPassword.css";
 
+// Emailed reset codes are off until the sending domain is verified. Set REACT_APP_EMAIL_PASSWORD_RESET=true to bring the
+// self-service flow back; until then this page tells people who can reset their password for them.
+const EMAIL_RESET_ENABLED = process.env.REACT_APP_EMAIL_PASSWORD_RESET === "true";
+
 const ForgotPassword = () => {
   const [step, setStep] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
@@ -86,6 +90,29 @@ const ForgotPassword = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (!EMAIL_RESET_ENABLED) {
+    return (
+      <div className="forgot-password-page">
+        <div className="forgot-password-container reset-disabled" role="status">
+          <button className="back-button" onClick={() => navigate("/")}>
+            ← Back to sign in
+          </button>
+          <div className="reset-disabled-icon" aria-hidden="true">🔒</div>
+          <h1>Forgot your password?</h1>
+          <span className="reset-disabled-badge">Self-service reset is currently disabled</span>
+          <div className="reset-disabled-steps">
+            <p>Ask the super administrator to reset it. They will give you a temporary password that works straight away.</p>
+            <p>Once you are signed in, you can choose your own password from the profile menu → Change password.</p>
+          </div>
+          <p className="reset-disabled-note">If you are the super administrator, contact the IT team.</p>
+          <button type="button" className="reset-disabled-primary" onClick={() => navigate("/")}>
+            Return to sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="forgot-password-page">

@@ -9,6 +9,7 @@ import "./ImportStudentsPage.css";
 import NoResultsFound from "../../Components/NoResultsFound";
 import ImportHistory from "./ImportHistory";
 import StudentFlow from "../../Components/StudentFlow/StudentFlow";
+import { FiKey } from "react-icons/fi";
 
 const ImportStudentsPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -22,6 +23,7 @@ const ImportStudentsPage = () => {
   const [success, setSuccess] = useState("");
   const [importErrors, setImportErrors] = useState([]);
   const [historyKey, setHistoryKey] = useState(0);   // bumped after an import so the history shows it at once
+  const [importedCount, setImportedCount] = useState(0); // students created by the last import, for the next-step prompt
 
   useEffect(() => {
     // Check if user is authenticated
@@ -191,6 +193,7 @@ const ImportStudentsPage = () => {
           }
 
           setSuccess(successMessage);
+          setImportedCount(createdCount);
           showToast(successMessage, errors.length > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS);
           // The rows that were refused stay on the page (a toast would vanish before they could be read).
           setImportErrors(errors);
@@ -269,8 +272,21 @@ const ImportStudentsPage = () => {
         {success && (
           <div className="success-message">
             <p>{success}</p>
-            <button onClick={() => setSuccess("")} className="dismiss-success-btn">
+            <button onClick={() => { setSuccess(""); setImportedCount(0); }} className="dismiss-success-btn">
               Dismiss
+            </button>
+          </div>
+        )}
+
+        {success && importedCount > 0 && (
+          <div className="import-passwords">
+            <span className="import-passwords-icon" aria-hidden="true"><FiKey /></span>
+            <div>
+              <strong>Next: give the new students their passwords</strong>
+              <small>Importing in batches? Finish them all first, then issue every password at once in Student Passwords. You'll get one CSV with everyone in it.</small>
+            </div>
+            <button type="button" onClick={() => navigate("/student-passwords")}>
+              Go to Student Passwords →
             </button>
           </div>
         )}
