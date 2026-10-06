@@ -127,3 +127,24 @@ test("an invalid email keeps Save disabled", async () => {
   await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, "nope"); input.dispatchEvent(new Event("input", { bubbles: true })); });
   expect(dialogButton("Save changes").disabled).toBe(true);
 });
+
+test("Reset password asks first, then shows the new temporary password once", async () => {
+  await mount();
+  axios.post.mockResolvedValue({ data: { temporaryPassword: "Abcd-Efgh-Jkmn" } });
+  await click(container.querySelector('[aria-label="More actions for Bilal Raza"]'));
+  await click(buttonIn(container, "Reset password…"));
+  expect(dialog().textContent).toMatch(/signed out everywhere/);
+  expect(axios.post).not.toHaveBeenCalled();
+  await click(dialogButton("Reset password"));
+  await wait(10);
+  expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/api/users/teachers/t2/reset-password"), {}, expect.anything());
+  expect(document.querySelector('[data-testid="temporary-password"]').textContent).toBe("Abcd-Efgh-Jkmn");
+  expect(dialog().textContent).toMatch(/bilal@gu.edu/);
+});
+
+test("a revoked teacher has no Reset password action", async () => {
+  await mount();
+  await click(container.querySelectorAll('[role="tab"]')[1]);
+  await click(container.querySelector('[aria-label="More actions for Hina Shah"]'));
+  expect(buttonIn(container, "Reset password…")).toBeUndefined();
+});

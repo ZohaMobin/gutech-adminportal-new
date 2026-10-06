@@ -1,7 +1,7 @@
 import Loading, { BusyLabel } from "../../Components/Loading/Loading";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { messageOf } from "../../utils/apiMessage";
-import { ConfirmModal, Modal } from "../Administrators/AdminModals";
+import { ConfirmModal, CredentialModal, Modal } from "../Administrators/AdminModals";
 import { initialsOf, formatDate } from "../Administrators/adminListUtils";
 import { countByStatus, visibleTeachers, sectionsText } from "./teacherListUtils";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -118,7 +118,7 @@ const TeachersPanel = () => {
   const [tab, setTab] = useState("active");
   const [query, setQuery] = useState("");
   const [menuFor, setMenuFor] = useState(null);
-  const [modal, setModal] = useState(null); // { type: revoke | restore | signout | delete, teacher }
+  const [modal, setModal] = useState(null); // { type: edit | revoke | restore | signout | reset | credential | delete, teacher }
   const [busy, setBusy] = useState(false);
   const [modalError, setModalError] = useState("");
   const menuRef = useRef(null);
@@ -154,6 +154,20 @@ const TeachersPanel = () => {
       showToast(doneMessage, TOAST_TYPES.SUCCESS);
     } catch (err) {
       setModalError(messageOf(err, "Something went wrong. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // A new temporary password is shown once, so the confirm modal hands over to the credential modal instead of closing.
+  const resetPassword = async () => {
+    try {
+      setBusy(true);
+      setModalError("");
+      const { data } = await axios.post(`${API}/api/users/teachers/${modal.teacher._id}/reset-password`, {}, { headers });
+      setModal({ type: "credential", teacher: modal.teacher, temporaryPassword: data.temporaryPassword });
+    } catch (err) {
+      setModalError(messageOf(err, "Could not reset the password. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -221,6 +235,7 @@ const TeachersPanel = () => {
                     <button className="am-icon-btn" aria-label={`More actions for ${teacher.name}`} aria-haspopup="menu" aria-expanded={menuFor === teacher._id} onClick={() => setMenuFor(menuFor === teacher._id ? null : teacher._id)}>⋯</button>
                     {menuFor === teacher._id && (
                       <div className="am-menu-list" role="menu">
+                        {!revoked && <button role="menuitem" onClick={() => { setMenuFor(null); setModal({ type: "reset", teacher }); }}>Reset password…</button>}
                         {!revoked && <button role="menuitem" onClick={() => { setMenuFor(null); setModal({ type: "signout", teacher }); }}>Sign out everywhere</button>}
                         <button role="menuitem" className="is-danger" onClick={() => { setMenuFor(null); setModal({ type: "delete", teacher }); }}>Delete…</button>
                       </div>
@@ -280,6 +295,21 @@ const TeachersPanel = () => {
           onConfirm={() => act(() => axios.post(`${API}/api/users/teachers/${t._id}/sign-out`, {}, { headers }), `${t.name} was signed out everywhere`)}
           onClose={closeModal}
         />
+      )}
+      {modal?.type === "reset" && (
+        <ConfirmModal
+          title="Reset password"
+          body={`Give ${t.name} a new temporary password? Their current password stops working and they are signed out everywhere. You will see the new password once, to pass on to them.`}
+          confirmLabel="Reset password"
+          busyText="Resetting…"
+          busy={busy}
+          error={modalError}
+          onConfirm={resetPassword}
+          onClose={closeModal}
+        />
+      )}
+      {modal?.type === "credential" && (
+        <CredentialModal heading="Password reset" name={t.name} email={t.email} temporaryPassword={modal.temporaryPassword} onClose={closeModal} />
       )}
       {modal?.type === "delete" && (
         <DeleteModal
