@@ -9,6 +9,7 @@ import { getEnrollment, initialsOf, plural, shortDate } from "../ManageEnrollmen
 import CoursesPanel from "./CoursesPanel";
 import PasswordTab from "./PasswordTab";
 import HistoryList from "./HistoryList";
+import EditDetailsModal from "./EditDetailsModal";
 import "../Administrators/AdministratorsPage.css";
 import "../StudentPasswords/StudentPasswordsPage.css";
 import "../ManageEnrollment/ManageEnrollmentPage.css";
@@ -36,7 +37,7 @@ const StudentProfilePage = () => {
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [modal, setModal] = useState(null);   // 'deactivate' | 'reactivate'
+  const [modal, setModal] = useState(null);   // 'edit' | 'deactivate' | 'reactivate'
   const menuRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -121,6 +122,7 @@ const StudentProfilePage = () => {
           </button>
           {menuOpen && (
             <div className="am-menu-list" role="menu">
+              <button role="menuitem" onClick={() => { setMenuOpen(false); setModal("edit"); }}>Edit details…</button>
               {inactive
                 ? <button role="menuitem" onClick={() => { setMenuOpen(false); setModal("reactivate"); }}>Reactivate…</button>
                 : <button role="menuitem" className="is-danger" onClick={() => { setMenuOpen(false); setModal("deactivate"); }}>Deactivate…</button>}
@@ -154,6 +156,7 @@ const StudentProfilePage = () => {
         <HistoryList history={data.history} firstName={student.name.split(" ")[0]} />
       </div>
 
+      {modal === "edit" && <EditDetailsModal student={student} onClose={() => setModal(null)} onDone={afterAccountChange} />}
       {modal === "deactivate" && <DeactivateModal student={modalStudent} onClose={() => setModal(null)} onDone={afterAccountChange} />}
       {modal === "reactivate" && <ReactivateModal student={modalStudent} onClose={() => setModal(null)} onDone={afterAccountChange} />}
     </div>
