@@ -399,3 +399,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .me-savebar { animation: none; } }
+
+/* A deactivated student */
+.me-banner-inactive { border-color: #e3e6ea; background: #f4f5f7; color: #374151; }
+.me-banner-inactive strong { color: #111827; }
+.me-banner-inactive svg { flex: none; color: #6b7280; }
