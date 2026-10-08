@@ -5,7 +5,7 @@ import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { messageOf } from "../../utils/apiMessage";
 import { listChanges, downloadChangesCsv, dateTime } from "./enrollmentApi";
 
-const TYPES = [["", "All changes"], ["added", "Added"], ["dropped", "Dropped"], ["mistake", "Removed by mistake"], ["section", "Section changed"], ["restored", "Restored"]];
+const TYPES = [["", "All changes"], ["added", "Added"], ["dropped", "Dropped"], ["mistake", "Removed by mistake"], ["section", "Section changed"], ["restored", "Restored"], ["account", "Account and details"]];
 const TONE = { "enrollment.added": "is-good", "enrollment.restored": "is-good", "enrollment.dropped": "is-bad", "enrollment.removed_by_mistake": "is-bad", "enrollment.upload_undone": "is-bad", "enrollment.section_changed": "is-info" };
 
 // Every enrollment change, newest first: who changed what, for whom, and why. Filter, page through, or download.
@@ -85,7 +85,7 @@ const ChangeLog = ({ onOpenStudent }) => {
                           </button>
                         ) : <span className="me-muted">{row.fileName ? `Upload · ${row.fileName}` : "—"}</span>}
                       </td>
-                      <td>{row.course ? <><span className="me-code me-code-small">{row.course.code}</span> {row.course.name}</> : "—"}</td>
+                      <td>{row.course ? <><span className="me-code me-code-small">{row.course.code}</span> {row.course.name}</> : row.summary || "—"}</td>
                       <td className="me-nowrap">{row.fromSection && row.toSection ? `${row.fromSection} → ${row.toSection}` : row.toSection || row.fromSection || "—"}</td>
                       <td className="me-reason-cell">{row.reason || "—"}</td>
                       <td className="me-nowrap">{row.by || "—"}</td>

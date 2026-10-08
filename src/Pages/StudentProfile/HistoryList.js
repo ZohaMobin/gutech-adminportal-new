@@ -21,6 +21,7 @@ const HistoryList = ({ history, firstName }) => (
             <span className={`me-dot ${h.action.split(".")[1]}`} aria-hidden="true" />
             <div>
               <strong>{h.label}</strong> {h.course ? courseTitle(h.course) : ""}
+              {h.summary && <span className="me-sec"> · {h.summary}</span>}
               {(h.fromSection || h.toSection) && <span className="me-sec"> · {h.fromSection && h.toSection ? `Section ${h.fromSection} → ${h.toSection}` : `Section ${h.toSection || h.fromSection}`}</span>}
               {h.reason && <p className="me-why">“{h.reason}”</p>}
               <small>{dateTime(h.at)}{h.by ? ` · ${h.by}` : ""}</small>
