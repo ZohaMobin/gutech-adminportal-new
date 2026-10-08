@@ -3,7 +3,7 @@ import { FiSearch } from "react-icons/fi";
 import Loading from "../../Components/Loading/Loading";
 import { messageOf } from "../../utils/apiMessage";
 import { Modal } from "../Administrators/AdminModals";
-import { getCourseOptions, plural } from "./enrollmentApi";
+import { getCourseOptions, plural } from "../ManageEnrollment/enrollmentApi";
 
 const isFull = (s) => s.capacity !== null && s.capacity !== undefined && s.taken >= s.capacity;
 const seatsText = (s) => (s.capacity === null || s.capacity === undefined ? `${s.taken} enrolled` : `${s.taken} of ${s.capacity} seats`);

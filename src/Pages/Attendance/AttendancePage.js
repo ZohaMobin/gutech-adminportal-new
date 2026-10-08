@@ -402,6 +402,7 @@ const AttendancePage = () => {
             id: studentId?.toString() || studentId,
             rollNumber: rollNumber,
             name: name,
+            suspended: reg.suspended === true,
           };
         });
         return formattedStudents;
@@ -803,7 +804,7 @@ const AttendancePage = () => {
                                       return (
                                         <tr key={studentId}>
                                           <td className="sticky-col roll-number">{student.rollNumber || "N/A"}</td>
-                                          <td className="sticky-col student-name">{student.name || "Unknown Student"}</td>
+                                          <td className="sticky-col student-name">{student.name || "Unknown Student"}{student.suspended && <span className="att-suspended" title="Suspended: can't sign in, keeps their courses">Suspended</span>}</td>
                                           {sectionData.dates.map((date) => {
                                             const status = studentData?.attendance[date] || "";
                                             return (

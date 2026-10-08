@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FiPlus, FiMinus, FiRepeat, FiRotateCcw, FiLock, FiAlertTriangle, FiAlertCircle, FiClock, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import React, { useEffect, useMemo, useState } from "react";
+import { FiPlus, FiMinus, FiRepeat, FiRotateCcw, FiLock, FiAlertTriangle, FiAlertCircle, FiClock } from "react-icons/fi";
 import Loading, { BusyLabel } from "../../Components/Loading/Loading";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { messageOf } from "../../utils/apiMessage";
 import { Modal } from "../Administrators/AdminModals";
 import AddCourseModal from "./AddCourseModal";
-import { getEnrollment, previewChanges, saveChanges, initialsOf, plural, shortDate, dateTime } from "./enrollmentApi";
+import { previewChanges, saveChanges, plural, shortDate } from "../ManageEnrollment/enrollmentApi";
 
 const seatsText = (s) => (s.capacity === null || s.capacity === undefined ? `${s.taken} enrolled` : `${s.taken} of ${s.capacity} seats`);
 const isFull = (s) => s.capacity !== null && s.capacity !== undefined && s.taken >= s.capacity;
@@ -123,10 +123,9 @@ const ReviewModal = ({ student, preview, checking, saving, error, onSave, onClos
   );
 };
 
-// One student's courses this semester, edited as a set of pending changes and saved together.
-const StudentWorkspace = ({ studentId, onClose }) => {
-  const [data, setData] = useState(null);
-  const [loadError, setLoadError] = useState("");
+// One student's courses this semester, edited as a set of pending changes and saved together. The profile page owns
+// the student's data; this panel reports whether it has unsaved changes and hands back the fresh data after a save.
+const CoursesPanel = ({ studentId, data, onSaved, onDirtyChange }) => {
   const [staged, setStaged] = useState({});        // registrationId -> { type: 'remove', kind } | { type: 'section', section } | { type: 'restore' }
   const [adds, setAdds] = useState([]);             // [{ key, courseOfferingId, course, section }]
   const [preview, setPreview] = useState(null);
@@ -134,17 +133,6 @@ const StudentWorkspace = ({ studentId, onClose }) => {
   const [modal, setModal] = useState(null);         // { type: 'remove' | 'section', entry } | { type: 'add' } | { type: 'review' }
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      setLoadError("");
-      setData(await getEnrollment(studentId));
-    } catch (err) {
-      setLoadError(messageOf(err, "Could not load this student's courses."));
-    }
-  }, [studentId]);
-  useEffect(() => { setData(null); setStaged({}); setAdds([]); setPreview(null); load(); }, [load]);
 
   // The changes as the server wants them, and which row each one belongs to.
   const { changes, keys } = useMemo(() => {
@@ -158,6 +146,8 @@ const StudentWorkspace = ({ studentId, onClose }) => {
     for (const a of adds) { list.push({ type: "add", courseOfferingId: a.courseOfferingId, sectionId: a.section.id }); keyList.push(a.key); }
     return { changes: list, keys: keyList };
   }, [staged, adds]);
+
+  useEffect(() => { onDirtyChange?.(changes.length > 0); }, [changes.length, onDirtyChange]);
 
   // Check as you go, a moment after the last edit, so problems show on the row straight away.
   useEffect(() => {
@@ -191,7 +181,7 @@ const StudentWorkspace = ({ studentId, onClose }) => {
       setSaving(true);
       setSaveError("");
       const result = await saveChanges(studentId, changes, reason);
-      setData(result.enrollment);
+      onSaved(result.enrollment);
       setStaged({}); setAdds([]); setPreview(null); setModal(null);
       showToast(result.message || "Changes saved", TOAST_TYPES.SUCCESS);
     } catch (err) {
@@ -202,10 +192,7 @@ const StudentWorkspace = ({ studentId, onClose }) => {
     }
   };
 
-  if (loadError) return <div className="me-card"><div className="error-message" role="alert">{loadError} <button type="button" className="am-btn am-btn-small" onClick={load}>Try again</button></div></div>;
-  if (!data) return <div className="me-card"><Loading variant="list" rows={4} label="Loading courses" /></div>;
-
-  const { student, term, courses, dropped, addDrop, history } = data;
+  const { student, courses, dropped, addDrop } = data;
   const inactive = student.account?.status === "inactive";
   const pendingCredits = (() => {
     let total = data.credits;
@@ -225,27 +212,6 @@ const StudentWorkspace = ({ studentId, onClose }) => {
 
   return (
     <div className="me-workspace">
-      <section className="me-card me-student">
-        <div className="me-avatar" aria-hidden="true">{initialsOf(student.name)}</div>
-        <div className="me-student-text">
-          <h2>{student.name}</h2>
-          <p>{[student.rollNumber, student.program?.name || student.program?.code, student.currentSemester !== null ? `Semester ${student.currentSemester}` : null].filter(Boolean).join(" · ")}</p>
-        </div>
-        <div className="me-student-stats">
-          <div><span>Semester</span><strong>{term.label}</strong></div>
-          <div><span>Courses</span><strong>{courses.length}</strong></div>
-          <div><span>Credit hours</span><strong>{data.credits}</strong></div>
-        </div>
-        <button type="button" className="me-close" onClick={() => { if (!changes.length || window.confirm("Discard your unsaved changes for this student?")) onClose(); }}>Change student</button>
-      </section>
-
-      {inactive && (
-        <div className="me-banner me-banner-inactive" role="status">
-          <FiLock aria-hidden="true" />
-          <span><strong>Inactive</strong> · {student.account.categoryLabel || "Deactivated"}{student.account.deactivatedAt ? ` on ${shortDate(student.account.deactivatedAt)}` : ""}{student.account.note ? ` · ${student.account.note}` : ""}. They can't sign in, and courses can't be added until they're reactivated in Student Directory.</span>
-        </div>
-      )}
-
       {addDrop?.passed && (
         <div className="me-banner"><FiClock aria-hidden="true" /> The add/drop period ended on {shortDate(addDrop.endsAt)}. Changes are still allowed. You'll see a reminder before saving.</div>
       )}
@@ -256,13 +222,13 @@ const StudentWorkspace = ({ studentId, onClose }) => {
             <h3>Courses this semester</h3>
             <p>Remove, move to another section, or add a course. Nothing is saved until you review.</p>
           </div>
-          <button type="button" className="sp-btn sp-btn-primary me-add-btn" onClick={() => setModal({ type: "add" })} disabled={inactive} title={inactive ? "Reactivate this student first" : undefined}><FiPlus aria-hidden="true" /> Add course</button>
+          <button type="button" className="sp-btn sp-btn-primary me-add-btn" onClick={() => setModal({ type: "add" })} disabled={inactive} title={inactive ? "Reactivate this student first (⋯ menu above)" : undefined}><FiPlus aria-hidden="true" /> Add course</button>
         </header>
 
         {courses.length === 0 && adds.length === 0 ? (
           <div className="me-empty">
             <strong>No courses this semester</strong>
-            <span>{inactive ? "Reactivate them in Student Directory before adding courses." : `Use “Add course” to enroll ${student.name.split(" ")[0]} in one.`}</span>
+            <span>{inactive ? "Reactivate them from the ⋯ menu above before adding courses." : `Use “Add course” to enroll ${student.name.split(" ")[0]} in one.`}</span>
           </div>
         ) : (
           <ul className="me-list">
@@ -358,28 +324,6 @@ const StudentWorkspace = ({ studentId, onClose }) => {
         )}
       </section>
 
-      <section className="me-card">
-        <button type="button" className="me-history-toggle" onClick={() => setShowHistory((v) => !v)} aria-expanded={showHistory}>
-          <span><h3>Change history</h3><small>{history.length ? `${plural(history.length, "change")} recorded for ${student.name.split(" ")[0]}` : "No changes recorded yet"}</small></span>
-          {showHistory ? <FiChevronUp aria-hidden="true" /> : <FiChevronDown aria-hidden="true" />}
-        </button>
-        {showHistory && history.length > 0 && (
-          <ol className="me-timeline">
-            {history.map((h) => (
-              <li key={h.id}>
-                <span className={`me-dot ${h.action.split(".")[1]}`} aria-hidden="true" />
-                <div>
-                  <strong>{h.label}</strong> {h.course ? courseTitle(h.course) : ""}
-                  {(h.fromSection || h.toSection) && <span className="me-sec"> · {h.fromSection && h.toSection ? `Section ${h.fromSection} → ${h.toSection}` : `Section ${h.toSection || h.fromSection}`}</span>}
-                  {h.reason && <p className="me-why">“{h.reason}”</p>}
-                  <small>{dateTime(h.at)}{h.by ? ` · ${h.by}` : ""}</small>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-
       {changes.length > 0 && (
         <div className="me-savebar" role="region" aria-label="Unsaved changes">
           <div className="me-savebar-text">
@@ -416,4 +360,4 @@ const StudentWorkspace = ({ studentId, onClose }) => {
   );
 };
 
-export default StudentWorkspace;
+export default CoursesPanel;

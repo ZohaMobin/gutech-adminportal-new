@@ -1,14 +1,14 @@
 import Loading from "../../Components/Loading/Loading";
 import PageHeader from "../../Components/PageHeader/PageHeader";
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { showToast, TOAST_TYPES } from '../../Components/Toast/Toast';
 import './StudentDirectoryPage.css';
-import { FiSearch, FiFilter, FiX } from 'react-icons/fi'; // Import icons
+import { FiSearch, FiFilter, FiX, FiChevronRight } from 'react-icons/fi'; // Import icons
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
 import NoResultsFound from '../../Components/NoResultsFound';
 import { semesterLabel } from "../../utils/semester";
-import { DeactivateModal, ReactivateModal } from "./StudentAccountModals";
 import "../Administrators/AdministratorsPage.css";
 import "./StudentAccount.css";
 
@@ -17,21 +17,32 @@ const shortDate = (value) => (value ? new Date(value).toLocaleDateString(undefin
 const StudentDirectoryPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
   const { departments, programs, loading: deptProgLoading } = useDepartmentsAndPrograms();
+  // Filters, search and the Active / Inactive tab live in the address, so coming back from a student's profile
+  // shows the same list.
+  const [urlParams, setUrlParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(() => urlParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    department: '',
-    program: '',
-    semester: '',
-    search: ''
-  });
+  const [filters, setFilters] = useState(() => ({
+    department: urlParams.get('department') || '',
+    program: urlParams.get('program') || '',
+    semester: urlParams.get('semester') || '',
+    search: urlParams.get('search') || ''
+  }));
   const [semesters, setSemesters] = useState([]);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [status, setStatus] = useState('active');       // active | inactive (deactivated accounts)
+  const [status, setStatus] = useState(() => (urlParams.get('status') === 'inactive' ? 'inactive' : 'active'));
   const [counts, setCounts] = useState(null);
-  const [accountModal, setAccountModal] = useState(null); // { type: 'deactivate' | 'reactivate', student }
+
+  useEffect(() => {
+    const next = Object.fromEntries(Object.entries({ ...filters, status: status === 'inactive' ? 'inactive' : '' }).filter(([, v]) => v));
+    setUrlParams(next, { replace: true });
+  }, [filters, status, setUrlParams]);
+
+  const openStudent = (student) => navigate(`/students/${student._id}`, { state: { from: `${location.pathname}${location.search}` } });
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -297,12 +308,19 @@ const StudentDirectoryPage = () => {
                     <th>Program</th>
                     <th>Semester</th>
                     {status === 'inactive' ? <th>Deactivated</th> : <th>CGPA</th>}
-                    <th className="sda-actions-col"><span className="sda-sr">Actions</span></th>
+                    <th className="sda-actions-col"><span className="sda-sr">Open</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {students.map(student => (
-                    <tr key={student._id}>
+                    <tr
+                      key={student._id}
+                      className="sda-row"
+                      tabIndex={0}
+                      onClick={() => openStudent(student)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') openStudent(student); }}
+                      aria-label={`Open ${student.name}`}
+                    >
                       <td>{student.rollNumber}</td>
                       <td>{student.name || 'N/A'}</td>
                       <td>{student.email || 'N/A'}</td>
@@ -321,11 +339,7 @@ const StudentDirectoryPage = () => {
                           </span>
                         </td>
                       )}
-                      <td className="sda-actions-col">
-                        {status === 'inactive'
-                          ? <button type="button" className="am-btn am-btn-small" onClick={() => setAccountModal({ type: 'reactivate', student })}>Reactivate</button>
-                          : <button type="button" className="am-btn am-btn-small sda-deactivate" onClick={() => setAccountModal({ type: 'deactivate', student })}>Deactivate…</button>}
-                      </td>
+                      <td className="sda-actions-col"><FiChevronRight className="sda-open" aria-hidden="true" />                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -334,7 +348,7 @@ const StudentDirectoryPage = () => {
               status === 'inactive' && !Object.values(filters).some(Boolean) ? (
               <div className="sda-empty">
                 <strong>No inactive students</strong>
-                <span>Students who withdraw, leave or are suspended appear here after you deactivate them.</span>
+                <span>Students who withdraw, leave or are suspended appear here. Open a student and use the ⋯ menu to deactivate them.</span>
               </div>
               ) : <NoResultsFound 
                 title="No Students Found"
@@ -349,12 +363,6 @@ const StudentDirectoryPage = () => {
         )}
       </div>
 
-      {accountModal?.type === 'deactivate' && (
-        <DeactivateModal student={accountModal.student} onClose={() => setAccountModal(null)} onDone={(message) => { setAccountModal(null); showToast(`${accountModal.student.name}: ${message}`, TOAST_TYPES.SUCCESS); fetchStudents(); }} />
-      )}
-      {accountModal?.type === 'reactivate' && (
-        <ReactivateModal student={accountModal.student} onClose={() => setAccountModal(null)} onDone={(message) => { setAccountModal(null); showToast(`${accountModal.student.name}: ${message}`, TOAST_TYPES.SUCCESS); fetchStudents(); }} />
-      )}
     </div>
   );
 };

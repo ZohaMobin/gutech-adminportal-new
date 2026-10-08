@@ -4,6 +4,8 @@ import { FiLogOut, FiBookOpen, FiLock, FiArchive } from "react-icons/fi";
 import Loading, { BusyLabel } from "../../Components/Loading/Loading";
 import { messageOf } from "../../utils/apiMessage";
 import { ConfirmModal, Modal } from "../Administrators/AdminModals";
+import "../Administrators/AdministratorsPage.css";
+import "./StudentAccount.css";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const headers = () => ({ Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` });
@@ -11,7 +13,7 @@ const headers = () => ({ Authorization: `Bearer ${sessionStorage.getItem("adminT
 export const REASONS = [
   { id: "withdrew", label: "Withdrew", hint: "Left their studies" },
   { id: "left", label: "Left the university", hint: "Transferred or moved on" },
-  { id: "suspended", label: "Suspended", hint: "Temporarily not allowed to study" },
+  { id: "suspended", label: "Suspended", hint: "Temporary; keeps their courses" },
   { id: "other", label: "Other", hint: "Explain in the note" },
 ];
 
@@ -86,11 +88,15 @@ export const DeactivateModal = ({ student, onDone, onClose }) => {
         <ul className="sda-effects">
           <li><FiLogOut aria-hidden="true" /><span>Signed out straight away, and can't sign in until reactivated.</span></li>
           <li><FiBookOpen aria-hidden="true" /><span>
-            {preview.willDrop.length
-              ? <>Dropped from {preview.willDrop.length === 1 ? "1 course" : `${preview.willDrop.length} courses`} this semester: {courseList(preview.willDrop)}.</>
-              : "Not enrolled in any course this semester, so no course is dropped."}
+            {!preview.willDrop.length
+              ? "Not enrolled in any course this semester, so no course is dropped."
+              : category === "suspended"
+                ? <>Stays enrolled in {courseList(preview.willDrop)}. Teachers see a "Suspended" tag, and everything is as it was when they're reactivated.</>
+                : category
+                  ? <>Dropped from {preview.willDrop.length === 1 ? "1 course" : `${preview.willDrop.length} courses`} this semester: {courseList(preview.willDrop)}.</>
+                  : <>Choose a reason to see what happens to their {preview.willDrop.length === 1 ? "course" : `${preview.willDrop.length} courses`}: suspended students keep them, everyone else is dropped.</>}
           </span></li>
-          {preview.lockedStay.length > 0 && <li><FiLock aria-hidden="true" /><span>{courseList(preview.lockedStay)} {preview.lockedStay.length === 1 ? "has a locked result and stays" : "have locked results and stay"} as {preview.lockedStay.length === 1 ? "it is" : "they are"}.</span></li>}
+          {preview.lockedStay.length > 0 && category !== "suspended" && <li><FiLock aria-hidden="true" /><span>{courseList(preview.lockedStay)} {preview.lockedStay.length === 1 ? "has a locked result and stays" : "have locked results and stay"} as {preview.lockedStay.length === 1 ? "it is" : "they are"}.</span></li>}
           <li><FiArchive aria-hidden="true" /><span>Past results, transcript, attendance and marks are kept. This can be undone with Reactivate.</span></li>
         </ul>
       )}

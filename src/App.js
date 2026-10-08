@@ -11,6 +11,7 @@ import ImportStudentsPage from "./Pages/ImportStudents/ImportStudentsPage";
 import StudentDirectoryPage from "./Pages/StudentDirectory/StudentDirectoryPage";
 import StudentPasswordsPage from "./Pages/StudentPasswords/StudentPasswordsPage";
 import ManageEnrollmentPage from "./Pages/ManageEnrollment/ManageEnrollmentPage";
+import StudentProfilePage from "./Pages/StudentProfile/StudentProfilePage";
 import CoursePage from "./Pages/Course/CoursePage.js";
 import CourseRegistrationPage from "./Pages/CourseRegistration/CourseRegistrationPage";
 import StudentMarksPage from "./Pages/StudentMarks/StudentMarksPage";
@@ -42,6 +43,7 @@ function App() {
                 <Route path="manage-enrollment" element={<ManageEnrollmentPage />} />
                 <Route path="import-students" element={<ImportStudentsPage />} />
                 <Route path="student-directory" element={<StudentDirectoryPage />} />
+                <Route path="students/:studentId" element={<StudentProfilePage />} />
                 <Route path="student-passwords" element={<StudentPasswordsPage />} />
                 <Route path="marks" element={<StudentMarksPage />} />
                 <Route path="attendance" element={<AttendancePage />} />
