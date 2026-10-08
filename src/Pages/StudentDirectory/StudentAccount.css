@@ -1,0 +1,39 @@
+/* Student Directory: Active / Inactive tabs, the row action, and the deactivate dialog. */
+.student-directory-container .results-summary { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 0.5rem 0.75rem; flex: 1; }
+.sda-tabs { margin-left: auto; }
+.sda-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.student-directory-container th.sda-actions-col, .student-directory-container td.sda-actions-col { width: 1%; white-space: nowrap; text-align: right; }
+.sda-deactivate { color: #6b7280 !important; }
+.sda-deactivate:hover:not(:disabled) { border-color: #e7b4b4 !important; color: #b42318 !important; background: #fef3f2 !important; }
+
+.sda-status-cell { min-width: 12rem; }
+.sda-badge { display: inline-flex; align-items: center; height: 1.5rem; padding: 0 0.55rem; border-radius: 999px; background: #f2f3f6; color: #4b5563; font-size: 0.74rem; font-weight: 650; }
+.sda-status-cell small { display: block; margin-top: 0.2rem; font-size: 0.78rem; color: #6b7280; }
+
+.sda-empty { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 3rem 1rem; text-align: center; }
+.sda-empty strong { color: #1f2937; }
+.sda-empty span { max-width: 26rem; font-size: 0.88rem; color: #6b7280; }
+
+/* the dialog */
+.sda-who { display: flex; align-items: center; gap: 0.75rem; margin: 0.2rem 0 1rem; padding: 0.7rem 0.8rem; border-radius: 0.65rem; background: #f7f8fa; }
+.sda-avatar { flex: none; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--primary-tint-line); color: var(--primary-color); font-weight: 700; font-size: 0.85rem; }
+.sda-who strong { display: block; font-size: 0.95rem; color: #111827; }
+.sda-who small { display: block; font-size: 0.8rem; color: #6b7280; }
+
+.sda-label { margin: 0 0 0.45rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
+.sda-reasons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.9rem; }
+.sda-reason { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.6rem 0.7rem; border: 1px solid #e3e6ea; border-radius: 0.6rem; cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); }
+.sda-reason:hover { border-color: #c9ced6; }
+.sda-reason.is-on { border-color: var(--primary-color); background: var(--primary-tint); box-shadow: 0 0 0 1px var(--primary-color); }
+.sda-reason input { flex: none; width: 1rem; height: 1rem; min-width: 0; margin: 0.15rem 0 0; padding: 0; accent-color: var(--primary-color); }
+.sda-reason span { flex: 1; min-width: 0; }
+.sda-reason strong { display: block; font-size: 0.86rem; color: #111827; }
+.sda-reason small { display: block; margin-top: 0.1rem; font-size: 0.76rem; color: #6b7280; }
+.sda-note { margin-bottom: 0.9rem; }
+
+.sda-effects { margin: 0 0 0.4rem; padding: 0.75rem 0.85rem; list-style: none; border-radius: 0.65rem; background: #f7f8fa; }
+.sda-effects li { display: flex; gap: 0.55rem; font-size: 13.5px; line-height: 1.5; color: #374151; }
+.sda-effects li + li { margin-top: 0.4rem; }
+.sda-effects svg { flex: none; margin-top: 0.2rem; color: #6b7280; }
+
+@media (max-width: 520px) { .sda-reasons { grid-template-columns: 1fr; } }

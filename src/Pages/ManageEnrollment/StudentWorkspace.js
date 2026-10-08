@@ -206,6 +206,7 @@ const StudentWorkspace = ({ studentId, onClose }) => {
   if (!data) return <div className="me-card"><Loading variant="list" rows={4} label="Loading courses" /></div>;
 
   const { student, term, courses, dropped, addDrop, history } = data;
+  const inactive = student.account?.status === "inactive";
   const pendingCredits = (() => {
     let total = data.credits;
     for (const c of courses) if (staged[c.registrationId]?.type === "remove") total -= c.course.creditHours;
@@ -238,6 +239,13 @@ const StudentWorkspace = ({ studentId, onClose }) => {
         <button type="button" className="me-close" onClick={() => { if (!changes.length || window.confirm("Discard your unsaved changes for this student?")) onClose(); }}>Change student</button>
       </section>
 
+      {inactive && (
+        <div className="me-banner me-banner-inactive" role="status">
+          <FiLock aria-hidden="true" />
+          <span><strong>Inactive</strong> · {student.account.categoryLabel || "Deactivated"}{student.account.deactivatedAt ? ` on ${shortDate(student.account.deactivatedAt)}` : ""}{student.account.note ? ` · ${student.account.note}` : ""}. They can't sign in, and courses can't be added until they're reactivated in Student Directory.</span>
+        </div>
+      )}
+
       {addDrop?.passed && (
         <div className="me-banner"><FiClock aria-hidden="true" /> The add/drop period ended on {shortDate(addDrop.endsAt)}. Changes are still allowed. You'll see a reminder before saving.</div>
       )}
@@ -248,13 +256,13 @@ const StudentWorkspace = ({ studentId, onClose }) => {
             <h3>Courses this semester</h3>
             <p>Remove, move to another section, or add a course. Nothing is saved until you review.</p>
           </div>
-          <button type="button" className="sp-btn sp-btn-primary me-add-btn" onClick={() => setModal({ type: "add" })}><FiPlus aria-hidden="true" /> Add course</button>
+          <button type="button" className="sp-btn sp-btn-primary me-add-btn" onClick={() => setModal({ type: "add" })} disabled={inactive} title={inactive ? "Reactivate this student first" : undefined}><FiPlus aria-hidden="true" /> Add course</button>
         </header>
 
         {courses.length === 0 && adds.length === 0 ? (
           <div className="me-empty">
             <strong>No courses this semester</strong>
-            <span>Use “Add course” to enroll {student.name.split(" ")[0]} in one.</span>
+            <span>{inactive ? "Reactivate them in Student Directory before adding courses." : `Use “Add course” to enroll ${student.name.split(" ")[0]} in one.`}</span>
           </div>
         ) : (
           <ul className="me-list">
@@ -338,7 +346,7 @@ const StudentWorkspace = ({ studentId, onClose }) => {
                           <button type="button" className="me-link" onClick={() => unstage(c.registrationId)}><FiRotateCcw aria-hidden="true" /> Undo</button>
                         </div>
                       ) : (
-                        <button type="button" className="am-btn am-btn-small" onClick={() => stage(c.registrationId, { type: "restore" })} disabled={takenCourseIds.has(String(c.course.id))}>Restore</button>
+                        <button type="button" className="am-btn am-btn-small" onClick={() => stage(c.registrationId, { type: "restore" })} disabled={inactive || takenCourseIds.has(String(c.course.id))} title={inactive ? "Reactivate this student first" : undefined}>Restore</button>
                       )}
                     </div>
                     <Issues issue={issue} />

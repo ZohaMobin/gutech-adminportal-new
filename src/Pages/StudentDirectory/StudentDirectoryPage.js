@@ -8,6 +8,11 @@ import { FiSearch, FiFilter, FiX } from 'react-icons/fi'; // Import icons
 import { useDepartmentsAndPrograms } from '../../hooks/useDepartmentsAndPrograms';
 import NoResultsFound from '../../Components/NoResultsFound';
 import { semesterLabel } from "../../utils/semester";
+import { DeactivateModal, ReactivateModal } from "./StudentAccountModals";
+import "../Administrators/AdministratorsPage.css";
+import "./StudentAccount.css";
+
+const shortDate = (value) => (value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
 
 const StudentDirectoryPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -24,6 +29,9 @@ const StudentDirectoryPage = () => {
   });
   const [semesters, setSemesters] = useState([]);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [status, setStatus] = useState('active');       // active | inactive (deactivated accounts)
+  const [counts, setCounts] = useState(null);
+  const [accountModal, setAccountModal] = useState(null); // { type: 'deactivate' | 'reactivate', student }
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -35,7 +43,7 @@ const StudentDirectoryPage = () => {
         return;
       }
 
-      const queryParams = {};
+      const queryParams = { status };
       if (filters.department) queryParams.department = filters.department;
       if (filters.program) queryParams.program = filters.program;
       if (filters.semester) queryParams.semester = filters.semester;
@@ -50,6 +58,7 @@ const StudentDirectoryPage = () => {
       
       setStudents(response.data.students);
       setTotalStudents(response.data.total);
+      setCounts(response.data.counts || null);
     } catch (error) {
       console.error('Error fetching students:', error);
       if (error.response?.status === 401) {
@@ -60,7 +69,7 @@ const StudentDirectoryPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, apiUrl]);
+  }, [filters, apiUrl, status]);
 
   // Fetch semesters when program is selected
   useEffect(() => {
@@ -234,7 +243,14 @@ const StudentDirectoryPage = () => {
         <div className="results-header">
           <div className="results-summary">
             <h3>Student List</h3>
-            <span className="results-count">{totalStudents} students found</span>
+            <span className="results-count">{totalStudents} {status === 'inactive' ? 'inactive' : ''} student{totalStudents === 1 ? '' : 's'}</span>
+            <div className="am-tabs sda-tabs" role="tablist" aria-label="Account status">
+              {[['active', 'Active'], ['inactive', 'Inactive']].map(([key, label]) => (
+                <button key={key} role="tab" aria-selected={status === key} className={`am-tab ${status === key ? 'is-active' : ''}`} onClick={() => setStatus(key)}>
+                  {label}{counts && <span className="am-count">{counts[key]}</span>}
+                </button>
+              ))}
+            </div>
           </div>
           {Object.values(filters).some(filter => filter) && (
             <div className="active-filters">
@@ -280,7 +296,8 @@ const StudentDirectoryPage = () => {
                     <th>Department</th>
                     <th>Program</th>
                     <th>Semester</th>
-                    <th>CGPA</th>
+                    {status === 'inactive' ? <th>Deactivated</th> : <th>CGPA</th>}
+                    <th className="sda-actions-col"><span className="sda-sr">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -292,17 +309,34 @@ const StudentDirectoryPage = () => {
                       <td>{student.department?.name || student.department || 'N/A'}</td>
                       <td>{student.program?.name || student.program || 'N/A'}</td>
                       <td>{student.currentSemester ?? 'N/A'}</td>
-                      <td className="cgpa-cell">
-                        <span className={`cgpa-badge ${student.CGPA >= 3.5 ? 'high' : student.CGPA >= 2.5 ? 'medium' : 'low'}`}>
-                          {student.CGPA?.toFixed(2) || 'N/A'}
-                        </span>
+                      {status === 'inactive' ? (
+                        <td className="sda-status-cell">
+                          <span className="sda-badge">{student.account?.categoryLabel || 'Inactive'}</span>
+                          <small>{shortDate(student.account?.deactivatedAt)}{student.account?.note ? ` · ${student.account.note}` : ''}</small>
+                        </td>
+                      ) : (
+                        <td className="cgpa-cell">
+                          <span className={`cgpa-badge ${student.CGPA >= 3.5 ? 'high' : student.CGPA >= 2.5 ? 'medium' : 'low'}`}>
+                            {student.CGPA?.toFixed(2) || 'N/A'}
+                          </span>
+                        </td>
+                      )}
+                      <td className="sda-actions-col">
+                        {status === 'inactive'
+                          ? <button type="button" className="am-btn am-btn-small" onClick={() => setAccountModal({ type: 'reactivate', student })}>Reactivate</button>
+                          : <button type="button" className="am-btn am-btn-small sda-deactivate" onClick={() => setAccountModal({ type: 'deactivate', student })}>Deactivate…</button>}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             ) : (
-              <NoResultsFound 
+              status === 'inactive' && !Object.values(filters).some(Boolean) ? (
+              <div className="sda-empty">
+                <strong>No inactive students</strong>
+                <span>Students who withdraw, leave or are suspended appear here after you deactivate them.</span>
+              </div>
+              ) : <NoResultsFound 
                 title="No Students Found"
                 message="No students match your current filter criteria. Try adjusting your filters or search terms."
                 icon="search"
@@ -314,6 +348,13 @@ const StudentDirectoryPage = () => {
           </div>
         )}
       </div>
+
+      {accountModal?.type === 'deactivate' && (
+        <DeactivateModal student={accountModal.student} onClose={() => setAccountModal(null)} onDone={(message) => { setAccountModal(null); showToast(`${accountModal.student.name}: ${message}`, TOAST_TYPES.SUCCESS); fetchStudents(); }} />
+      )}
+      {accountModal?.type === 'reactivate' && (
+        <ReactivateModal student={accountModal.student} onClose={() => setAccountModal(null)} onDone={(message) => { setAccountModal(null); showToast(`${accountModal.student.name}: ${message}`, TOAST_TYPES.SUCCESS); fetchStudents(); }} />
+      )}
     </div>
   );
 };
