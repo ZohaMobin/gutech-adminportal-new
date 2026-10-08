@@ -1,11 +1,11 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
-import StudentWorkspace from "./StudentWorkspace";
-import * as api from "./enrollmentApi";
+import CoursesPanel from "./CoursesPanel";
+import * as api from "../ManageEnrollment/enrollmentApi";
 
-jest.mock("./enrollmentApi", () => ({
-  ...jest.requireActual("./enrollmentApi"),
+jest.mock("../ManageEnrollment/enrollmentApi", () => ({
+  ...jest.requireActual("../ManageEnrollment/enrollmentApi"),
   getEnrollment: jest.fn(),
   getCourseOptions: jest.fn(),
   previewChanges: jest.fn(),
@@ -39,11 +39,13 @@ const type = async (el, value) => act(async () => {
   Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "value").set.call(el, value);
   el.dispatchEvent(new Event("input", { bubbles: true }));
 });
-const mount = async () => {
+let onSaved; let onDirtyChange;
+const mount = async (data = enrollment()) => {
+  onSaved = jest.fn(); onDirtyChange = jest.fn();
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  await act(async () => { root.render(<StudentWorkspace studentId="s1" onClose={jest.fn()} />); });
+  await act(async () => { root.render(<CoursesPanel studentId="s1" data={data} onSaved={onSaved} onDirtyChange={onDirtyChange} />); });
   await wait(10);
 };
 beforeEach(() => {
@@ -55,13 +57,16 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); document.body.innerHTML = ""; jest.clearAllMocks(); });
 
-test("it shows the student, the semester, courses with sections and credits, and locked results", async () => {
+test("it lists courses with sections and credits, and locked results can't be changed", async () => {
   await mount();
-  expect(container.textContent).toMatch(/Muhammad Akif/);
-  expect(container.textContent).toMatch(/2622-6DSAI-023 · BS Data Science and AI · Semester 2/);
-  expect(container.querySelector(".me-student-stats").textContent).toMatch(/Fall 2026.*2.*6/);
+  expect(rowOf("Machine Learning").textContent).toMatch(/Section A · Dr. T · 3 credits/);
   expect(rowOf("Linear Algebra").textContent).toMatch(/Result locked/);
   expect(rowOf("Linear Algebra").querySelector("button")).toBeNull();
+});
+
+test("an inactive student can't have courses added", async () => {
+  await mount(enrollment({ student: { ...enrollment().student, account: { status: "inactive" } } }));
+  expect(button("Add course").disabled).toBe(true);
 });
 
 test("the email's request: drop one course and add another, reviewed and saved together with a reason", async () => {
@@ -89,6 +94,8 @@ test("the email's request: drop one course and add another, reviewed and saved t
   await type(document.querySelector('[role="dialog"] textarea'), "Academic Dept email, 6 Oct");
   await click(save);
   await wait(10);
+  expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+  expect(onSaved).toHaveBeenCalled();
   expect(api.saveChanges).toHaveBeenCalledWith("s1", [
     { type: "remove", registrationId: "r1", kind: "dropped" },
     { type: "add", courseOfferingId: "o-paids", sectionId: "paB" },

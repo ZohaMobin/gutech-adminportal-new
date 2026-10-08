@@ -3,8 +3,11 @@
 .sda-tabs { margin-left: auto; }
 .sda-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .student-directory-container th.sda-actions-col, .student-directory-container td.sda-actions-col { width: 1%; white-space: nowrap; text-align: right; }
-.sda-deactivate { color: #6b7280 !important; }
-.sda-deactivate:hover:not(:disabled) { border-color: #e7b4b4 !important; color: #b42318 !important; background: #fef3f2 !important; }
+.student-directory-container tr.sda-row { cursor: pointer; transition: background var(--transition-fast); }
+.student-directory-container tr.sda-row:hover td { background: #fafbfc; }
+.student-directory-container tr.sda-row:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
+.sda-open { color: #b4b9c2; font-size: 1.05rem; vertical-align: middle; transition: transform var(--transition-fast), color var(--transition-fast); }
+.student-directory-container tr.sda-row:hover .sda-open { color: var(--primary-color); transform: translateX(2px); }
 
 .sda-status-cell { min-width: 12rem; }
 .sda-badge { display: inline-flex; align-items: center; height: 1.5rem; padding: 0 0.55rem; border-radius: 999px; background: #f2f3f6; color: #4b5563; font-size: 0.74rem; font-weight: 650; }
