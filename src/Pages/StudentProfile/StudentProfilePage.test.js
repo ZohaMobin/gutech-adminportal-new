@@ -86,7 +86,7 @@ test("account actions live in the ⋯ menu: Deactivate for an active student", a
   await mount();
   await click(container.querySelector('[aria-label="Account actions"]'));
   const items = [...container.querySelectorAll('[role="menuitem"]')].map((b) => b.textContent);
-  expect(items).toEqual(["Deactivate…"]);
+  expect(items).toEqual(["Edit details…", "Deactivate…"]);
 });
 
 test("an inactive student shows why, and the menu offers Reactivate", async () => {
@@ -96,7 +96,7 @@ test("an inactive student shows why, and the menu offers Reactivate", async () =
   expect(head).toMatch(/Inactive · Withdrew/);
   expect(head).toMatch(/Letter dated 7 Oct/);
   await click(container.querySelector('[aria-label="Account actions"]'));
-  expect(container.querySelector('[role="menuitem"]').textContent).toBe("Reactivate…");
+  expect([...container.querySelectorAll('[role="menuitem"]')].map((b) => b.textContent)).toEqual(["Edit details…", "Reactivate…"]);
 });
 
 test("the breadcrumb goes back to the list the admin came from, filters included", async () => {
