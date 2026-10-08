@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiSearch, FiX, FiUsers, FiList } from "react-icons/fi";
 import PageHeader from "../../Components/PageHeader/PageHeader";
 import { messageOf } from "../../utils/apiMessage";
-import StudentWorkspace from "./StudentWorkspace";
 import ChangeLog from "./ChangeLog";
 import { searchStudents, initialsOf } from "./enrollmentApi";
 import "../Administrators/AdministratorsPage.css";
@@ -67,34 +66,29 @@ const StudentSearch = ({ onPick }) => {
 
 const ManageEnrollmentPage = () => {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const tab = params.get("tab") === "log" ? "log" : "students";
-  const studentId = params.get("student");
-  const top = useRef(null);
+  const here = `/manage-enrollment${params.toString() ? `?${params}` : ""}`;
 
-  const go = (next) => {
-    const p = new URLSearchParams(params);
-    Object.entries(next).forEach(([k, v]) => (v ? p.set(k, v) : p.delete(k)));
-    setParams(p);
-    top.current?.scrollIntoView({ block: "start" });
-  };
+  // A student opens on their profile (Courses tab); the breadcrumb there comes back here.
+  const openStudent = (id) => navigate(`/students/${id}`, { state: { from: here } });
+  const setTab = (next) => setParams(next === "log" ? { tab: "log" } : {});
+
+  // Old links to a student here (?student=…) now go to their profile.
+  const legacy = params.get("student");
+  React.useEffect(() => { if (legacy) navigate(`/students/${legacy}`, { replace: true }); }, [legacy, navigate]);
 
   return (
-    <div className="me page-shell" ref={top}>
+    <div className="me page-shell">
       <PageHeader
         title="Manage Enrollment"
-        subtitle="Add, drop or move a student's courses this semester. Each change is saved with a reason and recorded in the change log."
+        subtitle="Find a student to add, drop or move their courses, or see every change in the change log."
       />
       <div className="am-tabs me-tabs" role="tablist" aria-label="Manage Enrollment">
-        <button role="tab" aria-selected={tab === "students"} className={`am-tab ${tab === "students" ? "is-active" : ""}`} onClick={() => go({ tab: null })}><FiUsers aria-hidden="true" /> Students</button>
-        <button role="tab" aria-selected={tab === "log"} className={`am-tab ${tab === "log" ? "is-active" : ""}`} onClick={() => go({ tab: "log" })}><FiList aria-hidden="true" /> Change log</button>
+        <button role="tab" aria-selected={tab === "students"} className={`am-tab ${tab === "students" ? "is-active" : ""}`} onClick={() => setTab("students")}><FiUsers aria-hidden="true" /> Students</button>
+        <button role="tab" aria-selected={tab === "log"} className={`am-tab ${tab === "log" ? "is-active" : ""}`} onClick={() => setTab("log")}><FiList aria-hidden="true" /> Change log</button>
       </div>
-      {tab === "log" ? (
-        <ChangeLog onOpenStudent={(id) => go({ tab: null, student: id })} />
-      ) : studentId ? (
-        <StudentWorkspace studentId={studentId} onClose={() => go({ student: null })} />
-      ) : (
-        <StudentSearch onPick={(id) => go({ student: id })} />
-      )}
+      {tab === "log" ? <ChangeLog onOpenStudent={openStudent} /> : <StudentSearch onPick={openStudent} />}
     </div>
   );
 };

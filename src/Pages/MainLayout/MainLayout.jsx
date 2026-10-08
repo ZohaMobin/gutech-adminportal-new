@@ -15,7 +15,9 @@ const MainLayout = ({ children }) => {
   useEffect(() => {
     // Extract the page ID from the path (without the leading slash)
     const currentPath = location.pathname.substring(1);
-    if (currentPath) {
+    if (currentPath.startsWith('students/')) {
+      setActivePage('student-directory');   // a student's profile belongs to the directory
+    } else if (currentPath) {
       setActivePage(currentPath);
     } else {
       setActivePage('attendance'); // Default to the first page if on root path

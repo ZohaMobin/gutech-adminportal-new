@@ -32,12 +32,13 @@ test("deactivate shows who and what will happen, needs a reason, then sends it",
   await mount(<DeactivateModal student={student} onDone={onDone} onClose={jest.fn()} />);
   const text = document.querySelector('[role="dialog"]').textContent;
   expect(text).toMatch(/Muhammad Akif/);
-  expect(text).toMatch(/Dropped from 1 course this semester: AI301 Machine Learning/);
+  expect(text).toMatch(/Choose a reason to see what happens to their course/);
   expect(text).toMatch(/MTH202 Linear Algebra has a locked result and stays/);
   expect(text).toMatch(/Past results, transcript, attendance and marks are kept/);
 
   expect(button("Deactivate student").disabled).toBe(true);
   await click(document.querySelectorAll('input[name="sda-reason"]')[0]);       // Withdrew
+  expect(document.querySelector('[role="dialog"]').textContent).toMatch(/Dropped from 1 course this semester: AI301 Machine Learning/);
   await type(document.querySelector("textarea"), "Letter dated 7 Oct");
   await click(button("Deactivate student"));
   await wait(10);
@@ -64,4 +65,14 @@ test("reactivate explains that courses are not added back", async () => {
   await wait(10);
   expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/api/students/s1/reactivate"), {}, expect.anything());
   expect(onDone).toHaveBeenCalled();
+});
+
+test("suspended keeps their courses, and the dialog says so", async () => {
+  axios.get.mockResolvedValue({ data: { willDrop: [{ code: "AI301", name: "Machine Learning" }], lockedStay: [] } });
+  await mount(<DeactivateModal student={student} onDone={jest.fn()} onClose={jest.fn()} />);
+  await click(document.querySelectorAll('input[name="sda-reason"]')[2]);       // Suspended
+  const text = document.querySelector('[role="dialog"]').textContent;
+  expect(text).toMatch(/Stays enrolled in AI301 Machine Learning/);
+  expect(text).toMatch(/Suspended" tag/);
+  expect(text).not.toMatch(/Dropped from/);
 });

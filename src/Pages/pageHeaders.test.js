@@ -9,7 +9,7 @@ import StudentPasswordsPage from "./StudentPasswords/StudentPasswordsPage";
 import ClassSchedulePage from "./Class Schedule/Class Schedule";
 
 jest.mock("axios");
-jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
+jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn(), useLocation: () => ({ pathname: "/", search: "" }), useSearchParams: () => [new URLSearchParams(), jest.fn()] }), { virtual: true });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 let container; let root;

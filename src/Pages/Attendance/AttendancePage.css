@@ -816,4 +816,4 @@
 @media (max-width: 900px) {
   .att-sidebar { position: static; }
 }
-
+.att-suspended { display: inline-block; margin-left: 0.45rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: #fff4dc; color: #8a5a00; font-size: 0.7rem; font-weight: 650; vertical-align: middle; }
