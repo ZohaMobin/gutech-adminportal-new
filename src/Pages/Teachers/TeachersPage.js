@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import axios from "axios";
 import "../Administrators/AdministratorsPage.css";
 import "./TeachersPage.css";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -190,7 +191,7 @@ const TeachersPanel = () => {
         </div>
       </div>
 
-      {loadError && <div className="error-message" role="alert">{loadError} <button type="button" className="am-btn am-btn-small" onClick={load}>Try again</button></div>}
+      <InlineAlert message={loadError} onRetry={load} />
 
       {teachers === null ? (
         <Loading variant="list" rows={4} label="Loading teachers" />

@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import Loading from "../../Components/Loading/Loading";
 import "./AttendancePage.css";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const getAttendanceItems = (payload) => {
   if (Array.isArray(payload)) {
@@ -619,11 +620,7 @@ const AttendancePage = () => {
         }
       />
 
-      {error && (
-        <div className="error-message">
-          <span>{error}</span>
-        </div>
-      )}
+      <InlineAlert message={error} />
 
       <section className="att-filters" aria-label="Find a course">
         <label className="att-f">

@@ -11,6 +11,7 @@ import { PasswordCell, PasswordsBar, DownloadModal, GenerateModal } from "./Pass
 import { issuePasswords, downloadPasswordsCsv, csvFileName } from "./passwordApi";
 import "../Administrators/AdministratorsPage.css";
 import "./StudentPasswordsPage.css";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const NO_FILTERS = { department: "", program: "", semester: "", search: "" };
@@ -174,9 +175,7 @@ const StudentPasswordsPage = () => {
         </div>
       </div>
 
-      {loadError && (
-        <div className="error-message" role="alert">{loadError} <button type="button" className="am-btn am-btn-small" onClick={load}>Try again</button></div>
-      )}
+      <InlineAlert message={loadError} onRetry={load} />
 
       {students !== null && (
         <PasswordsBar

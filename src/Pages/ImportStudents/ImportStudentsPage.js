@@ -10,6 +10,7 @@ import NoResultsFound from "../../Components/NoResultsFound";
 import ImportHistory from "./ImportHistory";
 import StudentFlow from "../../Components/StudentFlow/StudentFlow";
 import { FiKey } from "react-icons/fi";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const ImportStudentsPage = () => {
   const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -260,14 +261,7 @@ const ImportStudentsPage = () => {
           </div>
         )}
 
-        {error && (
-          <div className="error-message">
-            <p>{error}</p>
-            <button onClick={() => setError("")} className="dismiss-error-btn">
-              Dismiss
-            </button>
-          </div>
-        )}
+        <InlineAlert message={error} onDismiss={() => setError("")} />
 
         {success && (
           <div className="success-message">

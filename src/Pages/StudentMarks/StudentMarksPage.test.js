@@ -97,7 +97,7 @@ test("a section with nothing published says so", async () => {
 
 test("a real failure shows its reason once, in the banner, with a neutral note in the table area", async () => {
   await openSection(() => Promise.reject({ response: { status: 500, data: { message: "Database unavailable" } } }));
-  const banners = container.querySelectorAll(".error-message");
+  const banners = container.querySelectorAll(".ia");
   expect(banners.length).toBe(1);
   expect(banners[0].textContent).toMatch(/Database unavailable/);
   expect(container.querySelector(".no-data-container").textContent).toMatch(/could not be loaded/);

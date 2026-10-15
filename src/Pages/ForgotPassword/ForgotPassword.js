@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./ForgotPassword.css";
+import { formMessageOf } from "../../utils/apiMessage";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 // Emailed reset codes are off until the sending domain is verified. Set REACT_APP_EMAIL_PASSWORD_RESET=true to bring the
 // self-service flow back; until then this page tells people who can reset their password for them.
@@ -32,7 +34,7 @@ const ForgotPassword = () => {
       await axios.post(`${apiUrl}/api/auth/forgot-password`, { email });
       setStep(2);
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || "Failed to send reset code. Please try again.");
+      setErrorMessage(formMessageOf(error, "Failed to send reset code. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -51,7 +53,7 @@ const ForgotPassword = () => {
       await axios.post(`${apiUrl}/api/auth/verify-reset-code`, { email, code: otp });
       setStep(3);
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || "Invalid verification code");
+      setErrorMessage(formMessageOf(error, "Invalid verification code"));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,7 +87,7 @@ const ForgotPassword = () => {
       alert("Password reset successfully!");
       navigate("/");
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || "Failed to reset password. Please try again.");
+      setErrorMessage(formMessageOf(error, "Failed to reset password. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -133,7 +135,7 @@ const ForgotPassword = () => {
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSubmitting}
             />
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
+            <InlineAlert message={errorMessage} />
             <button type="button" onClick={handleEmailSubmit} disabled={isSubmitting}>
               {isSubmitting ? "Sending..." : "Submit"}
             </button>
@@ -152,7 +154,7 @@ const ForgotPassword = () => {
               onChange={(e) => setOtp(e.target.value)}
               disabled={isSubmitting}
             />
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
+            <InlineAlert message={errorMessage} />
             <button type="button" onClick={handleCodeSubmit} disabled={isSubmitting}>
               {isSubmitting ? "Verifying..." : "Submit"}
             </button>
@@ -203,7 +205,7 @@ const ForgotPassword = () => {
                 )}
               </span>
             </div>
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
+            <InlineAlert message={errorMessage} />
             <button type="button" onClick={handlePasswordSubmit} disabled={isSubmitting}>
               {isSubmitting ? "Resetting..." : "Submit"}
             </button>

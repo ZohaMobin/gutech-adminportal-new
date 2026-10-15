@@ -4,6 +4,8 @@ import { ConfirmModal, Modal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./DepartmentsPage.css";
+import { messageOf } from "../../utils/apiMessage";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const EMPTY_FORM = { code: "", name: "", description: "", isActive: true };
 
@@ -39,7 +41,7 @@ const DepartmentsPage = () => {
       setDepartments(response.data);
       setError("");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to fetch departments");
+      setError(messageOf(err, "Failed to fetch departments"));
     } finally {
       setRefreshing(false);
       setFirstLoad(false);
@@ -123,7 +125,7 @@ const DepartmentsPage = () => {
         <button className="pk-btn pk-btn-primary" onClick={() => setShowModal(true)}>+ Add Department</button>
       </div>
 
-      {error && <div className="error-message" role="alert">{error}</div>}
+      <InlineAlert message={error} onRetry={fetchDepartments} />
 
       <Refreshing active={refreshing}>
       <div className="pk-table-wrap">

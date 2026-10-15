@@ -9,6 +9,8 @@ import { downloadCsv } from "../../utils/csv";
 import { readSelection, saveSelection } from "./savedSelection";
 import "./StudentMarksPage.css";
 import { semesterLabel } from "../../utils/semester";
+import { messageOf } from "../../utils/apiMessage";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const getPerformanceClass = (percentage) => {
   if (percentage === null || percentage === undefined || Number.isNaN(percentage)) return "missing";
@@ -120,7 +122,7 @@ const StudentMarksPage = () => {
           return { ...prev, academicYearId: initialTerm?._id || "" };
         });
       } catch (err) {
-        setError("Failed to load academic terms. Please try again.");
+        setError(messageOf(err, "Failed to load academic terms. Please try again."));
         console.error("Error loading academic terms:", err);
       } finally {
         setLoading(false);
@@ -167,7 +169,7 @@ const StudentMarksPage = () => {
 
         setAvailableFilters((prev) => ({ ...prev, courses: filteredCourses, sections: [] }));
       } catch (err) {
-        setError("Failed to load courses. Please try again.");
+        setError(messageOf(err, "Failed to load courses. Please try again."));
         console.error("Error loading courses:", err);
       } finally {
         setLoading(false);
@@ -195,7 +197,7 @@ const StudentMarksPage = () => {
         // A section from an old link or a remembered choice that is not in this course any more: start from the list.
         setFilters((prev) => (prev.section && !loaded.some((item) => item.id === prev.section) ? { ...prev, section: "" } : prev));
       } catch (err) {
-        setError("Failed to load sections. Please try again.");
+        setError(messageOf(err, "Failed to load sections. Please try again."));
         console.error("Error loading sections:", err);
       } finally {
         setLoading(false);
@@ -234,7 +236,7 @@ const StudentMarksPage = () => {
         if (err.response?.status === 404 && EMPTY_SECTION[code]) {
           setEmptyReason(code);
         } else {
-          setError(err.response?.data?.message || "Failed to load marks data. Please try again.");
+          setError(messageOf(err, "Failed to load marks data. Please try again."));
           console.error("Error loading marks data:", err);
         }
         setMarksData([]);
@@ -407,14 +409,7 @@ const StudentMarksPage = () => {
         subtitle="Review a section's gradebook. Marks are read-only here; teachers enter them."
       />
 
-      {error && (
-        <div className="error-message" role="alert">
-          <p>{error}</p>
-          <button onClick={() => setError(null)} className="dismiss-error-btn">
-            Dismiss
-          </button>
-        </div>
-      )}
+      <InlineAlert message={error} onDismiss={() => setError(null)} />
 
       <section className="marks-filters" aria-label="Choose a section">
         <label htmlFor="marks-academic-term">

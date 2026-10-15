@@ -4,6 +4,8 @@ import { ConfirmModal, Modal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./ProgramsPage.css";
+import { messageOf } from "../../utils/apiMessage";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const EMPTY_FORM = { code: "", name: "", level: "undergraduate", typicalDuration: 8, description: "", isActive: true };
 
@@ -39,7 +41,7 @@ const ProgramsPage = () => {
       setPrograms(response.data);
       setError("");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to fetch programs");
+      setError(messageOf(err, "Failed to fetch programs"));
     } finally {
       setRefreshing(false);
       setFirstLoad(false);
@@ -125,7 +127,7 @@ const ProgramsPage = () => {
         <button className="pk-btn pk-btn-primary" onClick={() => setShowModal(true)}>+ Add Program</button>
       </div>
 
-      {error && <div className="error-message" role="alert">{error}</div>}
+      <InlineAlert message={error} onRetry={fetchPrograms} />
 
       <Refreshing active={refreshing}>
       <div className="pk-table-wrap">

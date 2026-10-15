@@ -10,6 +10,7 @@ import { showToast, showConflictToasts, TOAST_TYPES } from "../../Components/Toa
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import { assignCardColors } from "../../utils/scheduleColors";
 import "./Class Schedule.css";
+import { messageOf } from "../../utils/apiMessage";
 
 function ClassSchedule() {
   const [sections, setSections] = useState([]);
@@ -105,7 +106,7 @@ function ClassSchedule() {
       setSections(response.data);
     } catch (error) {
       console.error("Error fetching sections:", error);
-      showToast("Failed to fetch sections", TOAST_TYPES.ERROR);
+      showToast(messageOf(error, "Failed to fetch sections"), TOAST_TYPES.ERROR);
     }
   };
 
@@ -116,7 +117,7 @@ function ClassSchedule() {
       });
       setTeachers(response.data);
     } catch (error) {
-      showToast("Failed to fetch teachers", TOAST_TYPES.ERROR);
+      showToast(messageOf(error, "Failed to fetch teachers"), TOAST_TYPES.ERROR);
       console.error(error);
     }
   };
@@ -193,7 +194,7 @@ function ClassSchedule() {
       const newSectionColors = assignCardColors(normalizedSchedules.map((schedule) => ({ key: schedule.sectionId._id, code: schedule.courseId?.code })));
       setSectionColors(newSectionColors);
     } catch (error) {
-      showToast("Failed to fetch schedules", TOAST_TYPES.ERROR);
+      showToast(messageOf(error, "Failed to fetch schedules"), TOAST_TYPES.ERROR);
       console.error(error);
     } finally {
       setLoading(false);
@@ -552,7 +553,7 @@ function ClassSchedule() {
       const newSectionColors = assignCardColors(normalizedSchedules.map((schedule) => ({ key: schedule.sectionId._id, code: schedule.courseId?.code })));
       setSectionColors(newSectionColors);
     } catch (error) {
-      showToast("Failed to fetch all schedules", TOAST_TYPES.ERROR);
+      showToast(messageOf(error, "Failed to fetch all schedules"), TOAST_TYPES.ERROR);
       console.error(error);
     } finally {
       setLoading(false);
