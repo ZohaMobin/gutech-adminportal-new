@@ -4,6 +4,7 @@ import Loading, { BusyLabel } from "../../Components/Loading/Loading";
 import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { messageOf } from "../../utils/apiMessage";
 import { listChanges, downloadChangesCsv, dateTime } from "./enrollmentApi";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const TYPES = [["", "All changes"], ["added", "Added"], ["dropped", "Dropped"], ["mistake", "Removed by mistake"], ["section", "Section changed"], ["restored", "Restored"], ["account", "Account and details"]];
 const TONE = { "enrollment.added": "is-good", "enrollment.restored": "is-good", "enrollment.dropped": "is-bad", "enrollment.removed_by_mistake": "is-bad", "enrollment.upload_undone": "is-bad", "enrollment.section_changed": "is-info" };
@@ -63,7 +64,7 @@ const ChangeLog = ({ onOpenStudent }) => {
         {data && <span className="me-log-count">{data.total} {data.total === 1 ? "entry" : "entries"}</span>}
       </div>
 
-      {error && <div className="error-message" role="alert">{error}</div>}
+      <InlineAlert message={error} onRetry={load} />
       {data === null ? <Loading variant="table" rows={6} label="Loading the change log" />
         : data.items.length === 0 ? (
           <div className="me-empty"><strong>No changes yet</strong><span>{filters.type || filters.from || filters.to ? "Nothing matches these filters." : "Changes made in Manage Enrollment appear here."}</span></div>

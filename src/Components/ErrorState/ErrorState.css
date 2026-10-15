@@ -1,0 +1,17 @@
+/* Errors, the same in every portal. Inline alert: a banner above a form or table. Error state: a page or card that could not load. */
+.ia { display: flex; align-items: flex-start; gap: 0.6rem; margin: 0 0 0.85rem; padding: 0.65rem 0.85rem; border-radius: 0.6rem; background: rgba(239, 68, 68, 0.07); border: 1px solid rgba(239, 68, 68, 0.22); color: #991b1b; font-size: 0.86rem; font-weight: 500; line-height: 1.45; text-align: left; }
+.ia > svg { flex: none; margin-top: 0.18rem; }
+.ia-text { flex: 1; min-width: 0; }
+.ia.is-network { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.32); color: #92400e; }
+.ia-retry { flex: none; align-self: center; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.ia-dismiss { flex: none; align-self: center; margin: -0.2rem -0.2rem -0.2rem 0; padding: 0 0.35rem; border: 0; background: none; color: inherit; font-size: 1.25rem; line-height: 1; opacity: 0.7; cursor: pointer; }
+.ia-dismiss:hover { opacity: 1; }
+.ia-retry:focus-visible, .ia-dismiss:focus-visible, .es-btn:focus-visible { outline: 2px solid #991d20; outline-offset: 2px; }
+
+.es { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; max-width: 30rem; margin: 2.5rem auto; padding: 2.5rem 1.5rem; text-align: center; }
+.es-icon { display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; border-radius: 50%; background: rgba(153, 29, 32, 0.08); color: #991d20; }
+.es.is-network .es-icon { background: rgba(245, 158, 11, 0.15); color: #b45309; }
+.es-title { margin-top: 0.35rem; border: 0; padding: 0; font-size: 1.05rem; font-weight: 600; color: #1e293b; }
+.es p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: #64748b; }
+.es-btn { display: inline-flex; align-items: center; gap: 0.4rem; height: 2.4rem; margin-top: 0.75rem; padding: 0 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; background: #fff; color: #1e293b; font: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.es-btn:hover { border-color: #cbd5e1; background: #f8fafc; }

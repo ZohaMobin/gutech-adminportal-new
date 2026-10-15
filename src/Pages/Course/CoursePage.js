@@ -13,6 +13,7 @@ import { semesterLabel } from '../../utils/semester';
 import './CourseRefresh.css';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import { ConfirmModal } from '../Administrators/AdminModals';
+import { messageOf } from '../../utils/apiMessage';
 
 const COURSES_PER_PAGE = 25;
 
@@ -109,7 +110,7 @@ const CoursePage = () => {
       setAcademicYears(activeYears);
     } catch (error) {
       console.error('Error fetching academic years:', error);
-      showToast('Failed to fetch academic years', TOAST_TYPES.ERROR);
+      showToast(messageOf(error, 'Failed to fetch academic years'), TOAST_TYPES.ERROR);
     }
   };
 
