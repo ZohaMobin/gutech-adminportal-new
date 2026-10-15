@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import './Signup.css';
 import { useAuth } from '../../Components/AuthContext';
+import { formMessageOf } from '../../utils/apiMessage';
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 // Administrator login. There is deliberately no sign-up here: administrator accounts are
 // created by an existing administrator (Setup → Administrators) or, for the very first one,
@@ -61,7 +63,7 @@ const Signup = () => {
       // There is no dashboard page; land on the first real one.
       navigate('/attendance');
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      const errorMessage = formMessageOf(error, 'Login failed. Please check your credentials.');
       setError(errorMessage);
       console.error('Login error:', errorMessage);
     } finally {
@@ -81,7 +83,7 @@ const Signup = () => {
           <form onSubmit={handleLogin}>
             <h1 className="form-title">Sign In</h1>
 
-            {error && <div className="error-message">{error}</div>}
+            <InlineAlert message={error} />
 
             <input
               type="email"

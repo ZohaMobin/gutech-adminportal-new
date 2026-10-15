@@ -14,6 +14,7 @@ import "../Administrators/AdministratorsPage.css";
 import "../StudentPasswords/StudentPasswordsPage.css";
 import "../ManageEnrollment/ManageEnrollmentPage.css";
 import "./StudentProfilePage.css";
+import ErrorState from '../../Components/ErrorState/ErrorState';
 
 const TABS = [
   { id: "courses", label: "Courses", icon: FiBookOpen },
@@ -76,7 +77,7 @@ const StudentProfilePage = () => {
     return (
       <div className="pf page-shell">
         <nav className="pf-crumbs"><Link to={backTo}>{backLabel}</Link></nav>
-        <div className="me-card"><div className="error-message" role="alert">{error} <button type="button" className="am-btn am-btn-small" onClick={load}>Try again</button></div></div>
+        <div className="me-card"><ErrorState message={error} onRetry={load} /></div>
       </div>
     );
   }

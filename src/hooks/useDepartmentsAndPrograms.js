@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { messageOf } from "../utils/apiMessage";
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -25,7 +26,7 @@ export const useDepartmentsAndPrograms = () => {
         setDepartments(deptResponse.data || []);
         setPrograms(progResponse.data || []);
       } catch (err) {
-        setError(err.response?.data?.error || "Failed to fetch departments and programs");
+        setError(messageOf(err, "Failed to fetch departments and programs"));
       } finally {
         setLoading(false);
       }

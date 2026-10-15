@@ -6,6 +6,7 @@ import axios from "axios";
 import "./AccountApprovalsPage.css";
 import { APPROVALS_CHANGED_EVENT } from "../../hooks/usePendingApprovals";
 import { initialsOf, formatDay, formatDayTime, waitingFor } from "./approvalFormat";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const PAGE_SIZE = 25;
@@ -61,7 +62,7 @@ const WaitingList = ({ headers, onCountChange }) => {
 
   return (
     <>
-      {error && <div className="error-message" role="alert">{error}</div>}
+      <InlineAlert message={error} />
       {accounts.length === 0 ? (
         <div className="am-empty am-empty-inline">
           <p>No requests are waiting. New sign-ups from the teacher portal appear here.</p>
@@ -192,7 +193,7 @@ const History = ({ headers, refreshKey }) => {
         </div>
       </div>
 
-      {error && <div className="error-message" role="alert">{error}</div>}
+      <InlineAlert message={error} />
 
       {items === null ? (
         <Loading variant="list" rows={4} label="Loading the history" />

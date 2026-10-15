@@ -11,6 +11,8 @@ import NoResultsFound from '../../Components/NoResultsFound';
 import { semesterLabel } from "../../utils/semester";
 import "../Administrators/AdministratorsPage.css";
 import "./StudentAccount.css";
+import { messageOf, NETWORK_MESSAGE } from '../../utils/apiMessage';
+import ErrorState from '../../Components/ErrorState/ErrorState';
 
 const shortDate = (value) => (value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
 
@@ -44,9 +46,12 @@ const StudentDirectoryPage = () => {
 
   const openStudent = (student) => navigate(`/students/${student._id}`, { state: { from: `${location.pathname}${location.search}` } });
 
+  const [loadError, setLoadError] = useState('');   // why the list could not be loaded, so an empty list is never mistaken for "no students"
+
   const fetchStudents = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError('');
       const token = sessionStorage.getItem('adminToken');
       
       if (!token) {
@@ -75,7 +80,9 @@ const StudentDirectoryPage = () => {
       if (error.response?.status === 401) {
         showToast('Session expired. Please login again.', TOAST_TYPES.ERROR);
       } else {
-        showToast('Failed to fetch students. Please try again.', TOAST_TYPES.ERROR);
+        const reason = messageOf(error, 'Failed to fetch students. Please try again.');
+        setLoadError(reason);
+        showToast(reason, TOAST_TYPES.ERROR);
       }
     } finally {
       setLoading(false);
@@ -344,6 +351,8 @@ const StudentDirectoryPage = () => {
                   ))}
                 </tbody>
               </table>
+            ) : loadError ? (
+              <ErrorState message={loadError} title={loadError === NETWORK_MESSAGE ? undefined : "Students could not be loaded"} onRetry={fetchStudents} />
             ) : (
               status === 'inactive' && !Object.values(filters).some(Boolean) ? (
               <div className="sda-empty">

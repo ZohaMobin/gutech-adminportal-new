@@ -5,6 +5,8 @@ import { ConfirmModal, Modal } from "../Administrators/AdminModals";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./AcademicYearsPage.css";
+import { messageOf } from "../../utils/apiMessage";
+import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const EMPTY_FORM = () => ({ semesterType: "Fall", year: new Date().getFullYear(), startDate: "", endDate: "", isCurrent: false });
 const yearName = (ay) => `${ay.semesterType} ${ay.year}`;
@@ -42,7 +44,7 @@ const AcademicYearsPage = () => {
       setAcademicYears(response.data);
       setError("");
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch academic years");
+      setError(messageOf(err, "Failed to fetch academic years"));
     } finally {
       setRefreshing(false);
       setFirstLoad(false);
@@ -167,7 +169,7 @@ const AcademicYearsPage = () => {
         }
       />
 
-      {error && <div className="error-message" role="alert">{error}</div>}
+      <InlineAlert message={error} onRetry={fetchAcademicYears} />
 
       <Refreshing active={refreshing}>
       <div className="pk-table-wrap">
@@ -184,7 +186,7 @@ const AcademicYearsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {academicYears.length === 0 ? (
+            {academicYears.length === 0 && error ? null : academicYears.length === 0 ? (
               <tr>
                 <td colSpan="7" className="pk-empty-cell">
                   No academic years found
