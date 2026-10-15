@@ -350,7 +350,8 @@ const CoursesPanel = ({ studentId, data, onSaved, onDirtyChange }) => {
           studentName={student.name}
           exclude={takenCourseIds}
           onClose={() => setModal(null)}
-          onAdd={(choice) => { setAdds((list) => [...list, { key: `add-${choice.courseOfferingId}`, ...choice }]); setModal(null); }}
+          currentCredits={pendingCredits}
+          onAdd={(choices) => { setAdds((list) => [...list, ...choices.filter((c) => !list.some((a) => a.courseOfferingId === c.courseOfferingId)).map((c) => ({ key: `add-${c.courseOfferingId}`, ...c }))]); setModal(null); }}
         />
       )}
       {modal?.type === "review" && (
