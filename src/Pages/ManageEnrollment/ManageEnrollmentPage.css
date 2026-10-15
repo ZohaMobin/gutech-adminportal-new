@@ -404,3 +404,15 @@
 .me-banner-inactive { border-color: #e3e6ea; background: #f4f5f7; color: #374151; }
 .me-banner-inactive strong { color: #111827; }
 .me-banner-inactive svg { flex: none; color: #6b7280; }
+
+/* Add courses: tick several, each with a section */
+.me-pick-head { display: flex; align-items: center; gap: 0.1rem; padding-left: 0.5rem; }
+.me-pick-head .me-pick-row { flex: 1; min-width: 0; padding-left: 0.4rem; }
+.me-tick { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; padding: 0; border: 1.5px solid #c3c8d1; border-radius: 0.35rem; background: #fff; color: #fff; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.me-tick:hover:not(:disabled) { border-color: var(--primary-color); }
+.me-tick.is-on { background: var(--primary-color); border-color: var(--primary-color); }
+.me-tick:disabled { opacity: 0.4; cursor: not-allowed; }
+.me-tick:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.me-pick.is-picked { border-color: var(--primary-tint-line); background: var(--primary-tint); }
+.me-pick-chip { flex: none; padding: 0.15rem 0.55rem; border-radius: 999px; background: #fff; border: 1px solid var(--primary-tint-line); font-size: 0.76rem; font-weight: 650; color: var(--primary-color); }
+.me-pick-summary { margin-right: auto; font-size: 0.85rem; font-weight: 600; color: #4b5563; align-self: center; }

@@ -80,7 +80,7 @@ test("the email's request: drop one course and add another, reviewed and saved t
   await click(button("Add course"));
   await wait(10);
   await click([...document.querySelectorAll(".me-pick-row")].find((b) => b.textContent.includes("Programming for AI and DS")));
-  const sections = [...document.querySelectorAll('input[name="me-add-section"]')];
+  const sections = [...document.querySelectorAll('input[name^="me-add-section"]')];
   expect(sections[0].disabled).toBe(true);                       // section A is full
   await click(sections[1]);
   await click(button("Add to changes"));
@@ -124,4 +124,43 @@ test("problems found by the check show on the row and saving is blocked until th
   await click(button("Review and save"));
   expect(document.querySelector('[role="dialog"]').textContent).toMatch(/Fix or undo the changes marked in red/);
   expect(document.querySelector('[role="dialog"] textarea')).toBeNull();
+});
+
+test("several courses can be ticked in one go and added together", async () => {
+  api.getCourseOptions.mockResolvedValue({ term: { label: "Fall 2026" }, options: [
+    { courseOfferingId: "o1", ownProgram: true, course: { id: "c1", code: "AI201", name: "Programming for AI", creditHours: 3 }, sections: [section("aA", "A", 30, 10)] },
+    { courseOfferingId: "o2", ownProgram: true, course: { id: "c2", code: "CS210", name: "Databases", creditHours: 4 }, sections: [section("dA", "A", 30, 30), section("dB", "B", 30, 5)] },
+    { courseOfferingId: "o3", ownProgram: true, course: { id: "c3", code: "CS300", name: "Networks", creditHours: 3 }, sections: [section("nA", "A", 30, 10), section("nB", "B", 30, 10)] },
+  ] });
+  await mount();
+  await click(button("Add course"));
+  await wait(10);
+  const tick = (code) => document.querySelector(`[aria-label="Select ${code}"]`);
+  await click(tick("AI201"));                                    // one open section: picked straight away
+  expect(tick("AI201").getAttribute("aria-checked")).toBe("true");
+  await click(tick("CS210"));                                    // A is full, only B is open: picked straight away
+  await click(tick("CS300"));                                    // two open sections: opens the list instead
+  expect(tick("CS300").getAttribute("aria-checked")).toBe("false");
+  await click(document.querySelectorAll('input[name="me-add-section-o3"]')[1]);
+  expect(document.querySelector(".me-pick-summary").textContent).toMatch(/3 courses · 10 credits · total 16/);
+  await click(button("Add 3 to changes"));
+  for (const name of ["Programming for AI", "Databases", "Networks"]) expect(rowOf(name).textContent).toMatch(/Will be added/);
+  await wait(400);
+  expect(api.previewChanges).toHaveBeenLastCalledWith("s1", [
+    { type: "add", courseOfferingId: "o1", sectionId: "aA" },
+    { type: "add", courseOfferingId: "o2", sectionId: "dB" },
+    { type: "add", courseOfferingId: "o3", sectionId: "nB" },
+  ]);
+});
+
+test("unticking a course removes it from the selection", async () => {
+  await mount();
+  await click(button("Add course"));
+  await wait(10);
+  expect(button("Add to changes").disabled).toBe(true);
+  await click(document.querySelector(".me-pick-row"));
+  await click(document.querySelectorAll('input[name="me-add-section-o-paids"]')[1]);
+  expect(button("Add to changes").disabled).toBe(false);
+  await click(document.querySelector('[aria-label="Select AI201"]'));
+  expect(button("Add to changes").disabled).toBe(true);
 });
