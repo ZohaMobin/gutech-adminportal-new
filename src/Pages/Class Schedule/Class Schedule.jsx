@@ -1,685 +1,246 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import Loading from "../../Components/Loading/Loading";
 import PageHeader from "../../Components/PageHeader/PageHeader";
+import ErrorState from "../../Components/ErrorState/ErrorState";
 import { ConfirmModal } from "../Administrators/AdminModals";
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import FiltersPanel from "./components/FiltersPanel";
-import TimetableGrid from "./components/TimetableGrid";
-import ScheduleModal from "./components/ScheduleModal";
-import { showToast, showConflictToasts, TOAST_TYPES } from "../../Components/Toast/Toast";
+import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
-import { assignCardColors } from "../../utils/scheduleColors";
+import { messageOf, NETWORK_MESSAGE } from "../../utils/apiMessage";
+import {
+  DAYS, MODES, axisOf, clashesFor, clashingIds, cohortOverlapIds, cohortOverlapsFor, cohortSentence, cohortsBySection, clashSentence, courseColors, courseKey, entityOptions, matchesEntity, sectionsWithoutClasses,
+  teacherName, timeOf, to12Bare, to12Hour, visibleDays,
+} from "../../utils/classSchedule";
+import WeekBoard from "./components/WeekBoard";
+import RoomBoard from "./components/RoomBoard";
+import ScheduleModal from "./components/ScheduleModal";
 import "./Class Schedule.css";
-import { messageOf } from "../../utils/apiMessage";
+
+const apiUrl = process.env.REACT_APP_BACKEND_URL;
+const authHeaders = () => ({ Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` });
+const idOf = (value) => String(value?._id ?? value ?? "");
+const DEFAULT_LENGTH = 85;                                  // minutes: one standard period
+const classes = (n) => `${n} ${n === 1 ? "class" : "classes"}`;
+
+// Every section's schedule rows, each tied to its section, course and teacher so the page can show names without asking again.
+const loadSchedules = async (sections, teachers) => {
+  const responses = await Promise.all(sections.map((section) => axios.get(`${apiUrl}/api/section-schedules/section/${section._id}`, { headers: authHeaders() }).then((r) => r.data, (error) => ({ error }))));
+  const failures = responses.filter((r) => r && r.error);
+  if (sections.length && failures.length === sections.length) throw failures[0].error;      // nothing loaded at all: that is an error, not an empty timetable
+  const sectionById = new Map(sections.map((s) => [idOf(s), s]));
+  const teacherById = new Map(teachers.map((t) => [idOf(t), t]));
+  return responses.flatMap((rows) => (Array.isArray(rows) ? rows : [])).map((row) => {
+    const sectionId = idOf(row.sectionId);
+    const section = sectionById.get(sectionId);
+    const teacher = typeof row.teacherId === "object" && row.teacherId?.userId ? row.teacherId : teacherById.get(idOf(row.teacherId)) || { _id: idOf(row.teacherId) };
+    return { ...row, sectionId, courseId: (typeof row.courseId === "object" && row.courseId?.name ? row.courseId : section?.courseId) || { name: "Unknown course" }, teacherId: teacher };
+  });
+};
 
 function ClassSchedule() {
-  const [sections, setSections] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [rooms] = useState(["Room 101", "Room 102", "Room 103", "Lab 1", "Lab 2", "Lab 3"]);
-  const [selectedSection, setSelectedSection] = useState(null);
-  const [scheduleToDelete, setScheduleToDelete] = useState(null);
-  const [schedules, setSchedules] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [currentAcademicYear, setCurrentAcademicYear] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState(null);
-  const [sectionColors, setSectionColors] = useState({});
-  const [filters, setFilters] = useState({
-    day: "",
-    teacher: "",
-    section: "",
-    department: "",
-    program: "",
-  });
-  const [newSchedule, setNewSchedule] = useState({
-    day: "Monday",
-    timeSlot: {
-      startTime: "",
-      endTime: "",
-      room: "",
-    },
-    teacherId: "",
-  });
+  const [state, setState] = useState({ status: "loading" });
+  const [mode, setMode] = useState("section");
+  const [entity, setEntity] = useState("");
+  const [search, setSearch] = useState("");
+  const [layout, setLayout] = useState("week");              // inside "All": the whole week, or one day by room
+  const [semester, setSemester] = useState("");             // inside "All": limit to one semester
+  const [day, setDay] = useState(() => { const today = new Date().toLocaleDateString("en-US", { weekday: "long" }); return DAYS.includes(today) ? today : "Monday"; });
+  const [selectedId, setSelectedId] = useState(null);
+  const [dialog, setDialog] = useState(null);                // { schedule, defaults }
+  const [toDelete, setToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const apiUrl = process.env.REACT_APP_BACKEND_URL;
-
-  // Fetch course details function moved before it's used
-  const fetchCourseDetails = async (courseId) => {
+  const load = useCallback(async () => {
+    setState({ status: "loading" });
     try {
-      const response = await axios.get(`${apiUrl}/api/courses/${courseId}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-      });
-      return response.data;
+      const [sectionsResponse, teachersResponse, term, offerings] = await Promise.all([
+        axios.get(`${apiUrl}/api/sections`, { headers: authHeaders(), params: { populate: "true", deep: "true" } }),
+        axios.get(`${apiUrl}/api/teachers`, { headers: authHeaders() }),
+        axios.get(`${apiUrl}/api/academic-years/current`, { headers: authHeaders() }).then((r) => r.data).catch(() => null),
+        axios.get(`${apiUrl}/api/course-offerings`, { headers: authHeaders(), params: { isActive: "true" } }).then((r) => (Array.isArray(r.data) ? r.data : r.data?.offerings || [])).catch(() => []),   // only powers the semester view and its warning
+      ]);
+      const sections = sectionsResponse.data || [];
+      const teachers = teachersResponse.data || [];
+      const schedules = await loadSchedules(sections, teachers);
+      setState({ status: "ready", sections, teachers, schedules, term, cohorts: cohortsBySection(sections, offerings) });
     } catch (error) {
-      console.warn(`Error fetching course details for ${courseId}:`, error);
+      setState({ status: "error", message: messageOf(error, "Failed to fetch the timetable") });
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const model = useMemo(() => {
+    if (state.status !== "ready") return null;
+    const { sections, teachers, schedules, cohorts } = state;
+    const options = entityOptions(mode, { sections, teachers, schedules, cohorts });
+    const chosen = options.some((o) => o.value === entity) ? entity : options[0]?.value || "";
+    const needle = search.trim().toLowerCase();
+    const shown = needle ? options.filter((o) => o.label.toLowerCase().includes(needle) || o.value === chosen) : options;
+    const sectionById = new Map(sections.map((s) => [idOf(s), s]));
+    return {
+      options: shown, chosen, sectionById,
+      visible: mode === "all" ? schedules.filter((s) => !semester || (cohorts?.get(idOf(s.sectionId)) || []).some((c) => c.key === semester)) : schedules.filter(matchesEntity(mode, chosen, cohorts)),
+      semesters: entityOptions("cohort", { cohorts }),
+      days: visibleDays(schedules), axis: axisOf(schedules), colors: courseColors(schedules),
+      clashIds: clashingIds(schedules), overlapIds: cohortOverlapIds(schedules, cohorts), unscheduled: sectionsWithoutClasses(sections, schedules),
+    };
+  }, [state, mode, entity, search, semester]);
+
+  if (state.status === "loading") return <div className="class-schedule-page page-shell"><PageHeader title="Class Schedule" subtitle="The weekly timetable of every section." /><Loading variant="table" rows={6} label="Loading the timetable" /></div>;
+  if (state.status === "error") {
+    return (
+      <div className="class-schedule-page page-shell">
+        <PageHeader title="Class Schedule" subtitle="The weekly timetable of every section." />
+        <div className="cs-card"><ErrorState message={state.message} title={state.message === NETWORK_MESSAGE ? undefined : "The timetable could not be loaded"} onRetry={load} /></div>
+      </div>
+    );
+  }
+
+  const { sections, teachers, schedules, term, cohorts } = state;
+  const { semesters, options, chosen, sectionById, visible, days, axis, colors, clashIds, overlapIds, unscheduled } = model;
+  const termLabel = term?.displayName || (term?.semesterType && term?.year ? `${term.semesterType} ${term.year}` : "");
+  const sectionLetter = (schedule) => sectionById.get(idOf(schedule.sectionId))?.section || "";
+  const teacherLabel = (schedule) => (teacherName(schedule.teacherId) || "").replace(/^(Dr|Mr|Ms|Mrs|Prof)\.? /i, "");
+  const classLabel = (schedule) => `${schedule.courseId?.name || "a class"}${sectionLetter(schedule) ? ` (${sectionLetter(schedule)})` : ""}`;
+  const selected = schedules.find((s) => String(s._id) === selectedId) || null;
+  const selectedClashes = selected ? clashesFor(selected, schedules, selected._id) : [];
+  const selectedOverlaps = selected ? cohortOverlapsFor(selected, schedules, cohorts, selected._id) : [];
+
+  const chooseMode = (next) => { setMode(next); setEntity(""); setSearch(""); setSelectedId(null); };
+  const showClash = () => {
+    const first = schedules.find((s) => clashIds.has(String(s._id))) || schedules.find((s) => overlapIds.has(String(s._id)));
+    if (!first) return;
+    setMode("section"); setEntity(idOf(first.sectionId)); setSearch(""); setSelectedId(String(first._id));
+  };
+  const openAdd = (dayName, start, room) => {
+    const from = start ?? axis.start;
+    setDialog({ schedule: null, defaults: {
+      day: dayName || (mode === "all" && layout === "rooms" ? day : "Monday"), start: timeOf(from), end: timeOf(from + DEFAULT_LENGTH),
+      sectionId: mode === "section" ? chosen : "", room: room || (mode === "room" ? chosen : ""), teacherId: mode === "teacher" ? chosen : "",
+    } });
+  };
+
+  const academicYear = termLabel || new Date().getFullYear().toString();
+  const saveClass = async (draft, editing) => {
+    const section = sections.find((s) => idOf(s) === draft.sectionId);
+    const payload = { day: draft.day, timeSlot: { startTime: draft.start, endTime: draft.end, room: draft.room }, teacherId: draft.teacherId, sectionId: draft.sectionId, courseId: section?.courseId?._id, semester: 1, academicYear };
+    try {
+      // The server has the last word on clashes: it sees every class, even ones added a moment ago by someone else.
+      const check = await axios.post(`${apiUrl}/api/section-schedules/check-conflicts`, { ...payload, ...(editing ? { excludeScheduleId: editing._id } : {}) }, { headers: authHeaders() });
+      if (check.data?.conflicts?.length) return check.data.conflicts.map((c) => c.message).join(" ");
+      if (editing) await axios.put(`${apiUrl}/api/section-schedules/${editing._id}`, payload, { headers: authHeaders() });
+      else await axios.post(`${apiUrl}/api/section-schedules`, payload, { headers: authHeaders() });
+      const fresh = await loadSchedules(sections, teachers);
+      setState((current) => ({ ...current, schedules: fresh }));
+      setDialog(null);
+      showToast(editing ? "Class updated" : "Class added", TOAST_TYPES.SUCCESS);
       return null;
+    } catch (error) {
+      return messageOf(error, editing ? "Failed to update the class" : "Failed to add the class");
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        await Promise.all([fetchSections(), fetchTeachers(), fetchAllSchedules(), fetchCurrentAcademicYear()]);
-      } catch (error) {
-        console.error("Error fetching initial data:", error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    // Cleanup function to prevent memory leaks
-    return () => {
-      isMounted = false;
-    };
-  }, [apiUrl]); // Added apiUrl as a dependency
-
-  const fetchCurrentAcademicYear = async () => {
+  const confirmDelete = async () => {
+    setDeleting(true);
     try {
-      const response = await axios.get(`${apiUrl}/api/academic-years/current`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-      });
-      setCurrentAcademicYear(response.data);
+      await axios.delete(`${apiUrl}/api/section-schedules/${toDelete._id}`, { headers: authHeaders() });
+      const fresh = await loadSchedules(sections, teachers);
+      setState((current) => ({ ...current, schedules: fresh }));
+      setSelectedId(null);
+      showToast("Class deleted", TOAST_TYPES.SUCCESS);
     } catch (error) {
-      console.warn("Error fetching current academic year:", error);
-      // Continue without current academic year
-    }
-  };
-
-  const fetchSections = async () => {
-    try {
-      // Use the deep populate query parameter to include the userId field
-      const response = await axios.get(`${apiUrl}/api/sections`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-        params: {
-          populate: "true",
-          deep: "true", // This parameter should trigger deep population in the backend
-        },
-      });
-
-      setSections(response.data);
-    } catch (error) {
-      console.error("Error fetching sections:", error);
-      showToast(messageOf(error, "Failed to fetch sections"), TOAST_TYPES.ERROR);
-    }
-  };
-
-  const fetchTeachers = async () => {
-    try {
-      const response = await axios.get(`${apiUrl}/api/teachers`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-      });
-      setTeachers(response.data);
-    } catch (error) {
-      showToast(messageOf(error, "Failed to fetch teachers"), TOAST_TYPES.ERROR);
-      console.error(error);
-    }
-  };
-
-  const fetchSchedules = async (sectionId) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${apiUrl}/api/section-schedules/section/${sectionId}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-      });
-
-      // Collect unique course IDs for fetching additional details
-      const courseIds = new Set();
-      response.data.forEach((schedule) => {
-        if (schedule.courseId && typeof schedule.courseId === "object" && schedule.courseId._id) {
-          courseIds.add(schedule.courseId._id);
-        } else if (typeof schedule.courseId === "string") {
-          courseIds.add(schedule.courseId);
-        }
-      });
-
-      // Fetch missing course details if needed
-      const courseDetailsMap = {};
-      const courseDetailPromises = [];
-
-      for (const courseId of courseIds) {
-        courseDetailPromises.push(
-          fetchCourseDetails(courseId).then((courseData) => {
-            if (courseData) {
-              courseDetailsMap[courseId] = courseData;
-            }
-          })
-        );
-      }
-
-      // Wait for all course details to be fetched
-      await Promise.all(courseDetailPromises);
-
-      // Normalize schedule data to ensure consistent structure
-      const normalizedSchedules = response.data.map((schedule) => {
-        // Create a normalized version of the schedule object
-        const courseData = schedule.courseId || { name: "Unknown Course" };
-
-        // Get course ID
-        const courseId = courseData._id || (typeof schedule.courseId === "string" ? schedule.courseId : null);
-
-        // Add department and program from course details if available
-        if (courseId && courseDetailsMap[courseId]) {
-          const courseDetails = courseDetailsMap[courseId];
-          courseData.department = courseDetails.department;
-          courseData.program = courseDetails.program;
-          if (!courseData.code) courseData.code = courseDetails.code;
-
-          // Ensure course name is available
-          if (!courseData.name) {
-            courseData.name = courseDetails.name;
-          }
-        }
-
-        // Find the section data
-        const sectionData = sections.find((s) => s._id === schedule.sectionId);
-
-        return {
-          ...schedule,
-          sectionId: sectionData || { _id: schedule.sectionId },
-          courseId: courseData,
-          teacherId: sectionData?.teacherId || schedule.teacherId || { _id: "unknown" },
-        };
-      });
-
-      setSchedules(normalizedSchedules);
-
-      // One colour per section, handed out in order so no two sections on the timetable share one.
-      const newSectionColors = assignCardColors(normalizedSchedules.map((schedule) => ({ key: schedule.sectionId._id, code: schedule.courseId?.code })));
-      setSectionColors(newSectionColors);
-    } catch (error) {
-      showToast(messageOf(error, "Failed to fetch schedules"), TOAST_TYPES.ERROR);
-      console.error(error);
+      showToast(messageOf(error, "Failed to delete the class"), TOAST_TYPES.ERROR);
     } finally {
-      setLoading(false);
+      setDeleting(false);
+      setToDelete(null);
     }
-  };
-
-  // Get section color for a schedule
-  const getSectionColor = (schedule) => {
-    if (!schedule || !schedule.sectionId) return "#f8f9fa";
-
-    const sectionId = typeof schedule.sectionId === "string" ? schedule.sectionId : schedule.sectionId._id;
-
-    return sectionColors[sectionId] || "#f8f9fa";
-  };
-
-  const checkConflicts = async (scheduleData) => {
-    try {
-      setLoading(true); // Show loader during API call
-      const response = await axios.post(`${apiUrl}/api/section-schedules/check-conflicts`, scheduleData, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-      });
-
-      // Check if there are conflicts in the response
-      if (response.data.conflicts && response.data.conflicts.length > 0) {
-        // Use the new showConflictToasts function to display conflicts
-        showConflictToasts(response.data.conflicts);
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error("Conflict check error:", error);
-      const errorMessage = error.response?.data?.message || "Error checking conflicts";
-      showToast(errorMessage, TOAST_TYPES.ERROR);
-      return true;
-    } finally {
-      setLoading(false); // Hide loader after API call completes
-    }
-  };
-
-  const handleAddSchedule = async () => {
-    try {
-      if (!selectedSection) {
-        showToast("Please select a section first", TOAST_TYPES.ERROR);
-        return;
-      }
-
-      // Validate that end time is after start time
-      if (newSchedule.timeSlot.startTime >= newSchedule.timeSlot.endTime) {
-        showToast("End time must be after start time", TOAST_TYPES.ERROR);
-        return;
-      }
-
-      // Use the teacherId from the schedule data
-      const teacherId = newSchedule.teacherId;
-      if (!teacherId) {
-        showToast("No teacher assigned to this schedule", TOAST_TYPES.ERROR);
-        return;
-      }
-
-      // Get semester from CourseOffering or default to 1
-      // For now, we'll use 1 as default since Section doesn't have semester
-      // In the future, this could be derived from CourseOffering
-      const semester = 1; // Default semester
-      const academicYearString = currentAcademicYear
-        ? currentAcademicYear.displayName || `${currentAcademicYear.semesterType} ${currentAcademicYear.year}`
-        : new Date().getFullYear().toString();
-
-      const scheduleData = {
-        ...newSchedule,
-        sectionId: selectedSection._id,
-        courseId: selectedSection.courseId?._id,
-        teacherId: teacherId,
-        semester: semester,
-        academicYear: academicYearString,
-      };
-
-      // Check for conflicts before saving
-      const hasConflicts = await checkConflicts(scheduleData);
-      if (hasConflicts) {
-        return; // Stop if there are conflicts
-      }
-
-      try {
-        setLoading(true); // Show loader during API call
-        await axios.post(`${apiUrl}/api/section-schedules`, scheduleData, {
-          headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-        });
-
-        showToast("Schedule added successfully", TOAST_TYPES.SUCCESS);
-        fetchSchedules(selectedSection._id);
-        setShowAddModal(false);
-        setNewSchedule({
-          day: "Monday",
-          timeSlot: {
-            startTime: "",
-            endTime: "",
-            room: "",
-          },
-          teacherId: "",
-        });
-      } catch (error) {
-        const errorMessage = error.response?.data?.message || "Failed to add schedule";
-        showToast(errorMessage, TOAST_TYPES.ERROR);
-        console.error("Add schedule error:", error);
-      } finally {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error("Error in handleAddSchedule:", error);
-      showToast("An error occurred while adding the schedule", TOAST_TYPES.ERROR);
-    }
-  };
-
-  const handleEditSchedule = async (schedule) => {
-    setSelectedSchedule(schedule);
-    setNewSchedule({
-      day: schedule.day,
-      timeSlot: schedule.timeSlot,
-      teacherId: schedule.teacherId?._id || "",
-    });
-    setShowAddModal(true);
-  };
-
-  const handleUpdateSchedule = async () => {
-    try {
-      if (!selectedSchedule) {
-        showToast("No schedule selected for update", TOAST_TYPES.ERROR);
-        return;
-      }
-
-      // Validate that end time is after start time
-      if (newSchedule.timeSlot.startTime >= newSchedule.timeSlot.endTime) {
-        showToast("End time must be after start time", TOAST_TYPES.ERROR);
-        return;
-      }
-
-      // Use the teacherId from the schedule data
-      const teacherId = newSchedule.teacherId;
-      if (!teacherId) {
-        showToast("No teacher assigned to this schedule", TOAST_TYPES.ERROR);
-        return;
-      }
-
-      // Get semester from CourseOffering or default to 1
-      // For now, we'll use 1 as default since Section doesn't have semester
-      // In the future, this could be derived from CourseOffering
-      const semester = 1; // Default semester
-      const academicYearString = currentAcademicYear
-        ? currentAcademicYear.displayName || `${currentAcademicYear.semesterType} ${currentAcademicYear.year}`
-        : new Date().getFullYear().toString();
-
-      const scheduleData = {
-        ...newSchedule,
-        sectionId: selectedSection._id,
-        courseId: selectedSection.courseId?._id,
-        teacherId: teacherId,
-        semester: semester,
-        academicYear: academicYearString,
-      };
-
-      // Check for conflicts before updating
-      const hasConflicts = await checkConflicts(scheduleData);
-      if (hasConflicts) {
-        return; // Stop if there are conflicts
-      }
-
-      try {
-        setLoading(true); // Show loader during API call
-        await axios.put(`${apiUrl}/api/section-schedules/${selectedSchedule._id}`, scheduleData, {
-          headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-        });
-
-        showToast("Schedule updated successfully", TOAST_TYPES.SUCCESS);
-        fetchSchedules(selectedSection._id);
-        setShowAddModal(false);
-        setSelectedSchedule(null);
-        setNewSchedule({
-          day: "Monday",
-          timeSlot: {
-            startTime: "",
-            endTime: "",
-            room: "",
-          },
-          teacherId: "",
-        });
-      } catch (error) {
-        const errorMessage = error.response?.data?.message || "Failed to update schedule";
-        showToast(errorMessage, TOAST_TYPES.ERROR);
-        console.error("Update schedule error:", error);
-      } finally {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error("Error in handleUpdateSchedule:", error);
-      showToast("An error occurred while updating the schedule", TOAST_TYPES.ERROR);
-    }
-  };
-
-  // Deleting asks first, in a dialog that names the class; nothing is deleted until it is confirmed.
-  const handleDeleteSchedule = (scheduleId) => setScheduleToDelete(schedules.find((item) => item._id === scheduleId) || { _id: scheduleId });
-
-  const confirmDeleteSchedule = async () => {
-    const scheduleId = scheduleToDelete._id;
-    try {
-      setLoading(true); // Show loader during API call; the dialog stays open, busy, until it is done
-      await axios.delete(`${apiUrl}/api/section-schedules/${scheduleId}`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-      });
-
-      showToast("Schedule deleted successfully", TOAST_TYPES.SUCCESS);
-
-      // Refresh schedule list - either section specific or all schedules
-      if (selectedSection) {
-        fetchSchedules(selectedSection._id);
-      } else {
-        fetchAllSchedules();
-      }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || "Failed to delete schedule";
-      showToast(errorMessage, TOAST_TYPES.ERROR);
-      console.error("Delete schedule error:", error);
-    } finally {
-      setLoading(false); // Hide loader after API call completes
-      setScheduleToDelete(null);
-    }
-  };
-
-  const formatSectionName = (section) => {
-    if (!section) return "";
-
-    const courseName = section.courseId?.name || (typeof section.courseId === "string" ? section.courseId : "");
-    const sectionName = section.section || section.name || "";
-    const teachersLabel = formatSectionTeachers(section);
-    const teacherInfo = teachersLabel !== "No teacher assigned" ? ` - Teachers: ${teachersLabel}` : "";
-
-    return `${courseName} (Section ${sectionName})${teacherInfo}`;
-  };
-
-  const formatTeacherName = (teacher) => {
-    if (!teacher) return "No teacher assigned";
-
-    // Check for different ways the teacher name might be available
-    if (teacher.userId && teacher.userId.name) {
-      return teacher.userId.name;
-    } else if (teacher.name) {
-      return teacher.name;
-    } else if (teacher.firstName && teacher.lastName) {
-      return `${teacher.firstName} ${teacher.lastName}`;
-    } else if (teacher.email) {
-      return teacher.email;
-    }
-
-    return "Teacher information unavailable";
-  };
-
-  // New function to fetch all schedules
-  const fetchAllSchedules = async () => {
-    try {
-      setLoading(true);
-
-      // First, fetch all sections
-      const sectionsResponse = await axios.get(`${apiUrl}/api/sections`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-        params: {
-          populate: "true",
-          deep: "true",
-        },
-      });
-
-      // Then fetch schedules for each section
-      const fetchPromises = [];
-      for (const section of sectionsResponse.data) {
-        fetchPromises.push(
-          axios
-            .get(`${apiUrl}/api/section-schedules/section/${section._id}`, {
-              headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken")}` },
-            })
-            .catch((error) => {
-              // If there's an error fetching schedules for this section, return an empty array
-              console.warn(`Error fetching schedules for section ${section._id}:`, error);
-              return { data: [] };
-            })
-        );
-      }
-
-      const scheduleResponses = await Promise.all(fetchPromises);
-
-      // Combine all schedules into a single array
-      let allSchedules = [];
-      scheduleResponses.forEach((response) => {
-        if (response.data && Array.isArray(response.data)) {
-          allSchedules = [...allSchedules, ...response.data];
-        }
-      });
-
-      // Collect unique course IDs for fetching additional details
-      const courseIds = new Set();
-      allSchedules.forEach((schedule) => {
-        if (schedule.courseId && typeof schedule.courseId === "object" && schedule.courseId._id) {
-          courseIds.add(schedule.courseId._id);
-        } else if (typeof schedule.courseId === "string") {
-          courseIds.add(schedule.courseId);
-        }
-      });
-
-      // Fetch missing course details if needed
-      const courseDetailsMap = {};
-      const courseDetailPromises = [];
-
-      for (const courseId of courseIds) {
-        courseDetailPromises.push(
-          fetchCourseDetails(courseId).then((courseData) => {
-            if (courseData) {
-              courseDetailsMap[courseId] = courseData;
-            }
-          })
-        );
-      }
-
-      // Wait for all course details to be fetched
-      await Promise.all(courseDetailPromises);
-
-      // Normalize schedule data to ensure consistent structure
-      const normalizedSchedules = allSchedules.map((schedule) => {
-        // Create a normalized version of the schedule object
-        const courseData = { ...schedule.courseId } || { name: "Unknown Course" };
-
-        // Get course ID
-        const courseId = courseData._id || (typeof schedule.courseId === "string" ? schedule.courseId : null);
-
-        // Add department and program from course details if available
-        if (courseId && courseDetailsMap[courseId]) {
-          const courseDetails = courseDetailsMap[courseId];
-          courseData.department = courseDetails.department;
-          courseData.program = courseDetails.program;
-          if (!courseData.code) courseData.code = courseDetails.code;
-
-          // Ensure course name is available
-          if (!courseData.name) {
-            courseData.name = courseDetails.name;
-          }
-        }
-
-        return {
-          ...schedule,
-          sectionId: typeof schedule.sectionId === "string" ? { _id: schedule.sectionId } : schedule.sectionId,
-          courseId: courseData,
-          teacherId: schedule.teacherId || { _id: "unknown" },
-        };
-      });
-
-      setSchedules(normalizedSchedules);
-
-      // One colour per section, handed out in order so no two sections on the timetable share one.
-      const newSectionColors = assignCardColors(normalizedSchedules.map((schedule) => ({ key: schedule.sectionId._id, code: schedule.courseId?.code })));
-      setSectionColors(newSectionColors);
-    } catch (error) {
-      showToast(messageOf(error, "Failed to fetch all schedules"), TOAST_TYPES.ERROR);
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Filter schedules based on selected filters
-  const filteredSchedules = schedules.filter((schedule) => {
-    // Day filter
-    if (filters.day && schedule.day !== filters.day) {
-      return false;
-    }
-
-    // Teacher filter
-    if (filters.teacher && schedule.teacherId && schedule.teacherId._id !== filters.teacher) {
-      return false;
-    }
-
-    // Section filter
-    if (filters.section && schedule.sectionId && schedule.sectionId._id !== filters.section) {
-      return false;
-    }
-
-    // Department filter
-    if (filters.department && schedule.courseId && schedule.courseId.department !== filters.department) {
-      return false;
-    }
-
-    // Program filter
-    if (filters.program && schedule.courseId && schedule.courseId.program !== filters.program) {
-      return false;
-    }
-
-    // Semester filter removed - semester is now in CourseOffering, not Course
-
-    return true;
-  });
-
-  // Handler for filter changes
-  const handleFilterChange = (filterName, value) => {
-    setFilters({
-      ...filters,
-      [filterName]: value,
-    });
-  };
-
-  // Clear all filters
-  const clearFilters = () => {
-    setFilters({
-      day: "",
-      teacher: "",
-      section: "",
-      department: "",
-      program: "",
-      semester: "",
-    });
   };
 
   return (
     <div className="class-schedule-page page-shell">
-      <PageHeader title="Class Schedule" subtitle="The weekly timetable of every section. Filter it, or add a class to a section." />
+      <PageHeader
+        title="Class Schedule"
+        subtitle="The weekly timetable of every section. Choose what to look at, click a class for its details, or click an empty slot to add one."
+        actions={<>{termLabel && <span className="cs-term">{termLabel}</span>}<button type="button" className="am-btn am-btn-primary" onClick={() => openAdd()} disabled={sections.length === 0}>+ Add class</button></>}
+      />
 
-      <div className="dashboard-layout">
-        <FiltersPanel
-          filters={filters}
-          sections={sections}
-          teachers={teachers}
-          handleFilterChange={handleFilterChange}
-          clearFilters={clearFilters}
-          handleAddSchedule={handleAddSchedule}
-          getSectionColor={getSectionColor}
-          formatTeacherName={formatTeacherName}
-          formatSectionName={formatSectionName}
-          selectedSection={selectedSection}
-          setSelectedSection={setSelectedSection}
-          setShowAddModal={setShowAddModal}
-          setSelectedSchedule={setSelectedSchedule}
-          sectionColors={sectionColors}
-        />
-
-        <div className="schedule-content">
-          {loading ? (
-            <Loading variant="table" rows={6} label="Loading the timetable" />
-          ) : (
-            <TimetableGrid
-              filteredSchedules={filteredSchedules}
-              sections={sections}
-              teachers={teachers}
-              getSectionColor={getSectionColor}
-              handleEditSchedule={handleEditSchedule}
-              handleDeleteSchedule={handleDeleteSchedule}
-              filters={filters}
-              clearFilters={clearFilters}
-            />
-          )}
+      {(clashIds.size > 0 || overlapIds.size > 0 || unscheduled.length > 0) && (
+        <div className="cs-health" role="status">
+          <span>{[clashIds.size > 0 && `${classes(clashIds.size)} clash`, overlapIds.size > 0 && `${classes(overlapIds.size)} overlap for a semester`, unscheduled.length > 0 && `${unscheduled.length} ${unscheduled.length === 1 ? "section has" : "sections have"} no timetable yet`].filter(Boolean).join(" · ")}</span>
+          {(clashIds.size > 0 || overlapIds.size > 0) && <button type="button" className="cs-link" onClick={showClash}>Show the clash</button>}
         </div>
+      )}
+
+      <div className="cs-tools">
+        <div className="cs-seg" role="group" aria-label="Look at">
+          {MODES.map(([key, label]) => <button type="button" key={key} className={mode === key ? "is-on" : ""} aria-pressed={mode === key} onClick={() => chooseMode(key)}>{label}</button>)}
+        </div>
+        {mode === "all" ? (
+          <>
+            <div className="cs-seg" role="group" aria-label="Layout">
+              <button type="button" className={layout === "week" ? "is-on" : ""} aria-pressed={layout === "week"} onClick={() => setLayout("week")}>Week</button>
+              <button type="button" className={layout === "rooms" ? "is-on" : ""} aria-pressed={layout === "rooms"} onClick={() => setLayout("rooms")}>By room</button>
+            </div>
+            {layout === "rooms"
+              ? <div className="cs-seg" role="group" aria-label="Day">{days.map((name) => <button type="button" key={name} className={day === name ? "is-on" : ""} aria-pressed={day === name} onClick={() => { setDay(name); setSelectedId(null); }}>{name.slice(0, 3)}</button>)}</div>
+              : <select className="cs-entity" value={semester} onChange={(event) => { setSemester(event.target.value); setSelectedId(null); }} aria-label="Limit to a semester"><option value="">Every semester</option>{semesters.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>}
+          </>
+        ) : (
+          <>
+            <input type="search" className="cs-search" placeholder={`Search ${mode}s…`} value={search} onChange={(event) => setSearch(event.target.value)} aria-label={`Search ${mode}s`} />
+            <select className="cs-entity" value={chosen} onChange={(event) => { setEntity(event.target.value); setSelectedId(null); }} aria-label={`Choose a ${mode}`}>
+              {options.length === 0 && <option value="">Nothing matches</option>}
+              {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </>
+        )}
+        <span className="cs-note">{mode === "all" && layout === "rooms" ? `${classes(visible.filter((s) => s.day === day).length)} on ${day}` : `${classes(visible.length)} this week`}</span>
       </div>
 
-      {scheduleToDelete && (
-        <ConfirmModal
-          title="Delete class"
-          body={`Delete ${scheduleToDelete.day ? `the ${scheduleToDelete.day} ${scheduleToDelete.timeSlot?.startTime || ""}-${scheduleToDelete.timeSlot?.endTime || ""} class` : "this class"} from the timetable? This cannot be undone.`}
-          confirmLabel="Delete class"
-          busyText="Deleting…"
-          danger
-          busy={loading}
-          onConfirm={confirmDeleteSchedule}
-          onClose={() => setScheduleToDelete(null)}
+      {mode === "all" && layout === "rooms" ? (
+        <RoomBoard
+          day={day} axis={axis} schedules={visible} colors={colors} courseKeyOf={courseKey} selectedId={selectedId}
+          onSelect={(id) => setSelectedId(id === selectedId ? null : id)} onAddAt={openAdd} sectionLabel={sectionLetter} teacherLabel={teacherLabel}
+        />
+      ) : <WeekBoard
+        days={days} axis={axis} schedules={visible} allSchedules={schedules} colors={colors} courseKeyOf={courseKey} mode={mode}
+        selectedId={selectedId} onSelect={(id) => setSelectedId(id === selectedId ? null : id)} onAddAt={openAdd}
+        sectionLabel={sectionLetter} teacherLabel={teacherLabel}
+      />}
+
+      {selected && (
+        <section className="cs-card cs-details" aria-label="Selected class">
+          <div className="cs-details-top">
+            <div>
+              <strong>{selected.courseId?.name || "Class"}{sectionLetter(selected) ? ` · Section ${sectionLetter(selected)}` : ""}</strong>
+              <span className="cs-note">{selected.day} · {to12Hour(selected.timeSlot.startTime)} – {to12Hour(selected.timeSlot.endTime)} · {selected.timeSlot.room || "No room"} · {teacherName(selected.teacherId) || "No teacher"}</span>
+              {formatSectionTeachers(sectionById.get(idOf(selected.sectionId))).includes(",") && <span className="cs-note">Section teachers: {formatSectionTeachers(sectionById.get(idOf(selected.sectionId)))}</span>}
+            </div>
+            <div className="cs-details-actions">
+              <button type="button" className="am-btn" onClick={() => setDialog({ schedule: selected, defaults: {} })}>Edit</button>
+              <button type="button" className="am-btn am-btn-danger" onClick={() => setToDelete(selected)}>Delete</button>
+            </div>
+          </div>
+          {selectedClashes.length > 0 && <div className="cs-check is-bad" role="alert">{selectedClashes.map((clash, index) => <p key={index}>{clashSentence(clash, classLabel)}</p>)}</div>}
+          {selectedOverlaps.length > 0 && <div className="cs-check is-warn" role="status">{selectedOverlaps.map((w, index) => <p key={index}>{cohortSentence(w, classLabel)}.</p>)}</div>}
+        </section>
+      )}
+
+      {dialog && (
+        <ScheduleModal
+          schedule={dialog.schedule} defaults={dialog.defaults} sections={sections} teachers={teachers} schedules={schedules} cohorts={cohorts}
+          onSave={saveClass} onClose={() => setDialog(null)} classLabel={classLabel}
         />
       )}
 
-      <ScheduleModal
-        showAddModal={showAddModal}
-        setShowAddModal={setShowAddModal}
-        selectedSchedule={selectedSchedule}
-        setSelectedSchedule={setSelectedSchedule}
-        newSchedule={newSchedule}
-        setNewSchedule={setNewSchedule}
-        handleAddSchedule={handleAddSchedule}
-        handleUpdateSchedule={handleUpdateSchedule}
-        selectedSection={selectedSection}
-        formatTeacherName={formatTeacherName}
-        rooms={rooms}
-        teachers={teachers}
-        saving={loading}
-      />
+      {toDelete && (
+        <ConfirmModal
+          title="Delete class"
+          body={`Delete the ${toDelete.day} ${to12Bare(toDelete.timeSlot.startTime)}–${to12Hour(toDelete.timeSlot.endTime)} class of ${toDelete.courseId?.name || "this section"} from the timetable? This cannot be undone.`}
+          confirmLabel="Delete class" busyText="Deleting…" danger busy={deleting}
+          onConfirm={confirmDelete} onClose={() => !deleting && setToDelete(null)}
+        />
+      )}
     </div>
   );
 }
