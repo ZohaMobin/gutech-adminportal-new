@@ -1,292 +1,67 @@
-.schedule-container {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
+/* Admin Class Schedule: pick a section, a teacher or a room and see its week on a real time axis. Same frame as the other admin pages. */
+.class-schedule-page { --cs-brand: #991d20; --cs-brand-tint: rgba(153, 29, 32, 0.06); --cs-line: #e2e8f0; --cs-muted: #64748b; --cs-text: #1e293b; --cs-gold: #f5c32c; }
+.cs-term { padding: 0.15rem 0.65rem; border-radius: 999px; background: var(--cs-brand-tint); color: var(--cs-brand); font-size: 0.75rem; font-weight: 600; }
+.cs-note { font-size: 0.8rem; color: var(--cs-muted); }
+.cs-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.cs-card { background: #fff; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
-.dashboard-layout { min-height: 60vh; }
+.cs-health { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; padding: 0.55rem 0.9rem; border-radius: 0.6rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #92400e; font-size: 0.86rem; font-weight: 500; }
 
-.schedule-content {
-  background-color: #fff;
-  border: 1px solid #e6e8ec;
-  border-radius: 0.85rem;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-  padding: 20px;
-  overflow: auto;
-}
+.cs-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
+.cs-seg { display: inline-flex; padding: 2px; border-radius: 0.5rem; background: #eef1f5; }
+.cs-seg button { border: 0; border-radius: 0.4rem; background: transparent; padding: 0.35rem 0.95rem; font: inherit; font-size: 0.82rem; font-weight: 500; color: var(--cs-muted); cursor: pointer; }
+.cs-seg button.is-on { background: #fff; color: var(--cs-brand); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12); }
+.cs-seg button:focus-visible, .cs-blk:focus-visible, .cs-chip:focus-visible { outline: 2px solid var(--cs-brand); outline-offset: 2px; }
+.cs-search, .cs-entity { height: 2.25rem; border: 1px solid #d7dce3; border-radius: 0.5rem; background: #fff; color: var(--cs-text); font: inherit; font-size: 0.85rem; padding: 0 0.7rem; }
+.cs-search { width: 11rem; }
+.cs-entity { min-width: 16rem; max-width: 100%; }
+.cs-tools .cs-note { margin-left: auto; }
 
-.filters-summary {
-  margin-bottom: 16px;
-  padding: 12px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  font-size: 14px;
-}
+/* The board */
+.cs-board { padding: 1rem 1.25rem 1.25rem; margin-bottom: 1rem; overflow-x: auto; }
+.cs-wkhead, .cs-wkbody { display: grid; gap: 0 0.4rem; min-width: 0; }
+.cs-wkhead > div { padding: 0.1rem 0 0.5rem; text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--cs-muted); }
+.cs-hours { position: relative; }
+.cs-hours span { position: absolute; right: 0.3rem; transform: translateY(-50%); font-size: 0.68rem; color: var(--cs-muted); }
+.cs-col { position: relative; border-radius: 0.4rem; cursor: cell; }
+.cs-col:hover { background: rgba(153, 29, 32, 0.025); }
+.cs-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--cs-line); pointer-events: none; }
+.cs-blk { position: absolute; display: flex; flex-direction: column; gap: 1px; overflow: hidden; padding: 0.3rem 0.4rem 0.3rem 0.5rem; border: 0; border-radius: 0.4rem; border-left: 3px solid var(--card-accent, #94a3b8); background: var(--card-bg, #f1f5f9); color: var(--card-ink, var(--cs-text)); font: inherit; line-height: 1.25; text-align: left; cursor: pointer; }
+.cs-blk b { font-size: 0.78rem; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cs-blk span { font-size: 0.7rem; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-blk.is-short b { -webkit-line-clamp: 1; }
+.cs-blk.is-short .cs-blk-3 { display: none; }
+.cs-blk.is-selected { outline: 2px solid var(--cs-brand); outline-offset: -1px; }
+.cs-blk.is-clash { outline: 1.5px solid #dc2626; outline-offset: -1px; }
+.cs-blk.is-clash.is-selected { outline-width: 2px; }
+.cs-tag { position: absolute; top: 3px; right: 4px; padding: 0 0.35rem; border-radius: 999px; background: #dc2626; color: #fff; font-size: 0.6rem; font-style: normal; font-weight: 600; }
 
-.applied-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
+/* The selected class */
+.cs-details { padding: 0.9rem 1.2rem; }
+.cs-details-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 0.8rem; }
+.cs-details-top > div:first-child { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.cs-details-top strong { font-size: 0.95rem; font-weight: 600; }
+.cs-details-actions { display: flex; gap: 0.5rem; }
 
-.filter-badge {
-  background-color: #e3f2fd;
-  color: #0d47a1;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
+/* The add / edit form */
+.cs-form .am-field { margin-bottom: 0.9rem; }
+.cs-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.15rem 0 0.35rem; }
+.cs-chip { padding: 0.2rem 0.65rem; border: 1px solid #d7dce3; border-radius: 999px; background: #fff; color: var(--cs-muted); font: inherit; font-size: 0.78rem; cursor: pointer; }
+.cs-chip.is-on { background: var(--cs-brand-tint); border-color: var(--cs-brand); color: var(--cs-brand); }
+.cs-times { display: flex; align-items: center; gap: 0.6rem; }
+.cs-times input { width: 8.5rem; }
+.cs-hint { color: var(--cs-muted); font-size: 0.76rem; margin-top: 0.2rem; }
+.cs-check { padding: 0.6rem 0.85rem; border-radius: 0.55rem; font-size: 0.85rem; line-height: 1.45; margin: 0.2rem 0 0.4rem; }
+.cs-check p { margin: 0; }
+.cs-check p + p { margin-top: 0.3rem; }
+.cs-check.is-ok { background: rgba(16, 185, 129, 0.1); color: #166534; }
+.cs-check.is-warn { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.28); color: #92400e; }
+.cs-check.is-bad { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.22); color: #991b1b; }
+.cs-details .cs-check { margin-top: 0.7rem; }
 
-.clear-filters-small {
-  background-color: #e0e0e0;
-  color: #555;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  cursor: pointer;
-  margin-left: 8px;
-  padding: 0;
-}
+@media (max-width: 720px) { .cs-entity { min-width: 0; width: 100%; } .cs-search { width: 100%; } .cs-tools .cs-note { margin-left: 0; } }
 
-.all-schedules-notice {
-  color: #666;
-  font-weight: 500;
-}
-
-.timetable-grid {
-  width: 100%;
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
-}
-
-th, td {
-  padding: 12px;
-  text-align: left;
-  border: 1px solid #ddd;
-}
-
-th {
-  background-color: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.scheduled {
-  background-color: #f8f9fa;
-}
-
-.schedule-cell {
-  position: relative;
-  padding: 10px;
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.schedule-info {
-  margin-bottom: 10px;
-}
-
-.course-name {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.schedule-section-name {
-  font-weight: normal;
-  font-size: 13px;
-  color: #555;
-}
-
-.schedule-teacher-name {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.room-info {
-  display: inline-block;
-  background-color: #e9ecef;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: #495057;
-}
-
-.schedule-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.edit-btn, .delete-btn {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.edit-btn {
-  background-color: #e3f2fd;
-  color: #1565c0;
-}
-
-.delete-btn {
-  background-color: #ffebee;
-  color: #c62828;
-}
-
-.edit-btn:hover {
-  background-color: #bbdefb;
-}
-
-.delete-btn:hover {
-  background-color: #ffcdd2;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-weight: 500;
-  font-size: 16px;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 30px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
-  font-size: 20px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.modal-actions button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.modal-actions button:first-child {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-.modal-actions button:last-child {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.modal-actions button:last-child:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.selected-teacher {
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  margin-top: 5px;
-  font-weight: 500;
-  color: #495057;
-}
-
-.course-details {
-  color: #777;
-  font-size: 13px;
-  margin-bottom: 6px;
-  font-style: italic;
-}
-
-@media (max-width: 768px) {
-  .dashboard-layout {
-    flex-direction: column;
-  }
-
-  .schedule-content {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
-  .modal-content {
-    width: 95%;
-    padding: 15px;
-  }
-
-  .schedule-cell {
-    padding: 8px;
-  }
-
-  .schedule-actions {
-    flex-direction: column;
-  }
-
-  .edit-btn, .delete-btn {
-    width: 100%;
-  }
-}
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+/* All: rooms of one day */
+.cs-wkhead small { font-weight: 400; opacity: 0.7; }
+.cs-wkhead .is-free { opacity: 0.6; }
+.cs-empty-day { grid-column: 2 / -1; padding: 2rem 0; text-align: center; font-size: 0.85rem; color: var(--cs-muted); }
