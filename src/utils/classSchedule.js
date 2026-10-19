@@ -100,9 +100,12 @@ export const entityOptions = (mode, { sections, teachers, schedules, cohorts }) 
   return knownRooms(schedules).map((room) => ({ value: room, label: room }));
 };
 
-export const matchesEntity = (mode, entity, cohorts) => (schedule) => {
+// Every teacher of each section (its teacher list and its main teacher), so a co-teacher sees the section's classes in their own timetable.
+export const teachersBySection = (sections) => new Map(sections.map((section) => [idOf(section), new Set([...(section.teacherIds || []), section.teacherId].filter(Boolean).map(idOf))]));
+
+export const matchesEntity = (mode, entity, cohorts, sectionTeachers) => (schedule) => {
   if (mode === "section") return sectionOf(schedule) === entity;
-  if (mode === "teacher") return teacherOf(schedule) === entity;
+  if (mode === "teacher") return teacherOf(schedule) === entity || Boolean(sectionTeachers?.get(sectionOf(schedule))?.has(entity));
   if (mode === "cohort") return (cohorts?.get(sectionOf(schedule)) || []).some((cohort) => cohort.key === entity);
   return roomOf(schedule).toLowerCase() === String(entity).toLowerCase();
 };

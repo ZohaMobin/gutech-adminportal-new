@@ -8,7 +8,7 @@ import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import { messageOf, NETWORK_MESSAGE } from "../../utils/apiMessage";
 import {
-  DAYS, MODES, sectionLabel, axisOf, clashesFor, clashingIds, cohortOverlapIds, cohortOverlapsFor, cohortSentence, cohortsBySection, clashSentence, courseColors, courseKey, entityOptions, matchesEntity, sectionsWithoutClasses,
+  DAYS, MODES, sectionLabel, axisOf, clashesFor, clashingIds, cohortOverlapIds, cohortOverlapsFor, cohortSentence, cohortsBySection, clashSentence, courseColors, courseKey, entityOptions, matchesEntity, sectionsWithoutClasses, teachersBySection,
   teacherName, timeOf, to12Bare, to12Hour, visibleDays,
 } from "../../utils/classSchedule";
 import WeekBoard from "./components/WeekBoard";
@@ -88,7 +88,7 @@ function ClassSchedule() {
     const sectionById = new Map(sections.map((s) => [idOf(s), s]));
     return {
       options: shown, chosen, sectionById,
-      visible: mode === "all" ? schedules.filter((s) => !semester || (cohorts?.get(idOf(s.sectionId)) || []).some((c) => c.key === semester)) : schedules.filter(matchesEntity(mode, chosen, cohorts)),
+      visible: mode === "all" ? schedules.filter((s) => !semester || (cohorts?.get(idOf(s.sectionId)) || []).some((c) => c.key === semester)) : schedules.filter(matchesEntity(mode, chosen, cohorts, teachersBySection(sections))),
       semesters: entityOptions("cohort", { cohorts }),
       days: visibleDays(schedules), axis: axisOf(schedules), colors: courseColors(schedules),
       clashIds: clashingIds(schedules), overlapIds: cohortOverlapIds(schedules, cohorts), unscheduled: sectionsWithoutClasses(sections, schedules),

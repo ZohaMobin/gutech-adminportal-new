@@ -278,3 +278,14 @@ test("the sections without a timetable can be listed, and a class added for one 
   expect(document.querySelector("form select").selectedOptions[0].textContent).toBe("Web Engineering · B26-F");
   await click(button("Hide sections without a timetable"));
 });
+
+test("a co-teacher sees the section's classes in their own timetable", async () => {
+  S[1].teacherIds = [T[1], T[2]];                                  // Data Structures is taught by Dr. Twaha, with Ms. Zoha as co-teacher
+  try {
+    await mount();
+    await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "Teacher"));
+    await change(container.querySelector(".cs-entity"), "t3");
+    const names = [...container.querySelectorAll(".cs-blk b")].map((b) => b.textContent).sort();
+    expect(names).toEqual(["Data Structures", "Database Systems Lab"]);
+  } finally { delete S[1].teacherIds; }
+});
