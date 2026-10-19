@@ -44,7 +44,7 @@ const mount = async ({ rowsOver, fail = false, conflicts = [], offers } = {}) =>
     if (url.endsWith("/api/sections")) return { data: S };
     if (url.endsWith("/api/teachers")) return { data: T };
     if (url.includes("/course-offerings")) return { data: offerings };
-    if (url.includes("/academic-years/current")) return { data: { semesterType: "Fall", year: 2026, displayName: "Fall 2026" } };
+    if (url.includes("/academic-years/current")) return { data: { _id: "term1", semesterType: "Fall", year: 2026, displayName: "Fall 2026" } };
     const id = url.split("/").pop();
     return { data: rows[id] || [] };
   });
@@ -203,7 +203,7 @@ test("with no internet it says so plainly and offers to try again", async () => 
 });
 
 const prog = { _id: "p1", code: "BSCS" };
-const offer = (id, courseObj, semester) => ({ _id: id, courseId: courseObj, program: prog, semester });
+const offer = (id, courseObj, semester) => ({ _id: id, courseId: courseObj, program: prog, semester, academicYearId: "term1" });
 
 test("classes of one semester that overlap are a warning, not a clash; the Semester view shows what those students have", async () => {
   const rowsOver = baseRows();
@@ -242,4 +242,22 @@ test("All by room puts every room of one day side by side, and an empty slot add
   expect(container.querySelectorAll(".cs-blk").length).toBe(3);                         // Monday: Database Systems twice, Data Structures once
   await click(container.querySelector(".cs-col"));
   expect(document.querySelector("[role=dialog], .am-modal, form")).not.toBeNull();
+});
+
+test("only the active term's courses are shown; an older term's section is left out", async () => {
+  S.push({ ...section("s9", "A25-F", course("c9", "CS-900", "Old Course"), T[0]), academicTermId: "term0" });
+  S.push({ ...section("s8", "A26-F", course("c8", "CS-800", "This Term Course"), T[0]), academicTermId: "term1" });
+  try {
+    await mount();
+    const names = [...container.querySelectorAll(".cs-entity option")].map((o) => o.textContent);
+    expect(names).toContain("This Term Course · A26-F");
+    expect(names).not.toContain("Old Course · A25-F");
+  } finally { S.splice(4, 2); }
+});
+
+test("with only overlaps the top button says overlap, not clash", async () => {
+  const rowsOver = baseRows();
+  rowsOver.s2 = [row("s2", S[1].courseId, T[1], "Monday", "08:30", "09:55", "SF2")];
+  await mount({ rowsOver, offers: [offer("o1", S[0].courseId, 5), offer("o2", S[1].courseId, 5)] });
+  expect(button("Show the overlap")).toBeTruthy();
 });

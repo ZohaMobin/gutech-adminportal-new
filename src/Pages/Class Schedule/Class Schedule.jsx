@@ -53,16 +53,24 @@ function ClassSchedule() {
   const load = useCallback(async () => {
     setState({ status: "loading" });
     try {
-      const [sectionsResponse, teachersResponse, term, offerings] = await Promise.all([
+      const term = await axios.get(`${apiUrl}/api/academic-years/current`, { headers: authHeaders() }).then((r) => r.data).catch(() => null);
+      const termId = idOf(term?._id);
+      const [sectionsResponse, teachersResponse, offerings] = await Promise.all([
         axios.get(`${apiUrl}/api/sections`, { headers: authHeaders(), params: { populate: "true", deep: "true" } }),
         axios.get(`${apiUrl}/api/teachers`, { headers: authHeaders() }),
-        axios.get(`${apiUrl}/api/academic-years/current`, { headers: authHeaders() }).then((r) => r.data).catch(() => null),
         axios.get(`${apiUrl}/api/course-offerings`, { headers: authHeaders(), params: { isActive: "true" } }).then((r) => (Array.isArray(r.data) ? r.data : r.data?.offerings || [])).catch(() => []),   // only powers the semester view and its warning
       ]);
-      const sections = sectionsResponse.data || [];
+      // Only the active term's courses: a section says which term it belongs to; an older one that does not is placed by its course offering.
+      const offeringTerm = new Map(offerings.map((o) => [idOf(o), idOf(o.academicYearId)]));
+      const inTerm = (section) => {
+        if (!termId) return true;
+        const own = idOf(section.academicTermId) || offeringTerm.get(idOf(section.courseOfferingId));
+        return !own || own === termId;
+      };
+      const sections = (sectionsResponse.data || []).filter(inTerm);
       const teachers = teachersResponse.data || [];
       const schedules = await loadSchedules(sections, teachers);
-      setState({ status: "ready", sections, teachers, schedules, term, cohorts: cohortsBySection(sections, offerings) });
+      setState({ status: "ready", sections, teachers, schedules, term, cohorts: cohortsBySection(sections, offerings.filter((o) => !termId || idOf(o.academicYearId) === termId)) });
     } catch (error) {
       setState({ status: "error", message: messageOf(error, "Failed to fetch the timetable") });
     }
@@ -167,7 +175,7 @@ function ClassSchedule() {
       {(clashIds.size > 0 || overlapIds.size > 0 || unscheduled.length > 0) && (
         <div className="cs-health" role="status">
           <span>{[clashIds.size > 0 && `${classes(clashIds.size)} clash`, overlapIds.size > 0 && `${classes(overlapIds.size)} overlap for a semester`, unscheduled.length > 0 && `${unscheduled.length} ${unscheduled.length === 1 ? "section has" : "sections have"} no timetable yet`].filter(Boolean).join(" · ")}</span>
-          {(clashIds.size > 0 || overlapIds.size > 0) && <button type="button" className="cs-link" onClick={showClash}>Show the clash</button>}
+          {(clashIds.size > 0 || overlapIds.size > 0) && <button type="button" className="cs-link" onClick={showClash}>{clashIds.size > 0 ? "Show the clash" : "Show the overlap"}</button>}
         </div>
       )}
 
