@@ -5,6 +5,7 @@
 .cs-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .cs-card { background: #fff; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
+.cs-health-actions { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
 .cs-health { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; padding: 0.55rem 0.9rem; border-radius: 0.6rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #92400e; font-size: 0.86rem; font-weight: 500; }
 
 .cs-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
@@ -65,3 +66,12 @@
 .cs-wkhead small { font-weight: 400; opacity: 0.7; }
 .cs-wkhead .is-free { opacity: 0.6; }
 .cs-empty-day { grid-column: 2 / -1; padding: 2rem 0; text-align: center; font-size: 0.85rem; color: var(--cs-muted); }
+
+/* Sections without a timetable */
+.cs-missing { padding: 0.9rem 1.1rem; margin-bottom: 0.9rem; }
+.cs-missing h3 { margin: 0 0 0.5rem; font-size: 0.92rem; font-weight: 600; }
+.cs-missing h3 span { margin-left: 0.35rem; padding: 0.05rem 0.5rem; border-radius: 999px; background: #eef1f5; font-size: 0.75rem; color: var(--cs-muted); }
+.cs-missing ul { list-style: none; margin: 0; padding: 0; max-height: 18rem; overflow-y: auto; }
+.cs-missing li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-top: 1px solid #eef1f5; }
+.cs-missing li > div { display: flex; flex-direction: column; min-width: 0; }
+.cs-missing strong { font-size: 0.86rem; font-weight: 600; }

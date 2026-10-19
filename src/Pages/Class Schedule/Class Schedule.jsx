@@ -8,7 +8,7 @@ import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import { messageOf, NETWORK_MESSAGE } from "../../utils/apiMessage";
 import {
-  DAYS, MODES, axisOf, clashesFor, clashingIds, cohortOverlapIds, cohortOverlapsFor, cohortSentence, cohortsBySection, clashSentence, courseColors, courseKey, entityOptions, matchesEntity, sectionsWithoutClasses,
+  DAYS, MODES, sectionLabel, axisOf, clashesFor, clashingIds, cohortOverlapIds, cohortOverlapsFor, cohortSentence, cohortsBySection, clashSentence, courseColors, courseKey, entityOptions, matchesEntity, sectionsWithoutClasses,
   teacherName, timeOf, to12Bare, to12Hour, visibleDays,
 } from "../../utils/classSchedule";
 import WeekBoard from "./components/WeekBoard";
@@ -39,9 +39,10 @@ const loadSchedules = async (sections, teachers) => {
 
 function ClassSchedule() {
   const [state, setState] = useState({ status: "loading" });
-  const [mode, setMode] = useState("section");
+  const [mode, setMode] = useState("all");
   const [entity, setEntity] = useState("");
   const [search, setSearch] = useState("");
+  const [showMissing, setShowMissing] = useState(false);
   const [layout, setLayout] = useState("week");              // inside "All": the whole week, or one day by room
   const [semester, setSemester] = useState("");             // inside "All": limit to one semester
   const [day, setDay] = useState(() => { const today = new Date().toLocaleDateString("en-US", { weekday: "long" }); return DAYS.includes(today) ? today : "Monday"; });
@@ -120,11 +121,11 @@ function ClassSchedule() {
     if (!first) return;
     setMode("section"); setEntity(idOf(first.sectionId)); setSearch(""); setSelectedId(String(first._id));
   };
-  const openAdd = (dayName, start, room) => {
+  const openAdd = (dayName, start, room, forSection) => {
     const from = start ?? axis.start;
     setDialog({ schedule: null, defaults: {
       day: dayName || (mode === "all" && layout === "rooms" ? day : "Monday"), start: timeOf(from), end: timeOf(from + DEFAULT_LENGTH),
-      sectionId: mode === "section" ? chosen : "", room: room || (mode === "room" ? chosen : ""), teacherId: mode === "teacher" ? chosen : "",
+      sectionId: forSection || (mode === "section" ? chosen : ""), room: room || (mode === "room" ? chosen : ""), teacherId: mode === "teacher" ? chosen : "",
     } });
   };
 
@@ -175,8 +176,25 @@ function ClassSchedule() {
       {(clashIds.size > 0 || overlapIds.size > 0 || unscheduled.length > 0) && (
         <div className="cs-health" role="status">
           <span>{[clashIds.size > 0 && `${classes(clashIds.size)} clash`, overlapIds.size > 0 && `${classes(overlapIds.size)} overlap for a semester`, unscheduled.length > 0 && `${unscheduled.length} ${unscheduled.length === 1 ? "section has" : "sections have"} no timetable yet`].filter(Boolean).join(" · ")}</span>
-          {(clashIds.size > 0 || overlapIds.size > 0) && <button type="button" className="cs-link" onClick={showClash}>{clashIds.size > 0 ? "Show the clash" : "Show the overlap"}</button>}
+          <span className="cs-health-actions">
+            {unscheduled.length > 0 && <button type="button" className="cs-link" aria-expanded={showMissing} onClick={() => setShowMissing(!showMissing)}>{showMissing ? "Hide sections without a timetable" : "See which sections"}</button>}
+            {(clashIds.size > 0 || overlapIds.size > 0) && <button type="button" className="cs-link" onClick={showClash}>{clashIds.size > 0 ? "Show the clash" : "Show the overlap"}</button>}
+          </span>
         </div>
+      )}
+
+      {showMissing && unscheduled.length > 0 && (
+        <section className="cs-card cs-missing" aria-label="Sections without a timetable">
+          <h3>Sections without a timetable <span>{unscheduled.length}</span></h3>
+          <ul>
+            {[...unscheduled].sort((a, b) => sectionLabel(a).localeCompare(sectionLabel(b), undefined, { numeric: true })).map((section) => (
+              <li key={idOf(section)}>
+                <div><strong>{sectionLabel(section)}</strong><span className="cs-note">{[(cohorts?.get(idOf(section)) || []).map((c) => c.label).join(", "), formatSectionTeachers(section)].filter(Boolean).join(" · ")}</span></div>
+                <button type="button" className="am-btn" onClick={() => openAdd(undefined, undefined, undefined, idOf(section))}>Add class</button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="cs-tools">
