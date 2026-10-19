@@ -87,7 +87,7 @@ export const layoutDay = (items, axisStart) => {
 };
 
 // ---- what to show: by section, by teacher or by room ----
-export const MODES = [["section", "Section"], ["teacher", "Teacher"], ["room", "Room"], ["cohort", "Semester"], ["all", "All"]];
+export const MODES = [["all", "All"], ["section", "Section"], ["teacher", "Teacher"], ["room", "Room"], ["cohort", "Semester"]];
 
 export const sectionLabel = (section) => `${section?.courseId?.name || "Section"} · ${section?.section || section?.name || "-"}`;
 export const teacherName = (teacher) => teacher?.userId?.name || teacher?.name || teacher?.email || "";

@@ -36,7 +36,7 @@ const change = async (el, value) => act(async () => {
 const text = () => container.textContent;
 const button = (label) => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === label);
 
-const mount = async ({ rowsOver, fail = false, conflicts = [], offers } = {}) => {
+const mount = async ({ rowsOver, fail = false, conflicts = [], offers, landing = false } = {}) => {
   n = 0; rows = rowsOver || baseRows(); offerings = offers || [];
   sessionStorage.setItem("adminToken", "t");
   axios.get.mockImplementation(async (url) => {
@@ -55,6 +55,7 @@ const mount = async ({ rowsOver, fail = false, conflicts = [], offers } = {}) =>
   // eslint-disable-next-line testing-library/no-unnecessary-act
   await act(async () => { root.render(<ClassSchedule />); });
   await wait(30);
+  if (!landing && !fail) await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "Section"));    // most tests look at one section
 };
 afterEach(() => { act(() => root.unmount()); container.remove(); document.body.innerHTML = ""; sessionStorage.clear(); jest.clearAllMocks(); });
 
@@ -225,8 +226,7 @@ test("no offerings simply means no semester warnings", async () => {
 });
 
 test("All shows every class on one week board, and can be limited to one semester", async () => {
-  await mount({ offers: [offer("o1", S[0].courseId, 5), offer("o2", S[1].courseId, 5), offer("o3", S[2].courseId, 3)] });
-  await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "All"));
+  await mount({ landing: true, offers: [offer("o1", S[0].courseId, 5), offer("o2", S[1].courseId, 5), offer("o3", S[2].courseId, 3)] });
   expect(container.querySelector(".cs-entity option:checked").textContent).toBe("Every semester");
   expect(container.querySelectorAll(".cs-blk").length).toBe(4);
   await change(container.querySelector(".cs-entity"), "p1|3");
@@ -234,8 +234,7 @@ test("All shows every class on one week board, and can be limited to one semeste
 });
 
 test("All by room puts every room of one day side by side, and an empty slot adds a class in that room", async () => {
-  await mount();
-  await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "All"));
+  await mount({ landing: true });
   await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "By room"));
   await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "Mon"));
   expect([...container.querySelectorAll(".cs-wkhead > div")].slice(1).map((d) => d.textContent)).toEqual(["SF1", "SL · free"]);
@@ -260,4 +259,22 @@ test("with only overlaps the top button says overlap, not clash", async () => {
   rowsOver.s2 = [row("s2", S[1].courseId, T[1], "Monday", "08:30", "09:55", "SF2")];
   await mount({ rowsOver, offers: [offer("o1", S[0].courseId, 5), offer("o2", S[1].courseId, 5)] });
   expect(button("Show the overlap")).toBeTruthy();
+});
+
+test("it opens on All, the whole week, so nothing is hidden by default", async () => {
+  await mount({ landing: true });
+  expect(container.querySelector(".cs-seg button.is-on").textContent).toBe("All");
+  expect(container.querySelectorAll(".cs-blk").length).toBe(4);
+  expect(text()).toContain("4 classes this week");
+});
+
+test("the sections without a timetable can be listed, and a class added for one straight from the list", async () => {
+  await mount({ landing: true });
+  expect(text()).toContain("1 section has no timetable yet");
+  await click(button("See which sections"));
+  const panel = container.querySelector(".cs-missing");
+  expect(panel.textContent).toContain("Web Engineering · B26-F");
+  await click([...panel.querySelectorAll("button")].find((b) => b.textContent === "Add class"));
+  expect(document.querySelector("form select").selectedOptions[0].textContent).toBe("Web Engineering · B26-F");
+  await click(button("Hide sections without a timetable"));
 });
