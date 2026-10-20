@@ -100,7 +100,7 @@ const Signup = () => {
               id="email"
               type="email"
               name="email"
-              placeholder="name@example.com"
+              placeholder="name@agu.edu.pk"
               autoComplete="username"
               value={loginForm.email}
               onChange={handleLoginChange}
