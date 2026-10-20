@@ -44,6 +44,15 @@
   color: #fff;
 }
 
+.brand-panel .eyebrow {
+  margin-bottom: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
 .auth-container .brand-panel h2 {
   margin: 0 0 12px;
   padding: 0;
@@ -269,6 +278,7 @@
     padding: 22px 26px;
   }
 
+  .brand-panel .eyebrow { margin-bottom: 6px; }
   .auth-container .brand-panel h2 { margin-bottom: 2px; font-size: 18px; }
   .auth-container .brand-panel p { margin: 0; font-size: 13px; }
   .brand-panel ul { display: none; }
