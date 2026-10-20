@@ -80,6 +80,7 @@ const Signup = () => {
     <div className="auth-page">
       <div className="auth-container login-only">
         <aside className="brand-panel">
+          <span className="eyebrow">Administrator portal</span>
           <h2>Welcome back</h2>
           <p>Manage the university's academics, attendance and accounts.</p>
           <ul>
@@ -91,7 +92,6 @@ const Signup = () => {
 
         <div className="form-container login-form">
           <form onSubmit={handleLogin}>
-            <h1 className="form-title">Administrator sign in</h1>
 
             <InlineAlert message={error} />
 
