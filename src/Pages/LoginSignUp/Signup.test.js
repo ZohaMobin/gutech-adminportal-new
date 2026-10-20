@@ -43,3 +43,17 @@ test("a rejection with no reason falls back to the credentials message", async (
   await signIn({ response: { status: 401, data: {} } });
   expect(container.textContent).toContain("Login failed. Please check your credentials.");
 });
+
+test("sign in tells the server this is the admin portal, and shows its refusal for other roles", async () => {
+  await signIn({ response: { status: 403, data: { message: "Access denied. This portal is for administrators only." } } });
+  expect(axios.post).toHaveBeenCalledWith(expect.stringContaining("/api/auth/login"), expect.objectContaining({ portal: "admin" }));
+  expect(container.textContent).toContain("This portal is for administrators only.");
+});
+
+test("the password toggle is a labelled button that switches the field", async () => {
+  const toggle = container.querySelector("button.password-toggle");
+  expect(toggle.getAttribute("aria-label")).toBe("Show password");
+  await act(async () => { toggle.click(); });
+  expect(container.querySelector('input[name="password"]').type).toBe("text");
+  expect(toggle.getAttribute("aria-label")).toBe("Hide password");
+});

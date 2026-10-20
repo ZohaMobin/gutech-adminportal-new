@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import './Signup.css';
 import { useAuth } from '../../Components/AuthContext';
 import { formMessageOf } from '../../utils/apiMessage';
+import { BusyLabel } from '../../Components/Loading/Loading';
 import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 // Administrator login. There is deliberately no sign-up here: administrator accounts are
@@ -13,7 +14,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -49,6 +50,7 @@ const Signup = () => {
       const response = await axios.post(`${apiUrl}/api/auth/login`, {
         email: loginForm.email,
         password: loginForm.password,
+        portal: 'admin', // the server refuses other roles here; the check below covers an older server
       });
 
       // Check if the user is an admin
@@ -71,32 +73,47 @@ const Signup = () => {
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  // Already signed in: no reason to show the login page again.
+  if (isAuthenticated) return <Navigate to="/attendance" replace />;
 
   return (
     <div className="auth-page">
-      <div className="auth-container">
-        {/* Sign In Form */}
-        <div className="form-container sign-in">
+      <div className="auth-container login-only">
+        <aside className="brand-panel">
+          <h2>Welcome back</h2>
+          <p>Manage the university's academics, attendance and accounts.</p>
+          <ul>
+            <li><i className="fas fa-calendar-alt" aria-hidden="true"></i>Class schedule</li>
+            <li><i className="fas fa-clipboard-check" aria-hidden="true"></i>Attendance</li>
+            <li><i className="fas fa-user-shield" aria-hidden="true"></i>Access and approvals</li>
+          </ul>
+        </aside>
+
+        <div className="form-container login-form">
           <form onSubmit={handleLogin}>
-            <h1 className="form-title">Sign In</h1>
+            <h1 className="form-title">Administrator sign in</h1>
 
             <InlineAlert message={error} />
 
+            <label className="field-label" htmlFor="email">Email</label>
             <input
+              id="email"
               type="email"
               name="email"
-              placeholder="Email"
+              placeholder="name@agu.edu.pk"
               autoComplete="username"
               value={loginForm.email}
               onChange={handleLoginChange}
               disabled={isSubmitting}
             />
 
+            <div className="field-label row">
+              <label htmlFor="password">Password</label>
+              <Link to="/forgot-password" className="forgot-password">Forgot password?</Link>
+            </div>
             <div className="password-field">
               <input
+                id="password"
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 placeholder="Password"
@@ -105,34 +122,23 @@ const Signup = () => {
                 onChange={handleLoginChange}
                 disabled={isSubmitting}
               />
-              <div
+              <button
+                type="button"
                 className="password-toggle"
-                onClick={togglePasswordVisibility}
+                onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
               >
-                {showPassword ? <i className="fas fa-eye-slash"></i> : <i className="fas fa-eye"></i>}
-              </div>
+                <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'} aria-hidden="true"></i>
+              </button>
             </div>
 
-            <Link to="/forgot-password" className="forgot-password">Forgot Your Password?</Link>
-
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
+            <button type="submit" className="submit-button" disabled={isSubmitting}>
+              <BusyLabel busy={isSubmitting} busyText="Signing in…" idle="Sign In" />
             </button>
-          </form>
-        </div>
 
-        {/* Welcome panel */}
-        <div className="toggle-container">
-          <div className="toggle">
-            <div className="toggle-panel toggle-right">
-              <h1>Welcome Back</h1>
-              <p>Access your account to use all features and services</p>
-              <p className="toggle-message">
-                Need administrator access?<br />Ask an existing administrator to add you.
-              </p>
-            </div>
-          </div>
+            <p className="help-text">Need administrator access? Ask an existing administrator to add you.</p>
+          </form>
         </div>
       </div>
     </div>
