@@ -69,9 +69,11 @@ test("it opens on a section, in the usual page frame, with the term and its week
   expect(text()).toContain("1 class this week");
 });
 
-test("the time axis fits the whole timetable and starts at the first class", async () => {
+test("the time axis fits the classes being shown, so an evening programme is not squeezed into the morning", async () => {
   await mount();
-  expect(container.querySelector(".cs-hours span").textContent).toBe("8:30a");
+  expect(container.querySelector(".cs-hours span").textContent).toBe("10a");                  // Data Structures starts at 10:10
+  await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "All"));
+  expect(container.querySelector(".cs-hours span").textContent).toBe("8:30a");                // the whole week starts at 8:30
 });
 
 test("the same timetable can be looked at by teacher or by room", async () => {
@@ -204,19 +206,19 @@ test("with no internet it says so plainly and offers to try again", async () => 
 });
 
 const prog = { _id: "p1", code: "BSCS" };
-const offer = (id, courseObj, semester) => ({ _id: id, courseId: courseObj, program: prog, semester, academicYearId: "term1" });
+const dept = { _id: "d1", name: "Computer Science" };
+const msProg = { _id: "p2", code: "MS DSAI" };
+const msDept = { _id: "d2", name: "Data Science" };
+const offer = (id, courseObj, semester, p = prog, d = dept) => ({ _id: id, courseId: courseObj, program: p, department: d, semester, academicYearId: "term1" });
 
-test("classes of one semester that overlap are a warning, not a clash; the Semester view shows what those students have", async () => {
+test("classes of one semester that overlap are a warning, not a clash; the details name the semester", async () => {
   const rowsOver = baseRows();
   rowsOver.s2 = [row("s2", S[1].courseId, T[1], "Monday", "08:30", "09:55", "SF2")];          // overlaps Database Systems (SF1) in time only
   await mount({ rowsOver, offers: [offer("o1", S[0].courseId, 5), offer("o2", S[1].courseId, 5), offer("o3", S[2].courseId, 3)] });
   expect(text()).toContain("2 classes overlap for a semester");
   expect(text()).not.toMatch(/\d classes? clash/);
-  await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "Semester"));
-  expect([...container.querySelectorAll(".cs-entity option")].map((o) => o.textContent)).toEqual(["BSCS · Semester 3", "BSCS · Semester 5"]);
-  await change(container.querySelector(".cs-entity"), "p1|5");
-  expect(container.querySelectorAll(".cs-blk").length).toBe(3);
-  await click(container.querySelector(".cs-blk"));
+  await click([...container.querySelectorAll(".cs-seg button")].find((b) => b.textContent === "Section"));
+  await click([...container.querySelectorAll(".cs-blk")][0]);
   expect(text()).toContain("BSCS · Semester 5 students also have");
 });
 
@@ -225,12 +227,38 @@ test("no offerings simply means no semester warnings", async () => {
   expect(text()).not.toContain("overlap for a semester");
 });
 
-test("All shows every class on one week board, and can be limited to one semester", async () => {
-  await mount({ landing: true, offers: [offer("o1", S[0].courseId, 5), offer("o2", S[1].courseId, 5), offer("o3", S[2].courseId, 3)] });
-  expect(container.querySelector(".cs-entity option:checked").textContent).toBe("Every semester");
+test("All shows every class on one week board, and can be limited by department, degree and semester", async () => {
+  await mount({ landing: true, offers: [offer("o1", S[0].courseId, 5), offer("o2", S[1].courseId, 5), offer("o3", S[2].courseId, 3), offer("o4", S[3].courseId, 1, msProg, msDept)] });
+  const selects = () => [...container.querySelectorAll(".cs-filterbar select")];
+  expect(container.querySelector(".cs-seg button.is-on").textContent).toBe("All");
   expect(container.querySelectorAll(".cs-blk").length).toBe(4);
-  await change(container.querySelector(".cs-entity"), "p1|3");
-  expect(container.querySelectorAll(".cs-blk").length).toBe(1);
+  expect([...selects()[0].options].map((o) => o.textContent)).toEqual(["All departments", "Computer Science", "Data Science"]);
+  await change(selects()[0], "d1");
+  expect([...selects()[1].options].map((o) => o.textContent)).toEqual(["All degrees", "BSCS"]);        // only that department's degrees
+  expect([...selects()[2].options].map((o) => o.textContent)).toEqual(["All semesters", "Semester 3", "Semester 5"]);
+  await change(selects()[2], "3");
+  expect(container.querySelectorAll(".cs-blk").length).toBe(1);                                        // Database Systems Lab only
+  await click(button("Clear all"));
+  expect(container.querySelectorAll(".cs-blk").length).toBe(4);
+  await change(selects()[1], "p2");
+  expect(container.querySelectorAll(".cs-blk").length).toBe(0);                                        // MS DSAI has no classes yet
+  expect(text()).toContain("0 classes this week");
+});
+
+test("evening and weekend classes can be added: every day is offered, and the weekend can be shown", async () => {
+  const rowsOver = baseRows();
+  rowsOver.s4 = [row("s4", S[3].courseId, T[0], "Saturday", "18:00", "21:00", "SF1")];
+  await mount({ rowsOver, landing: true });
+  expect([...container.querySelectorAll(".cs-wkhead > div")].slice(1).map((d) => d.textContent)).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);   // a Saturday class brings its column
+  await click(button("+ Add class"));
+  const days = [...document.querySelectorAll("form select")[1].options].map((o) => o.textContent);
+  expect(days).toEqual(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+  expect(container.querySelector(".cs-hours span:last-child").textContent).toBe("9p");               // the board runs into the evening
+});
+
+test("with no weekend classes the board stays Monday to Friday", async () => {
+  await mount({ landing: true });
+  expect([...container.querySelectorAll(".cs-wkhead > div")].slice(1).map((d) => d.textContent)).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri"]);
 });
 
 test("All by room puts every room of one day side by side, and an empty slot adds a class in that room", async () => {

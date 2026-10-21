@@ -8,11 +8,12 @@ import { showToast, TOAST_TYPES } from "../../Components/Toast/Toast";
 import { formatSectionTeachers } from "../../utils/sectionTeachers";
 import { messageOf, NETWORK_MESSAGE } from "../../utils/apiMessage";
 import {
-  DAYS, MODES, sectionLabel, axisOf, clashesFor, clashingIds, cohortOverlapIds, cohortOverlapsFor, cohortSentence, cohortsBySection, clashSentence, courseColors, courseKey, entityOptions, matchesEntity, sectionsWithoutClasses, teachersBySection,
+  DAYS, MODES, sectionLabel, axisOf, cohortFilterOptions, hasCohortFilter, matchesCohortFilter, clashesFor, clashingIds, cohortOverlapIds, cohortOverlapsFor, cohortSentence, cohortsBySection, clashSentence, courseColors, courseKey, entityOptions, matchesEntity, sectionsWithoutClasses, teachersBySection,
   teacherName, timeOf, to12Bare, to12Hour, visibleDays,
 } from "../../utils/classSchedule";
 import WeekBoard from "./components/WeekBoard";
 import RoomBoard from "./components/RoomBoard";
+import FilterPick from "./components/FilterPick";
 import ScheduleModal from "./components/ScheduleModal";
 import "./Class Schedule.css";
 
@@ -44,7 +45,7 @@ function ClassSchedule() {
   const [search, setSearch] = useState("");
   const [showMissing, setShowMissing] = useState(false);
   const [layout, setLayout] = useState("week");              // inside "All": the whole week, or one day by room
-  const [semester, setSemester] = useState("");             // inside "All": limit to one semester
+  const [filter, setFilter] = useState({ departmentId: "", programId: "", semester: "" });     // inside "All": limit to a department, degree, semester
   const [day, setDay] = useState(() => { const today = new Date().toLocaleDateString("en-US", { weekday: "long" }); return DAYS.includes(today) ? today : "Monday"; });
   const [selectedId, setSelectedId] = useState(null);
   const [dialog, setDialog] = useState(null);                // { schedule, defaults }
@@ -86,14 +87,16 @@ function ClassSchedule() {
     const needle = search.trim().toLowerCase();
     const shown = needle ? options.filter((o) => o.label.toLowerCase().includes(needle) || o.value === chosen) : options;
     const sectionById = new Map(sections.map((s) => [idOf(s), s]));
+    const visible = mode === "all"
+      ? schedules.filter((s) => matchesCohortFilter(idOf(s.sectionId), cohorts, filter))
+      : schedules.filter(matchesEntity(mode, chosen, cohorts, teachersBySection(sections)));
     return {
       options: shown, chosen, sectionById,
-      visible: mode === "all" ? schedules.filter((s) => !semester || (cohorts?.get(idOf(s.sectionId)) || []).some((c) => c.key === semester)) : schedules.filter(matchesEntity(mode, chosen, cohorts, teachersBySection(sections))),
-      semesters: entityOptions("cohort", { cohorts }),
-      days: visibleDays(schedules), axis: axisOf(schedules), colors: courseColors(schedules),
-      clashIds: clashingIds(schedules), overlapIds: cohortOverlapIds(schedules, cohorts), unscheduled: sectionsWithoutClasses(sections, schedules),
+      visible, filterOptions: cohortFilterOptions(cohorts, filter),
+      days: visibleDays(schedules), axis: axisOf(visible), colors: courseColors(schedules),
+      clashIds: clashingIds(schedules), overlapIds: cohortOverlapIds(schedules, cohorts), unscheduled: sectionsWithoutClasses(sections, schedules).filter((section) => mode !== "all" || matchesCohortFilter(idOf(section), cohorts, filter)),
     };
-  }, [state, mode, entity, search, semester]);
+  }, [state, mode, entity, search, filter]);
 
   if (state.status === "loading") return <div className="class-schedule-page page-shell"><PageHeader title="Class Schedule" subtitle="The weekly timetable of every section." /><Loading variant="table" rows={6} label="Loading the timetable" /></div>;
   if (state.status === "error") {
@@ -106,7 +109,7 @@ function ClassSchedule() {
   }
 
   const { sections, teachers, schedules, term, cohorts } = state;
-  const { semesters, options, chosen, sectionById, visible, days, axis, colors, clashIds, overlapIds, unscheduled } = model;
+  const { filterOptions, options, chosen, sectionById, visible, days, axis, colors, clashIds, overlapIds, unscheduled } = model;
   const termLabel = term?.displayName || (term?.semesterType && term?.year ? `${term.semesterType} ${term.year}` : "");
   const sectionLetter = (schedule) => sectionById.get(idOf(schedule.sectionId))?.section || "";
   const teacherLabel = (schedule) => (teacherName(schedule.teacherId) || "").replace(/^(Dr|Mr|Ms|Mrs|Prof)\.? /i, "");
@@ -207,9 +210,7 @@ function ClassSchedule() {
               <button type="button" className={layout === "week" ? "is-on" : ""} aria-pressed={layout === "week"} onClick={() => setLayout("week")}>Week</button>
               <button type="button" className={layout === "rooms" ? "is-on" : ""} aria-pressed={layout === "rooms"} onClick={() => setLayout("rooms")}>By room</button>
             </div>
-            {layout === "rooms"
-              ? <div className="cs-seg" role="group" aria-label="Day">{days.map((name) => <button type="button" key={name} className={day === name ? "is-on" : ""} aria-pressed={day === name} onClick={() => { setDay(name); setSelectedId(null); }}>{name.slice(0, 3)}</button>)}</div>
-              : <select className="cs-entity" value={semester} onChange={(event) => { setSemester(event.target.value); setSelectedId(null); }} aria-label="Limit to a semester"><option value="">Every semester</option>{semesters.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>}
+            {layout === "rooms" && <div className="cs-seg" role="group" aria-label="Day">{days.map((name) => <button type="button" key={name} className={day === name ? "is-on" : ""} aria-pressed={day === name} onClick={() => { setDay(name); setSelectedId(null); }}>{name.slice(0, 3)}</button>)}</div>}
           </>
         ) : (
           <>
@@ -220,8 +221,19 @@ function ClassSchedule() {
             </select>
           </>
         )}
-        <span className="cs-note">{mode === "all" && layout === "rooms" ? `${classes(visible.filter((s) => s.day === day).length)} on ${day}` : `${classes(visible.length)} this week`}</span>
+        {mode !== "all" && <span className="cs-note">{classes(visible.length)} this week</span>}
       </div>
+
+      {mode === "all" && (
+        <div className="cs-filterbar" role="group" aria-label="Filter classes">
+          <span className="cs-filterbar-title">Filter by</span>
+          <FilterPick label="Department" allLabel="All departments" value={filter.departmentId} options={filterOptions.departments} onChange={(value) => { setFilter({ departmentId: value, programId: "", semester: "" }); setSelectedId(null); }} />
+          <FilterPick label="Degree" allLabel="All degrees" value={filter.programId} options={filterOptions.programs} onChange={(value) => { setFilter({ ...filter, programId: value, semester: "" }); setSelectedId(null); }} />
+          <FilterPick label="Semester" allLabel="All semesters" value={filter.semester} options={filterOptions.semesters} onChange={(value) => { setFilter({ ...filter, semester: value }); setSelectedId(null); }} />
+          {hasCohortFilter(filter) && <button type="button" className="cs-clear" onClick={() => setFilter({ departmentId: "", programId: "", semester: "" })}>Clear all</button>}
+          <span className="cs-result">{layout === "rooms" ? `${classes(visible.filter((c) => c.day === day).length)} on ${day}` : `${classes(visible.length)} this week`}</span>
+        </div>
+      )}
 
       {mode === "all" && layout === "rooms" ? (
         <RoomBoard
