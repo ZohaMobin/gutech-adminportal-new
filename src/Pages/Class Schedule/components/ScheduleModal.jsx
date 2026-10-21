@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Modal } from "../../Administrators/AdminModals";
 import { BusyLabel } from "../../../Components/Loading/Loading";
 import { InlineAlert } from "../../../Components/ErrorState/ErrorState";
-import { DAYS, clashesFor, cohortOverlapsFor, cohortSentence, clashSentence, defaultTeacherId, knownRooms, minutesOf, popularPeriods, sectionLabel, teacherName, to12Bare, to12Hour } from "../../../utils/classSchedule";
+import { ALL_DAYS, clashesFor, cohortOverlapsFor, cohortSentence, clashSentence, defaultTeacherId, knownRooms, minutesOf, popularPeriods, sectionLabel, teacherName, to12Bare, to12Hour } from "../../../utils/classSchedule";
 
 const STANDARD_PERIODS = [["08:30", "09:55"], ["10:10", "11:35"], ["11:45", "13:10"], ["14:00", "15:25"]];
 
@@ -70,7 +70,7 @@ const ScheduleModal = ({ schedule, defaults, sections, teachers, schedules, coho
         <label className="am-field">
           <span>Day</span>
           <select value={draft.day} onChange={(event) => set({ day: event.target.value })} disabled={saving}>
-            {DAYS.map((day) => <option key={day} value={day}>{day}</option>)}
+            {ALL_DAYS.map((day) => <option key={day} value={day}>{day}</option>)}
           </select>
         </label>
 

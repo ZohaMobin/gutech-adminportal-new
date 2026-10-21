@@ -10,7 +10,9 @@ export const to12Hour = (time) => { const [h, m] = String(time).split(":"); cons
 export const to12Bare = (time) => to12Hour(time).replace(/ (AM|PM)$/, "");
 export const isOnline = (room) => String(room || "").trim().toUpperCase() === "ONLINE";
 
-export const visibleDays = (schedules) => [...DAYS, ...EXTRA_DAYS.filter((day) => schedules.some((s) => s.day === day))];
+export const ALL_DAYS = [...DAYS, ...EXTRA_DAYS];
+// Monday to Friday, plus Saturday and Sunday once any class is held on them (or when asked for, to add the first one).
+export const visibleDays = (schedules, includeWeekend = false) => [...DAYS, ...EXTRA_DAYS.filter((day) => includeWeekend || schedules.some((s) => s.day === day))];
 
 export const sectionOf = (schedule) => idOf(schedule?.sectionId);
 export const teacherOf = (schedule) => idOf(schedule?.teacherId);
@@ -87,14 +89,13 @@ export const layoutDay = (items, axisStart) => {
 };
 
 // ---- what to show: by section, by teacher or by room ----
-export const MODES = [["all", "All"], ["section", "Section"], ["teacher", "Teacher"], ["room", "Room"], ["cohort", "Semester"]];
+export const MODES = [["all", "All"], ["section", "Section"], ["teacher", "Teacher"], ["room", "Room"]];
 
 export const sectionLabel = (section) => `${section?.courseId?.name || "Section"} · ${section?.section || section?.name || "-"}`;
 export const teacherName = (teacher) => teacher?.userId?.name || teacher?.name || teacher?.email || "";
 
 export const entityOptions = (mode, { sections, teachers, schedules, cohorts }) => {
   if (mode === "all") return [];
-  if (mode === "cohort") return cohortOptions(cohorts);
   if (mode === "section") return sections.map((s) => ({ value: idOf(s), label: sectionLabel(s) })).sort((a, b) => a.label.localeCompare(b.label));
   if (mode === "teacher") return teachers.map((t) => ({ value: idOf(t), label: teacherName(t) || "Teacher" })).sort((a, b) => a.label.localeCompare(b.label));
   return knownRooms(schedules).map((room) => ({ value: room, label: room }));
@@ -106,7 +107,6 @@ export const teachersBySection = (sections) => new Map(sections.map((section) =>
 export const matchesEntity = (mode, entity, cohorts, sectionTeachers) => (schedule) => {
   if (mode === "section") return sectionOf(schedule) === entity;
   if (mode === "teacher") return teacherOf(schedule) === entity || Boolean(sectionTeachers?.get(sectionOf(schedule))?.has(entity));
-  if (mode === "cohort") return (cohorts?.get(sectionOf(schedule)) || []).some((cohort) => cohort.key === entity);
   return roomOf(schedule).toLowerCase() === String(entity).toLowerCase();
 };
 
@@ -164,14 +164,13 @@ export const cohortsBySection = (sections, offerings) => {
     const own = section.courseOfferingId && byId.get(idOf(section.courseOfferingId));
     const list = own ? [own] : byCourse.get(idOf(section.courseId)) || [];
     const seen = new Set();
-    result.set(idOf(section), list.map((o) => ({ key: `${idOf(o.program)}|${o.semester}`, label: cohortLabel(o) })).filter((c) => (seen.has(c.key) ? false : seen.add(c.key))));
+    result.set(idOf(section), list.map((o) => ({
+      key: `${idOf(o.program)}|${o.semester}`, label: cohortLabel(o), semester: o.semester,
+      programId: idOf(o.program), programLabel: o.program?.code || o.program?.name || "Program",
+      departmentId: idOf(o.department), departmentLabel: o.department?.name || o.department?.code || "",
+    })).filter((c) => (seen.has(c.key) ? false : seen.add(c.key))));
   });
   return result;
-};
-export const cohortOptions = (cohorts) => {
-  const labels = new Map();
-  (cohorts ? [...cohorts.values()].flat() : []).forEach((c) => labels.set(c.key, c.label));
-  return [...labels.entries()].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
 };
 
 // Students of one cohort cannot be in two classes at once: a warning (not a block) for a class (or draft) that overlaps another class of the
@@ -195,3 +194,22 @@ export const cohortOverlapIds = (schedules, cohorts) => {
   return ids;
 };
 export const cohortSentence = ({ other, cohort }, label) => `${cohort.label} students also have ${label?.(other) || "another class"} on ${other.day} ${to12Bare(other.timeSlot.startTime)}–${to12Hour(other.timeSlot.endTime)}`;
+
+// ---- filters: department, degree (program), semester ----
+// Each list only offers what exists inside the choices made before it, so a department's degrees and a degree's semesters are all that is shown.
+const unique = (items) => [...new Map(items.map((item) => [item.value, item])).values()];
+export const cohortFilterOptions = (cohorts, { departmentId = "", programId = "" } = {}) => {
+  const all = cohorts ? [...cohorts.values()].flat() : [];
+  const inDepartment = all.filter((c) => !departmentId || c.departmentId === departmentId);
+  const inProgram = inDepartment.filter((c) => !programId || c.programId === programId);
+  const byLabel = (a, b) => a.label.localeCompare(b.label, undefined, { numeric: true });
+  return {
+    departments: unique(all.filter((c) => c.departmentId).map((c) => ({ value: c.departmentId, label: c.departmentLabel || "Department" }))).sort(byLabel),
+    programs: unique(inDepartment.map((c) => ({ value: c.programId, label: c.programLabel }))).sort(byLabel),
+    semesters: unique(inProgram.map((c) => ({ value: String(c.semester), label: `Semester ${c.semester}` }))).sort(byLabel),
+  };
+};
+export const hasCohortFilter = (filter) => Boolean(filter.departmentId || filter.programId || filter.semester);
+export const matchesCohortFilter = (sectionId, cohorts, filter) => !hasCohortFilter(filter) || (cohorts?.get(sectionId) || []).some((c) => (
+  (!filter.departmentId || c.departmentId === filter.departmentId) && (!filter.programId || c.programId === filter.programId) && (!filter.semester || String(c.semester) === filter.semester)
+));
