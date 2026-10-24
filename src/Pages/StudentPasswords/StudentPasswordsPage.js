@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { FiSearch, FiX } from "react-icons/fi";
 import Loading from "../../Components/Loading/Loading";
@@ -15,7 +15,6 @@ import { InlineAlert } from '../../Components/ErrorState/ErrorState';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const NO_FILTERS = { department: "", program: "", semester: "", search: "" };
-const idOf = (ref) => (ref && typeof ref === "object" ? ref._id || ref.id : ref);
 
 // Student passwords in one place: find a student and show their password (the "I forgot" case at the office), or give a
 // whole class passwords and download them as a CSV. Everything acts on exactly the students in the current list.
@@ -62,10 +61,17 @@ const StudentPasswordsPage = () => {
       .catch(() => setSemesters([]));
   }, [filters.program]);
 
-  const programOptions = useMemo(
-    () => (filters.department ? programs.filter((p) => String(idOf(p.department)) === String(filters.department)) : programs),
-    [programs, filters.department]
-  );
+  // A program is not tied to a department in the data: the programs of a department are the ones its students are in, so the server says which.
+  const [departmentPrograms, setDepartmentPrograms] = useState(null);
+  useEffect(() => {
+    if (!filters.department) { setDepartmentPrograms(null); return undefined; }
+    let current = true;
+    axios.get(`${API}/api/student-directory/programs`, { params: { department: filters.department } })
+      .then(({ data }) => { if (current) setDepartmentPrograms(data.programs || []); })
+      .catch(() => { if (current) setDepartmentPrograms(null); });        // can't tell: show every program rather than none
+    return () => { current = false; };
+  }, [filters.department]);
+  const programOptions = filters.department && departmentPrograms ? departmentPrograms : programs;
 
   const setFilter = (name, value) => setFilters((f) => ({
     ...f,

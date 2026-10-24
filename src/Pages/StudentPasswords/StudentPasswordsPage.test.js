@@ -98,3 +98,27 @@ test("if the CSV fails after issuing, the passwords are still reported and the d
   expect(api.downloadPasswordsCsv).toHaveBeenCalledTimes(2);
   expect(document.querySelector('[role="dialog"]').textContent).toMatch(/Downloaded/);
 });
+
+test("choosing a department lists the programs its students are in (programs carry no department of their own)", async () => {
+  const bscs = { _id: "p1", name: "BS Computer Science" }; const bsai = { _id: "p2", name: "BS Artificial Intelligence" }; const bba = { _id: "p3", name: "BBA" };
+  axios.get.mockImplementation(async (url, opts) => {
+    if (url.endsWith("/api/departments")) return { data: [{ _id: "d1", name: "Computer Science" }, { _id: "d2", name: "Business" }] };
+    if (url.endsWith("/api/programs")) return { data: [bscs, bsai, bba] };
+    if (url.includes("/student-directory/programs")) return { data: { programs: opts.params.department === "d1" ? [bscs, bsai] : [bba] } };
+    if (url.endsWith("/api/students")) return { data: { total: 0, students: [] } };
+    return { data: [] };
+  });
+  container = document.createElement("div"); document.body.appendChild(container); root = createRoot(container);
+  await act(async () => { root.render(<StudentPasswordsPage />); });
+  await wait(20);
+  const programSelect = () => container.querySelector('select[aria-label="Program"]');
+  const options = () => [...programSelect().options].map((o) => o.textContent);
+  expect(options()).toEqual(["All programs", "BS Computer Science", "BS Artificial Intelligence", "BBA"]);
+  await act(async () => {
+    const dept = container.querySelector('select[aria-label="Department"]');
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(dept, "d1");
+    dept.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await wait(20);
+  expect(options()).toEqual(["All programs", "BS Computer Science", "BS Artificial Intelligence"]);
+});
