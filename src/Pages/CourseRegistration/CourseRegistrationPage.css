@@ -1,6 +1,6 @@
 /* Enroll students: four steps, each one visible only once the one before it is done. */
 .enr-page {
-  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-dark); --tint: var(--primary-tint);
+  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-color); --tint: var(--primary-tint);
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4; --bad: #b42318; --bad-bg: #fef2f2;
   color: var(--ink); display: flex; flex-direction: column; gap: 18px;
 }
@@ -89,7 +89,7 @@
 .enr-issue { display: block; color: var(--bad); font-size: 12.5px; font-weight: 600; }
 
 .enr-progress { position: relative; height: 22px; border-radius: 999px; background: #eceef2; overflow: hidden; }
-.enr-progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--primary-bright)); transition: width 0.3s ease; }
+.enr-progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--primary-color)); transition: width 0.3s ease; }
 .enr-progress span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; mix-blend-mode: difference; }
 .enr-enroll { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 4px; }
 .enr-enroll p { color: var(--muted); font-size: 14px; }

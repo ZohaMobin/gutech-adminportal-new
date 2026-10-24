@@ -14,4 +14,4 @@
 .row-btn--danger { color: #b42318; border-color: #f0c4c0; }
 .row-btn--danger:hover:not(:disabled) { color: #b42318; border-color: #b42318; background: #fef2f2; }
 .row-btn--primary { color: #fff; background: var(--primary-color); border-color: var(--primary-color); }
-.row-btn--primary:hover:not(:disabled) { color: #fff; background: var(--primary-dark); border-color: var(--primary-dark); }
+.row-btn--primary:hover:not(:disabled) { color: #fff; background: var(--primary-color); border-color: var(--primary-color); filter: brightness(0.9);}

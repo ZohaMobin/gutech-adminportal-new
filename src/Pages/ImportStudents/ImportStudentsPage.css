@@ -339,7 +339,7 @@
   cursor: pointer;
 }
 
-.import-passwords button:hover:not(:disabled) { background: var(--primary-dark); }
+.import-passwords button:hover:not(:disabled) { background: var(--primary-color); filter: brightness(0.9);}
 
 @media (max-width: 640px) {
   .import-passwords { flex-wrap: wrap; }

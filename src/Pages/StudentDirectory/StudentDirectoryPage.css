@@ -45,8 +45,7 @@
 }
 
 .search-button:hover {
-  background: #7a1719;
-}
+  background: #991D20; filter: brightness(0.9);}
 
 /* Filter Toggle Button */
 .filter-toggle {
