@@ -1,5 +1,5 @@
 /* Admin Class Schedule: pick a section, a teacher or a room and see its week on a real time axis. Same frame as the other admin pages. */
-.class-schedule-page { --cs-brand: #991d20; --cs-brand-tint: rgba(153, 29, 32, 0.06); --cs-line: #e2e8f0; --cs-muted: #64748b; --cs-text: #1e293b; --cs-gold: #f5c32c; }
+.class-schedule-page { --cs-brand: #991D20; --cs-brand-tint: rgba(153, 29, 32, 0.06); --cs-line: #e2e8f0; --cs-muted: #64748b; --cs-text: #1e293b; --cs-gold: #f5c32c; }
 .cs-term { padding: 0.15rem 0.65rem; border-radius: 999px; background: var(--cs-brand-tint); color: var(--cs-brand); font-size: 0.75rem; font-weight: 600; }
 .cs-note { font-size: 0.8rem; color: var(--cs-muted); }
 .cs-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }

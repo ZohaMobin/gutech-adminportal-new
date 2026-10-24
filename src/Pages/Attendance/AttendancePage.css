@@ -58,7 +58,7 @@
 .term-eyebrow {
   display: inline-flex;
   margin-bottom: 0.35rem;
-  color: #991d20;
+  color: #991D20;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -106,7 +106,7 @@
 }
 
 .term-selector-control select:focus {
-  border-color: #991d20;
+  border-color: #991D20;
   box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12);
 }
 
@@ -211,9 +211,9 @@
 
 .course-item.active {
   background-color: rgba(153, 29, 32, 0.1);
-  color: #991d20;
+  color: #991D20;
   font-weight: 500;
-  border-color: #991d20;
+  border-color: #991D20;
 }
 
 .course-info {
@@ -309,7 +309,7 @@
 }
 
 .attendance-page .search-input:focus {
-  border-color: #991d20;
+  border-color: #991D20;
   box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
@@ -614,9 +614,9 @@
 
 .section-tab.active {
   background-color: #ffffff;
-  border-color: #991d20;
+  border-color: #991D20;
   border-bottom-color: #ffffff;
-  color: #991d20;
+  color: #991D20;
   font-weight: 500;
   box-shadow: 0 -2px 4px -1px rgba(0, 0, 0, 0.05);
   z-index: 1;
@@ -645,7 +645,7 @@
 }
 
 .section-tab.active .tab-teacher {
-  color: #991d20;
+  color: #991D20;
   opacity: 0.8;
 }
 
@@ -660,7 +660,7 @@
 
 .section-tab.active .tab-count {
   background-color: rgba(153, 29, 32, 0.1);
-  color: #991d20;
+  color: #991D20;
 }
 
 /* Sections Container */

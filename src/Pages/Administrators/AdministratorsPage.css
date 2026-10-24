@@ -30,8 +30,7 @@
 }
 
 .am-btn-primary:hover:not(:disabled) {
-  background: var(--primary-dark);
-}
+  background: var(--primary-color); filter: brightness(0.9);}
 
 .am-btn-danger {
   background: #c62828;

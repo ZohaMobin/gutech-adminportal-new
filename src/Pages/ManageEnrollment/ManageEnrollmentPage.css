@@ -291,7 +291,7 @@
 .me-savebar .am-btn { border-color: #3a4152; background: transparent; color: #e5e7eb; }
 .me-savebar .am-btn:hover:not(:disabled) { background: #2b3141; color: #fff; }
 .me-savebar .am-btn-primary { border-color: var(--primary-color); background: var(--primary-color); color: #fff; }
-.me-savebar .am-btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+.me-savebar .am-btn-primary:hover:not(:disabled) { background: var(--primary-color); filter: brightness(0.9);}
 
 /* ---- modals ---- */
 .me-choices { display: grid; gap: 0.55rem; margin: 0.4rem 0 0.8rem; }

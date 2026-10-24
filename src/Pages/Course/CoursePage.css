@@ -166,8 +166,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .submit-btn:hover {
-  background-color: var(--primary-dark);
-}
+  background-color: var(--primary-color); filter: brightness(0.9);}
 
 .submit-btn:disabled {
   background-color: var(--disabled-color);

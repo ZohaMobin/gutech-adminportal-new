@@ -4,10 +4,10 @@
   --primary-color: #991D20;
   --primary-light: rgba(153, 29, 32, 0.1);
   --primary-rgb: 153, 29, 32;               /* for rgba(var(--primary-rgb), .12) shadows and washes */
-  --primary-dark: #7d1518;                  /* hover and pressed */
-  --primary-bright: #c24145;                /* the light end of a progress gradient */
-  --primary-tint: #fbf0f0;                  /* a selected row, a soft fill */
-  --primary-tint-line: #efd8d9;             /* the border that goes with the tint */
+  --primary-dark: #991D20;                  /* hover and pressed */
+  --primary-bright: #991D20;                /* the light end of a progress gradient */
+  --primary-tint: rgba(153, 29, 32, 0.06);                  /* a selected row, a soft fill */
+  --primary-tint-line: rgba(153, 29, 32, 0.18);             /* the border that goes with the tint */
   --text-color: #727272;
   --text-dark: #333333;
   --light-bg: #F9F9F9;
@@ -105,8 +105,7 @@
 }
 
 .btn:hover {
-  background-color: #7d1518;
-}
+  background-color: #991D20; filter: brightness(0.9);}
 
 .btn-secondary {
   background-color: var(--light-bg);
