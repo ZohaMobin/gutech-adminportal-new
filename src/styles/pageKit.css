@@ -22,7 +22,7 @@
 .pk-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 .pk-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .pk-btn-primary { color: #fff; background: var(--primary-color); border-color: var(--primary-color); }
-.pk-btn-primary:hover:not(:disabled) { color: #fff; background: var(--primary-dark); border-color: var(--primary-dark); }
+.pk-btn-primary:hover:not(:disabled) { color: #fff; background: var(--primary-color); border-color: var(--primary-color); filter: brightness(0.9);}
 
 /* Tabs that switch between sections of one page: an underline under the current one. (Status filters use the segmented pills.) */
 .pk-tabs { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 1.25rem; border-bottom: 1px solid #e8eaee; }

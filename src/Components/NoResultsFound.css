@@ -54,8 +54,7 @@
 }
 
 .action-button:hover {
-  background-color: var(--primary-dark);
-}
+  background-color: var(--primary-color); filter: brightness(0.9);}
 
 /* Animation for the icon */
 .no-results-icon {

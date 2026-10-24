@@ -2,7 +2,7 @@
    Same shell as the rest of the admin portal (Attendance, Marks): light background, Inter, a plain
    maroon-on-white title with no icon badge, and filters in their own bordered card. */
 .ra-page {
-  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-dark); --tint: var(--primary-tint);
+  --ink: #1f2937; --muted: #6b7280; --line: #e8eaee; --accent: var(--primary-color); --accent-hover: var(--primary-color); --tint: var(--primary-tint);
   --ok: #17693a; --ok-bg: #e7f6ec; --warn: #9a5b06; --warn-bg: #fff7e6; --warn-line: #f3d9a4; --info: #1b5e9b; --info-bg: #eaf3fb;
   color: var(--ink); display: flex; flex-direction: column; gap: 1.25rem;
   font-family: inherit;

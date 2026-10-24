@@ -40,7 +40,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 48px 40px;
-  background-color: #8f1b1e;
+  background-color: #991D20;
   color: #fff;
 }
 
@@ -162,12 +162,12 @@
 }
 
 .auth-container input:focus {
-  border-color: #8f1b1e;
-  box-shadow: 0 0 0 3px rgba(143, 27, 30, 0.12);
+  border-color: #991D20;
+  box-shadow: 0 0 0 3px rgba(153, 29, 32, 0.12);
 }
 
 .auth-container a {
-  color: #8f1b1e;
+  color: #991D20;
   font-size: 12.5px;
   text-decoration: none;
 }
@@ -210,12 +210,12 @@
 }
 
 .auth-container .password-toggle:hover {
-  color: #8f1b1e;
+  color: #991D20;
 }
 
 .auth-container .password-toggle:focus-visible,
 .auth-container .submit-button:focus-visible {
-  outline: 2px solid #8f1b1e;
+  outline: 2px solid #991D20;
   outline-offset: 2px;
 }
 
@@ -228,7 +228,7 @@
   height: 46px;
   margin-top: 26px;
   padding: 0 20px;
-  background-color: #8f1b1e;
+  background-color: #991D20;
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -239,8 +239,7 @@
 }
 
 .auth-container .submit-button:hover {
-  background-color: #a52225;
-}
+  background-color: #991D20; filter: brightness(0.9);}
 
 .auth-container .submit-button:disabled {
   background-color: #cfa0a2;
@@ -260,7 +259,7 @@
   background-color: #fdf0f0;
   border: 1px solid #f3d0d1;
   border-radius: 8px;
-  color: #8f1b1e;
+  color: #991D20;
   font-size: 13px;
   text-align: left;
 }

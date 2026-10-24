@@ -133,7 +133,7 @@ export const defaultTeacherId = (section) => idOf(section?.teacherId || section?
 
 // One tone per course from a short palette that sits with the portal's maroon (gold is left out: it means "now"). A lab (CS-301L) shares its
 // theory course's tone, a little deeper. Colours go to courses in sorted order, so they do not depend on the order the rows arrive in.
-const TONES = [["#991d20", "#6b1416"], ["#0f766e", "#0b4f4a"], ["#4f5bb5", "#2f3880"], ["#5f8f3e", "#37591f"], ["#86447f", "#59295a"], ["#c2562f", "#80351a"], ["#2f6fa3", "#1d4a73"], ["#be3a64", "#7d2144"], ["#64748b", "#334155"]];
+const TONES = [["#991d20", "#991d20"], ["#0f766e", "#0b4f4a"], ["#4f5bb5", "#2f3880"], ["#5f8f3e", "#37591f"], ["#86447f", "#59295a"], ["#c2562f", "#80351a"], ["#2f6fa3", "#1d4a73"], ["#be3a64", "#7d2144"], ["#64748b", "#334155"]];
 const labOf = (code) => { const match = /^(.*\d)L$/i.exec(String(code || "").trim()); return match ? match[1] : null; };
 const rgba = (hex, alpha) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`; };
 export const courseKey = (schedule) => schedule?.courseId?.code || idOf(schedule?.courseId);
